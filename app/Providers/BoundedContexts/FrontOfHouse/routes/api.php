@@ -4,6 +4,7 @@ use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Http\FloorPlanCont
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Http\GuestController;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Http\MenuController;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Http\TableOrderController;
+use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Http\ToServeController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/tables/{tableId}/guests', [GuestController::class, 'store'])
@@ -17,3 +18,9 @@ Route::get('/menu', MenuController::class)
 
 Route::post('/tables/{tableId}/orders', [TableOrderController::class, 'store'])
     ->name('front-of-house.orders.store');
+
+Route::get('/to-serve', [ToServeController::class, 'index'])
+    ->name('front-of-house.to-serve');
+
+Route::post('/to-serve/{toServeId}/serve', [ToServeController::class, 'serve'])
+    ->name('front-of-house.to-serve.serve');

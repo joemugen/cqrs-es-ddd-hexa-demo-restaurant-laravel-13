@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Providers\BoundedContexts\FrontOfHouse\Infrastructure;
 
 use App\Providers\BoundedContexts\FrontOfHouse\Application\MenuRepository;
+use App\Providers\BoundedContexts\FrontOfHouse\Domain\FrontOfHouseException;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\Menu;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\MenuItem;
 use Illuminate\Support\Facades\DB;
@@ -22,6 +23,24 @@ final class DatabaseMenuRepository implements MenuRepository
         }
 
         return new Menu($items);
+    }
+
+    public function findByName(string $name): MenuItem
+    {
+        $row = DB::table('foh_menu_items')->where('name', $name)->first();
+
+        if ($row === null) {
+            throw new FrontOfHouseException("Unknown menu item {$name}.", 404);
+        }
+
+        return $this->item($row);
+    }
+
+    public function save(MenuItem $item): void
+    {
+        DB::table('foh_menu_items')->where('id', $item->id())->update([
+            'available' => $item->isAvailable(),
+        ]);
     }
 
     private function item(object $row): MenuItem

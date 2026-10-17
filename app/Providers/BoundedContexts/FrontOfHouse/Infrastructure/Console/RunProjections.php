@@ -1,0 +1,29 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Console;
+
+use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Projection\ToServeProjector;
+use Illuminate\Console\Command;
+
+final class RunProjections extends Command
+{
+    protected $signature = 'projections:run {name=to-serve : The projection to catch up}';
+
+    protected $description = 'Catch a read model up from its checkpoint';
+
+    public function handle(ToServeProjector $projector): int
+    {
+        if ($this->argument('name') !== 'to-serve') {
+            $this->error('Unknown projection ['.$this->argument('name').'].');
+
+            return self::FAILURE;
+        }
+
+        $applied = $projector->catchUp();
+        $this->info("To-serve projection applied {$applied} ready dish(es).");
+
+        return self::SUCCESS;
+    }
+}

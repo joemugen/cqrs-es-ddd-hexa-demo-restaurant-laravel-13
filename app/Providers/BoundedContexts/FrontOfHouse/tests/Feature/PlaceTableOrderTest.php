@@ -3,6 +3,7 @@
 use App\Providers\BoundedContexts\EventStore\Domain\EventStore;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\MenuRepository;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\Menu;
+use App\Providers\BoundedContexts\FrontOfHouse\Domain\MenuItem;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\FrontOfHouseSeeder;
 use App\Providers\BoundedContexts\Kitchen\Infrastructure\KitchenSeeder;
 use Illuminate\Support\Facades\DB;
@@ -79,6 +80,16 @@ test('the menu query does not load the menu aggregate', function () {
     $this->app->instance(MenuRepository::class, new class implements MenuRepository
     {
         public function containing(array $ids): Menu
+        {
+            throw new RuntimeException('Queries must not hydrate aggregates.');
+        }
+
+        public function findByName(string $name): MenuItem
+        {
+            throw new RuntimeException('Queries must not hydrate aggregates.');
+        }
+
+        public function save(MenuItem $item): void
         {
             throw new RuntimeException('Queries must not hydrate aggregates.');
         }
