@@ -6,6 +6,7 @@
 >
     <testsuites>
         <testsuite name="Unit">
+            <directory suffix="Test.php">app/Providers/BoundedContexts/SharedKernel/tests/Unit</directory>
             <directory suffix="Test.php">app/Providers/BoundedContexts/EventStore/tests/Unit</directory>
             <directory suffix="Test.php">app/Providers/BoundedContexts/FrontOfHouse/tests/Unit</directory>
             <directory suffix="Test.php">app/Providers/BoundedContexts/Kitchen/tests/Unit</directory>
