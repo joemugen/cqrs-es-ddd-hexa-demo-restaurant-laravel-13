@@ -5,10 +5,14 @@ declare(strict_types=1);
 namespace App\Providers\BoundedContexts\FrontOfHouse;
 
 use App\Providers\BoundedContexts\FrontOfHouse\Application\FloorPlan;
+use App\Providers\BoundedContexts\FrontOfHouse\Application\MenuRepository;
+use App\Providers\BoundedContexts\FrontOfHouse\Application\TableOrderRepository;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\TableRepository;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\UnitOfWork;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\FrontOfHouseException;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\DatabaseFloorPlan;
+use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\DatabaseMenuRepository;
+use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\DatabaseTableOrderRepository;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\DatabaseTableRepository;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\DatabaseUnitOfWork;
 use Illuminate\Contracts\Debug\ExceptionHandler;
@@ -23,6 +27,8 @@ final class FrontOfHouseServiceProvider extends ServiceProvider
         $this->mergeConfigFrom(__DIR__.'/config/front_of_house.php', 'front_of_house');
 
         $this->app->bind(TableRepository::class, DatabaseTableRepository::class);
+        $this->app->bind(MenuRepository::class, DatabaseMenuRepository::class);
+        $this->app->bind(TableOrderRepository::class, DatabaseTableOrderRepository::class);
         $this->app->bind(FloorPlan::class, DatabaseFloorPlan::class);
         $this->app->bind(UnitOfWork::class, DatabaseUnitOfWork::class);
     }
