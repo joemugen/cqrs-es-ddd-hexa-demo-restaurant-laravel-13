@@ -4,6 +4,7 @@ use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\FrontOfHouseSeeder
 use App\Providers\BoundedContexts\Kitchen\Application\KitchenTicketRepository;
 use App\Providers\BoundedContexts\Kitchen\Domain\KitchenException;
 use App\Providers\BoundedContexts\Kitchen\Domain\KitchenTicket;
+use App\Providers\BoundedContexts\Kitchen\Domain\KitchenTicketId;
 use App\Providers\BoundedContexts\Kitchen\Infrastructure\KitchenSeeder;
 use App\Providers\BoundedContexts\Kitchen\Infrastructure\Projection\KitchenScreenProjector;
 
@@ -43,12 +44,12 @@ test('an order opens a kitchen ticket on the screen with no price', function () 
 test('the kitchen screen query does not load the ticket aggregate', function () {
     $this->app->instance(KitchenTicketRepository::class, new class implements KitchenTicketRepository
     {
-        public function exists(string $id): bool
+        public function exists(KitchenTicketId $id): bool
         {
             throw new RuntimeException('Queries must not hydrate aggregates.');
         }
 
-        public function get(string $id): KitchenTicket
+        public function get(KitchenTicketId $id): KitchenTicket
         {
             throw new RuntimeException('Queries must not hydrate aggregates.');
         }
@@ -98,8 +99,8 @@ test('the screen can be rebuilt by replaying the stream', function () {
 
 test('a stale ticket version is refused', function () {
     $ticketId = $this->getJson('/api/kitchen/screen')->json()[0]['ticketId'];
-    $first = app(KitchenTicketRepository::class)->get($ticketId);
-    $second = app(KitchenTicketRepository::class)->get($ticketId);
+    $first = app(KitchenTicketRepository::class)->get(new KitchenTicketId($ticketId));
+    $second = app(KitchenTicketRepository::class)->get(new KitchenTicketId($ticketId));
 
     $first->fireCourse('starter');
     app(KitchenTicketRepository::class)->save($first);

@@ -6,6 +6,7 @@ namespace App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Http;
 
 use App\Providers\BoundedContexts\FrontOfHouse\Application\Command\SeatGuests;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\Command\SeatGuestsHandler;
+use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableId;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -18,7 +19,7 @@ final class GuestController
         ]);
 
         return response()->json($handler->handle(new SeatGuests(
-            tableId: $tableId,
+            tableId: new TableId($tableId),
             guestCount: (int) $validated['guestCount'],
         )));
     }

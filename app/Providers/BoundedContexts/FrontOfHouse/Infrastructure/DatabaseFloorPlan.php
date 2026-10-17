@@ -12,8 +12,8 @@ final class DatabaseFloorPlan implements FloorPlan
 {
     public function sync(Table $table): void
     {
-        DB::table('foh_floor_plan')->where('table_id', $table->id())->update([
-            'label' => $table->label(),
+        DB::table('foh_floor_plan')->where('table_id', (string) $table->id())->update([
+            'label' => (string) $table->label(),
             'guest_count' => $table->guestCount(),
             'status' => $table->status(),
         ]);

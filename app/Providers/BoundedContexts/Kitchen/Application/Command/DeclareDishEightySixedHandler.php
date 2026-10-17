@@ -34,12 +34,12 @@ final readonly class DeclareDishEightySixedHandler implements CommandHandler
             $dish->eightySix();
             $this->dishes->save($dish);
             $this->bus->publish(IntegrationEvent::named('kitchen.dish_eighty_sixed', [
-                'dishName' => $dish->name(),
+                'dishName' => (string) $dish->name(),
             ]));
         });
 
         return [
-            'dishId' => $command->dishId,
+            'dishId' => (string) $command->dishId,
             'accepted' => true,
         ];
     }

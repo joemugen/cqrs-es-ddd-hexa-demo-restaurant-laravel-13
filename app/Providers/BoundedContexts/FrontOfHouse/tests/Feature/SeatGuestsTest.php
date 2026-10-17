@@ -3,6 +3,7 @@
 use App\Providers\BoundedContexts\FrontOfHouse\Application\FloorPlan;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\TableRepository;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\Table;
+use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableId;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\FrontOfHouseSeeder;
 use Illuminate\Support\Facades\DB;
 
@@ -56,7 +57,7 @@ test('a floor plan failure rolls the seating back', function () {
 test('the floor plan query does not load the table aggregate', function () {
     $this->app->instance(TableRepository::class, new class implements TableRepository
     {
-        public function get(string $id): Table
+        public function get(TableId $id): Table
         {
             throw new RuntimeException('Queries must not hydrate aggregates.');
         }

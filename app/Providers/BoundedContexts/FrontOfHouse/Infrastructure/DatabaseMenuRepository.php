@@ -5,29 +5,33 @@ declare(strict_types=1);
 namespace App\Providers\BoundedContexts\FrontOfHouse\Infrastructure;
 
 use App\Providers\BoundedContexts\FrontOfHouse\Application\MenuRepository;
+use App\Providers\BoundedContexts\FrontOfHouse\Domain\DishName;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\FrontOfHouseException;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\Menu;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\MenuItem;
+use App\Providers\BoundedContexts\FrontOfHouse\Domain\MenuItemId;
 use Illuminate\Support\Facades\DB;
 
 final class DatabaseMenuRepository implements MenuRepository
 {
     public function containing(array $ids): Menu
     {
-        $rows = DB::table('foh_menu_items')->whereIn('id', $ids)->get();
+        $rows = DB::table('foh_menu_items')
+            ->whereIn('id', array_map(fn (MenuItemId $id): string => (string) $id, $ids))
+            ->get();
         $items = [];
 
         foreach ($rows as $row) {
             $item = $this->item($row);
-            $items[$item->id()] = $item;
+            $items[(string) $item->id()] = $item;
         }
 
         return new Menu($items);
     }
 
-    public function findByName(string $name): MenuItem
+    public function findByName(DishName $name): MenuItem
     {
-        $row = DB::table('foh_menu_items')->where('name', $name)->first();
+        $row = DB::table('foh_menu_items')->where('name', (string) $name)->first();
 
         if ($row === null) {
             throw new FrontOfHouseException("Unknown menu item {$name}.", 404);
@@ -38,7 +42,7 @@ final class DatabaseMenuRepository implements MenuRepository
 
     public function save(MenuItem $item): void
     {
-        DB::table('foh_menu_items')->where('id', $item->id())->update([
+        DB::table('foh_menu_items')->where('id', (string) $item->id())->update([
             'available' => $item->isAvailable(),
         ]);
     }
@@ -51,8 +55,8 @@ final class DatabaseMenuRepository implements MenuRepository
         }
 
         return MenuItem::restore(
-            (string) $row->id,
-            (string) $row->name,
+            new MenuItemId((string) $row->id),
+            new DishName((string) $row->name),
             (string) $row->description,
             (int) $row->price_cents,
             is_array($allergens) ? array_values($allergens) : [],

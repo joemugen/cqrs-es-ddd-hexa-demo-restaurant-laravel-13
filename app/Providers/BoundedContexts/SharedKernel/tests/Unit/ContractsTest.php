@@ -7,8 +7,10 @@ use App\Providers\BoundedContexts\SharedKernel\Application\Projector;
 use App\Providers\BoundedContexts\SharedKernel\Application\Query;
 use App\Providers\BoundedContexts\SharedKernel\Application\QueryHandler;
 use App\Providers\BoundedContexts\SharedKernel\Application\RebuildableProjector;
+use App\Providers\BoundedContexts\SharedKernel\Domain\AggregateId;
 use App\Providers\BoundedContexts\SharedKernel\Domain\AggregateRoot;
 use App\Providers\BoundedContexts\SharedKernel\Domain\EventSourcedAggregate;
+use App\Providers\BoundedContexts\SharedKernel\Domain\StringValue;
 
 /**
  * @return list<class-string>
@@ -20,7 +22,7 @@ function classesIn(string $pattern): array
     return array_map(
         fn (string $file): string => 'App\\Providers\\BoundedContexts\\'
             .str_replace(['/', '.php'], ['\\', ''], substr($file, strlen($root) + 1)),
-        glob($root.'/'.$pattern),
+        glob($root.'/'.$pattern, GLOB_BRACE),
     );
 }
 
@@ -42,17 +44,37 @@ it('answers every query with a QueryHandler', function (string $class): void {
     expect(is_subclass_of($class, QueryHandler::class))->toBeTrue("{$class} does not implement QueryHandler");
 })->with(classesIn('*/Infrastructure/Query/*Handler.php'));
 
+/**
+ * @return list<class-string>
+ */
+function aggregates(): array
+{
+    $ns = 'App\\Providers\\BoundedContexts\\';
+
+    return [
+        $ns.'Billing\\Domain\\Bill',
+        $ns.'FrontOfHouse\\Domain\\DishAtThePass',
+        $ns.'FrontOfHouse\\Domain\\MenuItem',
+        $ns.'FrontOfHouse\\Domain\\Table',
+        $ns.'FrontOfHouse\\Domain\\TableOrder',
+        $ns.'Kitchen\\Domain\\Dish',
+        $ns.'Kitchen\\Domain\\KitchenTicket',
+    ];
+}
+
 it('declares every aggregate as an AggregateRoot', function (string $class): void {
     expect(is_subclass_of($class, AggregateRoot::class))->toBeTrue("{$class} does not implement AggregateRoot");
-})->with([
-    'App\\Providers\\BoundedContexts\\Billing\\Domain\\Bill',
-    'App\\Providers\\BoundedContexts\\FrontOfHouse\\Domain\\DishAtThePass',
-    'App\\Providers\\BoundedContexts\\FrontOfHouse\\Domain\\MenuItem',
-    'App\\Providers\\BoundedContexts\\FrontOfHouse\\Domain\\Table',
-    'App\\Providers\\BoundedContexts\\FrontOfHouse\\Domain\\TableOrder',
-    'App\\Providers\\BoundedContexts\\Kitchen\\Domain\\Dish',
-    'App\\Providers\\BoundedContexts\\Kitchen\\Domain\\KitchenTicket',
-]);
+})->with(aggregates());
+
+it('identifies every aggregate by a typed AggregateId', function (string $class): void {
+    $type = (string) (new ReflectionMethod($class, 'id'))->getReturnType();
+
+    expect(is_subclass_of($type, AggregateId::class))->toBeTrue("{$class}::id() returns {$type}");
+})->with(aggregates());
+
+it('types every identifier and name of a domain as a StringValue', function (string $class): void {
+    expect(is_subclass_of($class, StringValue::class))->toBeTrue("{$class} is not a StringValue");
+})->with(classesIn('{FrontOfHouse,Kitchen,Billing}/Domain/*{Id,Name,Label,Ref,Key}.php'));
 
 it('declares the kitchen ticket as an event-sourced aggregate', function (): void {
     expect(is_subclass_of('App\\Providers\\BoundedContexts\\Kitchen\\Domain\\KitchenTicket', EventSourcedAggregate::class))->toBeTrue();

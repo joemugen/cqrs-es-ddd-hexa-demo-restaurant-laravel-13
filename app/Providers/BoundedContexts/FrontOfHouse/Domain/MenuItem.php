@@ -12,8 +12,8 @@ final class MenuItem implements AggregateRoot
      * @param  list<string>  $allergens
      */
     private function __construct(
-        private readonly string $id,
-        private readonly string $name,
+        private readonly MenuItemId $id,
+        private readonly DishName $name,
         private readonly string $description,
         private readonly int $priceCents,
         private readonly array $allergens,
@@ -25,8 +25,8 @@ final class MenuItem implements AggregateRoot
      * @param  list<string>  $allergens
      */
     public static function restore(
-        string $id,
-        string $name,
+        MenuItemId $id,
+        DishName $name,
         string $description,
         int $priceCents,
         array $allergens,
@@ -46,12 +46,12 @@ final class MenuItem implements AggregateRoot
         return $this->available;
     }
 
-    public function id(): string
+    public function id(): MenuItemId
     {
         return $this->id;
     }
 
-    public function name(): string
+    public function name(): DishName
     {
         return $this->name;
     }

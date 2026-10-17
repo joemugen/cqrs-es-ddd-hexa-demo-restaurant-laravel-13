@@ -7,6 +7,7 @@ namespace App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Processors;
 use App\Providers\BoundedContexts\EventStore\Domain\CheckpointStore;
 use App\Providers\BoundedContexts\EventStore\Domain\EventStore;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\MenuRepository;
+use App\Providers\BoundedContexts\FrontOfHouse\Domain\DishName;
 use App\Providers\BoundedContexts\SharedKernel\Application\Processor;
 
 /**
@@ -28,7 +29,7 @@ final class MarkMenuItemUnavailableProcessor implements Processor
 
         foreach ($this->events->readAllFrom($position) as $event) {
             if ($event->type->is('kitchen.dish_eighty_sixed')) {
-                $item = $this->menus->findByName((string) $event->payload['dishName']);
+                $item = $this->menus->findByName(new DishName((string) $event->payload['dishName']));
                 $item->markUnavailable();
                 $this->menus->save($item);
             }

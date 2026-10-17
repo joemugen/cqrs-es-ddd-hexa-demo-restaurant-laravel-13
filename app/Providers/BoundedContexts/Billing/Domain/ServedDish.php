@@ -7,7 +7,7 @@ namespace App\Providers\BoundedContexts\Billing\Domain;
 final readonly class ServedDish
 {
     public function __construct(
-        public string $sourceKey,
+        public SourceKey $sourceKey,
         public string $description,
         public int $quantity,
         public int $unitPriceCents,

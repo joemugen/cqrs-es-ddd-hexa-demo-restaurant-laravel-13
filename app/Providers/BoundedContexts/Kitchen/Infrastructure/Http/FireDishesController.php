@@ -6,6 +6,7 @@ namespace App\Providers\BoundedContexts\Kitchen\Infrastructure\Http;
 
 use App\Providers\BoundedContexts\Kitchen\Application\Command\FireDishes;
 use App\Providers\BoundedContexts\Kitchen\Application\Command\FireDishesHandler;
+use App\Providers\BoundedContexts\Kitchen\Domain\KitchenTicketId;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -18,7 +19,7 @@ final class FireDishesController
         ]);
 
         return response()->json($handler->handle(new FireDishes(
-            ticketId: $ticketId,
+            ticketId: new KitchenTicketId($ticketId),
             course: $validated['course'],
         )));
     }

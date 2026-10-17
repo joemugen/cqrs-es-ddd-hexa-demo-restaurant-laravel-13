@@ -6,6 +6,7 @@ namespace App\Providers\BoundedContexts\Billing\Infrastructure\Http;
 
 use App\Providers\BoundedContexts\Billing\Application\Command\PayBill;
 use App\Providers\BoundedContexts\Billing\Application\Command\PayBillHandler;
+use App\Providers\BoundedContexts\Billing\Domain\BillId;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -19,7 +20,7 @@ final class PaymentController
         ]);
 
         return response()->json($handler->handle(new PayBill(
-            billId: $billId,
+            billId: new BillId($billId),
             amountCents: (int) $validated['amountCents'],
             tipCents: (int) ($validated['tipCents'] ?? 0),
         )));

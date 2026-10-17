@@ -6,6 +6,10 @@ namespace App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Http;
 
 use App\Providers\BoundedContexts\FrontOfHouse\Application\Command\PlaceTableOrder;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\Command\PlaceTableOrderHandler;
+use App\Providers\BoundedContexts\FrontOfHouse\Domain\MenuItemId;
+use App\Providers\BoundedContexts\FrontOfHouse\Domain\RequestedLine;
+use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableId;
+use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableOrderId;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -21,15 +25,15 @@ final class TableOrderController
             'lines.*.course' => ['required', 'string'],
         ]);
 
-        $lines = array_map(fn (array $line): array => [
-            'menuItemId' => $line['menuItemId'],
-            'quantity' => (int) $line['quantity'],
-            'course' => $line['course'],
-        ], $validated['lines']);
+        $lines = array_map(fn (array $line): RequestedLine => new RequestedLine(
+            new MenuItemId($line['menuItemId']),
+            (int) $line['quantity'],
+            $line['course'],
+        ), $validated['lines']);
 
         return response()->json($handler->handle(new PlaceTableOrder(
-            tableOrderId: (string) Str::ulid(),
-            tableId: $tableId,
+            tableOrderId: new TableOrderId((string) Str::ulid()),
+            tableId: new TableId($tableId),
             lines: $lines,
         )));
     }

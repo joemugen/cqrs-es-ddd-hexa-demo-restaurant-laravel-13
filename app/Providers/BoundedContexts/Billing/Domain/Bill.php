@@ -10,11 +10,11 @@ final class Bill implements AggregateRoot
 {
     /**
      * @param  list<ServedDish>  $lines
-     * @param  list<array{amountCents: int, tipCents: int}>  $payments
+     * @param  list<Payment>  $payments
      */
     private function __construct(
-        private readonly string $id,
-        private readonly string $coverRef,
+        private readonly BillId $id,
+        private readonly CoverRef $coverRef,
         private readonly array $lines,
         private array $payments,
         private bool $paid,
@@ -23,7 +23,7 @@ final class Bill implements AggregateRoot
     /**
      * @param  list<ServedDish>  $lines
      */
-    public static function prepare(string $id, string $coverRef, array $lines): self
+    public static function prepare(BillId $id, CoverRef $coverRef, array $lines): self
     {
         if ($lines === []) {
             throw new BillingException('Nothing has been served.');
@@ -34,9 +34,9 @@ final class Bill implements AggregateRoot
 
     /**
      * @param  list<ServedDish>  $lines
-     * @param  list<array{amountCents: int, tipCents: int}>  $payments
+     * @param  list<Payment>  $payments
      */
-    public static function restore(string $id, string $coverRef, array $lines, array $payments, bool $paid): self
+    public static function restore(BillId $id, CoverRef $coverRef, array $lines, array $payments, bool $paid): self
     {
         return new self($id, $coverRef, $lines, $payments, $paid);
     }
@@ -59,22 +59,19 @@ final class Bill implements AggregateRoot
             throw new BillingException('That payment is more than the balance.');
         }
 
-        $this->payments[] = [
-            'amountCents' => $amountCents,
-            'tipCents' => $tipCents,
-        ];
+        $this->payments[] = new Payment($amountCents, $tipCents);
 
         if ($this->balanceCents() === 0) {
             $this->paid = true;
         }
     }
 
-    public function id(): string
+    public function id(): BillId
     {
         return $this->id;
     }
 
-    public function coverRef(): string
+    public function coverRef(): CoverRef
     {
         return $this->coverRef;
     }
@@ -88,7 +85,7 @@ final class Bill implements AggregateRoot
     }
 
     /**
-     * @return list<array{amountCents: int, tipCents: int}>
+     * @return list<Payment>
      */
     public function payments(): array
     {
@@ -122,14 +119,14 @@ final class Bill implements AggregateRoot
 
     public function balanceCents(): int
     {
-        $settled = array_sum(array_column($this->payments, 'amountCents'));
+        $settled = array_sum(array_map(fn (Payment $payment): int => $payment->amountCents, $this->payments));
 
         return $this->totalCents() - $settled;
     }
 
     public function tipCents(): int
     {
-        return array_sum(array_column($this->payments, 'tipCents'));
+        return array_sum(array_map(fn (Payment $payment): int => $payment->tipCents, $this->payments));
     }
 
     private function grossOf(string $kind): int

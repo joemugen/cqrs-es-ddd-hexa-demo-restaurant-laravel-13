@@ -9,12 +9,12 @@ use App\Providers\BoundedContexts\SharedKernel\Domain\AggregateRoot;
 final class DishAtThePass implements AggregateRoot
 {
     public function __construct(
-        private readonly string $id,
-        private readonly string $tableId,
-        private readonly string $dishName,
+        private readonly DishAtThePassId $id,
+        private readonly TableId $tableId,
+        private readonly DishName $dishName,
         private readonly int $quantity,
-        private readonly string $ticketId,
-        private readonly string $lineId,
+        private readonly TicketId $ticketId,
+        private readonly LineId $lineId,
         private bool $served,
     ) {}
 
@@ -27,17 +27,17 @@ final class DishAtThePass implements AggregateRoot
         $this->served = true;
     }
 
-    public function id(): string
+    public function id(): DishAtThePassId
     {
         return $this->id;
     }
 
-    public function tableId(): string
+    public function tableId(): TableId
     {
         return $this->tableId;
     }
 
-    public function dishName(): string
+    public function dishName(): DishName
     {
         return $this->dishName;
     }
@@ -47,12 +47,12 @@ final class DishAtThePass implements AggregateRoot
         return $this->quantity;
     }
 
-    public function ticketId(): string
+    public function ticketId(): TicketId
     {
         return $this->ticketId;
     }
 
-    public function lineId(): string
+    public function lineId(): LineId
     {
         return $this->lineId;
     }

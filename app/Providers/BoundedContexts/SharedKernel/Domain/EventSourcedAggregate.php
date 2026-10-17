@@ -9,7 +9,7 @@ namespace App\Providers\BoundedContexts\SharedKernel\Domain;
  */
 interface EventSourcedAggregate extends AggregateRoot
 {
-    public static function fromHistory(string $id, DomainEvents $history): self;
+    public static function fromHistory(AggregateId $id, DomainEvents $history): self;
 
     public function streamId(): StreamId;
 

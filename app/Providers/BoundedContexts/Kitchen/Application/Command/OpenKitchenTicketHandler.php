@@ -25,7 +25,7 @@ final readonly class OpenKitchenTicketHandler implements CommandHandler
 
         if ($this->tickets->exists($command->ticketId)) {
             return [
-                'kitchenTicketId' => $command->ticketId,
+                'kitchenTicketId' => (string) $command->ticketId,
                 'accepted' => true,
             ];
         }
@@ -38,7 +38,7 @@ final readonly class OpenKitchenTicketHandler implements CommandHandler
         ));
 
         return [
-            'kitchenTicketId' => $command->ticketId,
+            'kitchenTicketId' => (string) $command->ticketId,
             'accepted' => true,
         ];
     }

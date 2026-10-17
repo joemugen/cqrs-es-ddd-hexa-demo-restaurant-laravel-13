@@ -1,26 +1,32 @@
 <?php
 
+use App\Providers\BoundedContexts\Kitchen\Domain\DishName;
 use App\Providers\BoundedContexts\Kitchen\Domain\KitchenException;
 use App\Providers\BoundedContexts\Kitchen\Domain\KitchenTicket;
+use App\Providers\BoundedContexts\Kitchen\Domain\KitchenTicketId;
+use App\Providers\BoundedContexts\Kitchen\Domain\LineId;
+use App\Providers\BoundedContexts\Kitchen\Domain\PartyRef;
+use App\Providers\BoundedContexts\Kitchen\Domain\TableLabel;
+use App\Providers\BoundedContexts\Kitchen\Domain\TicketLine;
 use App\Providers\BoundedContexts\SharedKernel\Domain\DomainEvent;
 
 function openTicket(): KitchenTicket
 {
-    return KitchenTicket::open('ticket-1', 'table-4', 'Window 4', [
-        ['lineId' => 'salad', 'dishName' => 'Green salad', 'station' => 'garnish', 'cookingMinutes' => 4, 'quantity' => 1, 'course' => 'starter', 'allergens' => []],
-        ['lineId' => 'steak', 'dishName' => 'Steak frites', 'station' => 'grill', 'cookingMinutes' => 12, 'quantity' => 1, 'course' => 'main', 'allergens' => ['gluten']],
+    return KitchenTicket::open(new KitchenTicketId('ticket-1'), new PartyRef('table-4'), new TableLabel('Window 4'), [
+        new TicketLine(new LineId('salad'), new DishName('Green salad'), 'garnish', 4, 1, 'starter', []),
+        new TicketLine(new LineId('steak'), new DishName('Steak frites'), 'grill', 12, 1, 'main', ['gluten']),
     ]);
 }
 
 test('a ticket is done only when every dish is ready', function () {
     $ticket = openTicket();
     $ticket->fireCourse('starter');
-    $ticket->markReady('salad');
+    $ticket->markReady(new LineId('salad'));
 
     expect($ticket->isComplete())->toBeFalse();
 
     $ticket->fireCourse('main');
-    $ticket->markReady('steak');
+    $ticket->markReady(new LineId('steak'));
 
     expect($ticket->isComplete())->toBeTrue()
         ->and(array_map(fn (DomainEvent $event): string => (string) $event->type, iterator_to_array($ticket->pendingEvents())))->toBe([
@@ -36,16 +42,16 @@ test('a ticket is done only when every dish is ready', function () {
 test('a dish cannot be ready before it is fired', function () {
     $ticket = openTicket();
 
-    expect(fn () => $ticket->markReady('salad'))
+    expect(fn () => $ticket->markReady(new LineId('salad')))
         ->toThrow(KitchenException::class, 'Fire the dish before it can be ready.');
 });
 
 test('replaying the stream rebuilds the same decision', function () {
     $original = openTicket();
     $original->fireCourse('starter');
-    $original->markReady('salad');
+    $original->markReady(new LineId('salad'));
 
-    $rebuilt = KitchenTicket::fromHistory('ticket-1', $original->pendingEvents());
+    $rebuilt = KitchenTicket::fromHistory(new KitchenTicketId('ticket-1'), $original->pendingEvents());
 
     expect($rebuilt->isComplete())->toBeFalse()
         ->and($rebuilt->expectedVersion())->toBe(3)

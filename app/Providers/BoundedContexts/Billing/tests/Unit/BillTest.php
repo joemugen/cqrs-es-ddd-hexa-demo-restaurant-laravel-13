@@ -1,13 +1,16 @@
 <?php
 
 use App\Providers\BoundedContexts\Billing\Domain\Bill;
+use App\Providers\BoundedContexts\Billing\Domain\BillId;
 use App\Providers\BoundedContexts\Billing\Domain\BillingException;
+use App\Providers\BoundedContexts\Billing\Domain\CoverRef;
 use App\Providers\BoundedContexts\Billing\Domain\ServedDish;
+use App\Providers\BoundedContexts\Billing\Domain\SourceKey;
 use App\Providers\BoundedContexts\Billing\Domain\Vat;
 
 function servedDish(string $description, int $unitPriceCents, int $quantity, string $kind): ServedDish
 {
-    return new ServedDish($description, $description, $quantity, $unitPriceCents, $kind);
+    return new ServedDish(new SourceKey($description), $description, $quantity, $unitPriceCents, $kind);
 }
 
 test('vat is 10 percent of food eaten in and 20 percent of alcohol', function () {
@@ -18,7 +21,7 @@ test('vat is 10 percent of food eaten in and 20 percent of alcohol', function ()
 });
 
 test('a bill charges only the served dishes and splits a payment with a tip', function () {
-    $bill = Bill::prepare('bill-1', 'table-4', [
+    $bill = Bill::prepare(new BillId('bill-1'), new CoverRef('table-4'), [
         servedDish('Green salad', 1100, 1, 'food'),
         servedDish('Steak frites', 2200, 1, 'food'),
         servedDish('Creme brulee', 1100, 2, 'food'),
@@ -46,12 +49,12 @@ test('a bill charges only the served dishes and splits a payment with a tip', fu
 });
 
 test('nothing served means there is no bill', function () {
-    expect(fn () => Bill::prepare('bill-1', 'table-4', []))
+    expect(fn () => Bill::prepare(new BillId('bill-1'), new CoverRef('table-4'), []))
         ->toThrow(BillingException::class, 'Nothing has been served.');
 });
 
 test('a payment cannot exceed the balance and a tip cannot be negative', function () {
-    $bill = Bill::prepare('bill-1', 'table-4', [
+    $bill = Bill::prepare(new BillId('bill-1'), new CoverRef('table-4'), [
         servedDish('Green salad', 1100, 1, 'food'),
     ]);
 
@@ -64,7 +67,7 @@ test('a payment cannot exceed the balance and a tip cannot be negative', functio
 });
 
 test('a paid bill is immutable', function () {
-    $bill = Bill::prepare('bill-1', 'table-4', [
+    $bill = Bill::prepare(new BillId('bill-1'), new CoverRef('table-4'), [
         servedDish('Green salad', 1100, 1, 'food'),
     ]);
     $bill->pay(1100, 200);

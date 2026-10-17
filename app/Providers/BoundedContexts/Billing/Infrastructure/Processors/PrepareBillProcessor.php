@@ -6,6 +6,8 @@ namespace App\Providers\BoundedContexts\Billing\Infrastructure\Processors;
 
 use App\Providers\BoundedContexts\Billing\Application\Command\PrepareBill;
 use App\Providers\BoundedContexts\Billing\Application\Command\PrepareBillHandler;
+use App\Providers\BoundedContexts\Billing\Domain\BillId;
+use App\Providers\BoundedContexts\Billing\Domain\CoverRef;
 use App\Providers\BoundedContexts\EventStore\Domain\CheckpointStore;
 use App\Providers\BoundedContexts\EventStore\Domain\EventStore;
 use App\Providers\BoundedContexts\SharedKernel\Application\Processor;
@@ -31,8 +33,8 @@ final class PrepareBillProcessor implements Processor
         foreach ($this->events->readAllFrom($position) as $event) {
             if ($event->type->is('front_of_house.bill_requested')) {
                 $this->handler->handle(new PrepareBill(
-                    billId: (string) Str::ulid(),
-                    coverRef: (string) $event->payload['tableId'],
+                    billId: new BillId((string) Str::ulid()),
+                    coverRef: new CoverRef((string) $event->payload['tableId']),
                 ));
             }
 

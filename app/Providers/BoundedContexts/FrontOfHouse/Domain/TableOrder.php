@@ -9,18 +9,18 @@ use App\Providers\BoundedContexts\SharedKernel\Domain\AggregateRoot;
 final readonly class TableOrder implements AggregateRoot
 {
     /**
-     * @param  list<array{lineId: string, menuItemId: string, name: string, quantity: int, course: string, unitPriceCents: int, kind: string, allergens: list<string>}>  $lines
+     * @param  list<OrderLine>  $lines
      */
     private function __construct(
-        private string $id,
-        private string $tableId,
+        private TableOrderId $id,
+        private TableId $tableId,
         private array $lines,
     ) {}
 
     /**
-     * @param  list<array{menuItemId: string, quantity: int, course: string}>  $requested
+     * @param  list<RequestedLine>  $requested
      */
-    public static function place(string $id, Table $table, Menu $menu, array $requested): self
+    public static function place(TableOrderId $id, Table $table, Menu $menu, array $requested): self
     {
         if (! $table->hasGuests()) {
             throw new FrontOfHouseException('No order for a table without seated guests.');
@@ -33,47 +33,47 @@ final readonly class TableOrder implements AggregateRoot
         $lines = [];
 
         foreach ($requested as $index => $line) {
-            if ($line['quantity'] < 1) {
+            if ($line->quantity < 1) {
                 throw new FrontOfHouseException('Each line needs a quantity of at least one.');
             }
 
-            if (! in_array($line['course'], ['starter', 'main', 'dessert', 'drink'], true)) {
+            if (! in_array($line->course, ['starter', 'main', 'dessert', 'drink'], true)) {
                 throw new FrontOfHouseException('Each line needs a course: starter, main, dessert, or drink.');
             }
 
-            $item = $menu->get($line['menuItemId']);
+            $item = $menu->get($line->menuItemId);
 
             if (! $item->isAvailable()) {
                 throw new FrontOfHouseException("{$item->name()} is unavailable.");
             }
 
-            $lines[] = [
-                'lineId' => $id.'-'.($index + 1),
-                'menuItemId' => $item->id(),
-                'name' => $item->name(),
-                'quantity' => $line['quantity'],
-                'course' => $line['course'],
-                'unitPriceCents' => $item->priceCents(),
-                'kind' => $item->kind(),
-                'allergens' => $item->allergens(),
-            ];
+            $lines[] = new OrderLine(
+                new LineId($id.'-'.($index + 1)),
+                $item->id(),
+                $item->name(),
+                $line->quantity,
+                $line->course,
+                $item->priceCents(),
+                $item->kind(),
+                $item->allergens(),
+            );
         }
 
         return new self($id, $table->id(), $lines);
     }
 
-    public function id(): string
+    public function id(): TableOrderId
     {
         return $this->id;
     }
 
-    public function tableId(): string
+    public function tableId(): TableId
     {
         return $this->tableId;
     }
 
     /**
-     * @return list<array{lineId: string, menuItemId: string, name: string, quantity: int, course: string, unitPriceCents: int, kind: string, allergens: list<string>}>
+     * @return list<OrderLine>
      */
     public function lines(): array
     {
@@ -87,12 +87,6 @@ final readonly class TableOrder implements AggregateRoot
      */
     public function forTheKitchen(): array
     {
-        return array_map(fn (array $line): array => [
-            'lineId' => $line['lineId'],
-            'name' => $line['name'],
-            'quantity' => $line['quantity'],
-            'course' => $line['course'],
-            'allergens' => $line['allergens'],
-        ], $this->lines);
+        return array_map(fn (OrderLine $line): array => $line->forTheKitchen(), $this->lines);
     }
 }

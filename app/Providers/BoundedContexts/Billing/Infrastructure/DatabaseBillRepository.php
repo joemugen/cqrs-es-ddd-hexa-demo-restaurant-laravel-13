@@ -6,15 +6,19 @@ namespace App\Providers\BoundedContexts\Billing\Infrastructure;
 
 use App\Providers\BoundedContexts\Billing\Application\BillRepository;
 use App\Providers\BoundedContexts\Billing\Domain\Bill;
+use App\Providers\BoundedContexts\Billing\Domain\BillId;
 use App\Providers\BoundedContexts\Billing\Domain\BillingException;
+use App\Providers\BoundedContexts\Billing\Domain\CoverRef;
+use App\Providers\BoundedContexts\Billing\Domain\Payment;
 use App\Providers\BoundedContexts\Billing\Domain\ServedDish;
+use App\Providers\BoundedContexts\Billing\Domain\SourceKey;
 use Illuminate\Support\Facades\DB;
 
 final class DatabaseBillRepository implements BillRepository
 {
-    public function get(string $id): Bill
+    public function get(BillId $id): Bill
     {
-        $row = DB::table('billing_bills')->where('id', $id)->first();
+        $row = DB::table('billing_bills')->where('id', (string) $id)->first();
 
         if ($row === null) {
             throw new BillingException("Unknown bill {$id}.", 404);
@@ -25,8 +29,8 @@ final class DatabaseBillRepository implements BillRepository
 
     public function save(Bill $bill): void
     {
-        DB::table('billing_bills')->updateOrInsert(['id' => $bill->id()], [
-            'cover_ref' => $bill->coverRef(),
+        DB::table('billing_bills')->updateOrInsert(['id' => (string) $bill->id()], [
+            'cover_ref' => (string) $bill->coverRef(),
             'status' => $bill->isPaid() ? 'paid' : 'open',
             'food_gross_cents' => $bill->foodGrossCents(),
             'alcohol_gross_cents' => $bill->alcoholGrossCents(),
@@ -36,12 +40,12 @@ final class DatabaseBillRepository implements BillRepository
             'tip_cents' => $bill->tipCents(),
         ]);
 
-        DB::table('billing_bill_lines')->where('bill_id', $bill->id())->delete();
+        DB::table('billing_bill_lines')->where('bill_id', (string) $bill->id())->delete();
 
         foreach ($bill->lines() as $line) {
             DB::table('billing_bill_lines')->insert([
-                'bill_id' => $bill->id(),
-                'source_key' => $line->sourceKey,
+                'bill_id' => (string) $bill->id(),
+                'source_key' => (string) $line->sourceKey,
                 'description' => $line->description,
                 'quantity' => $line->quantity,
                 'unit_price_cents' => $line->unitPriceCents,
@@ -50,21 +54,21 @@ final class DatabaseBillRepository implements BillRepository
             ]);
         }
 
-        DB::table('billing_payments')->where('bill_id', $bill->id())->delete();
+        DB::table('billing_payments')->where('bill_id', (string) $bill->id())->delete();
 
         foreach ($bill->payments() as $payment) {
             DB::table('billing_payments')->insert([
-                'bill_id' => $bill->id(),
-                'amount_cents' => $payment['amountCents'],
-                'tip_cents' => $payment['tipCents'],
+                'bill_id' => (string) $bill->id(),
+                'amount_cents' => $payment->amountCents,
+                'tip_cents' => $payment->tipCents,
             ]);
         }
     }
 
-    public function openFor(string $coverRef): ?Bill
+    public function openFor(CoverRef $coverRef): ?Bill
     {
         $row = DB::table('billing_bills')
-            ->where('cover_ref', $coverRef)
+            ->where('cover_ref', (string) $coverRef)
             ->where('status', 'open')
             ->first();
 
@@ -78,7 +82,7 @@ final class DatabaseBillRepository implements BillRepository
             ->orderBy('id')
             ->get()
             ->map(fn (object $line): ServedDish => new ServedDish(
-                (string) $line->source_key,
+                new SourceKey((string) $line->source_key),
                 (string) $line->description,
                 (int) $line->quantity,
                 (int) $line->unit_price_cents,
@@ -90,15 +94,15 @@ final class DatabaseBillRepository implements BillRepository
             ->where('bill_id', $row->id)
             ->orderBy('id')
             ->get()
-            ->map(fn (object $payment): array => [
-                'amountCents' => (int) $payment->amount_cents,
-                'tipCents' => (int) $payment->tip_cents,
-            ])
+            ->map(fn (object $payment): Payment => new Payment(
+                (int) $payment->amount_cents,
+                (int) $payment->tip_cents,
+            ))
             ->all();
 
         return Bill::restore(
-            (string) $row->id,
-            (string) $row->cover_ref,
+            new BillId((string) $row->id),
+            new CoverRef((string) $row->cover_ref),
             $lines,
             $payments,
             $row->status === 'paid',

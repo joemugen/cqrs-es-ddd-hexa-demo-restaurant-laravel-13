@@ -3,6 +3,7 @@
 use App\Providers\BoundedContexts\EventStore\Domain\EventStore;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\PassRepository;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\DishAtThePass;
+use App\Providers\BoundedContexts\FrontOfHouse\Domain\DishAtThePassId;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\FrontOfHouseSeeder;
 use App\Providers\BoundedContexts\Kitchen\Infrastructure\KitchenSeeder;
 
@@ -71,7 +72,7 @@ test('serving a dish acknowledges the command and leaves the pass', function () 
 test('the to-serve query does not load a pass aggregate', function () {
     $this->app->instance(PassRepository::class, new class implements PassRepository
     {
-        public function find(string $id): DishAtThePass
+        public function find(DishAtThePassId $id): DishAtThePass
         {
             throw new RuntimeException('Queries must not hydrate aggregates.');
         }

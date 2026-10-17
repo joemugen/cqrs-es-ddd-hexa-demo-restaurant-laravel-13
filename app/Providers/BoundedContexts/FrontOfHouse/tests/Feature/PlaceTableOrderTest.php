@@ -2,6 +2,7 @@
 
 use App\Providers\BoundedContexts\EventStore\Domain\EventStore;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\MenuRepository;
+use App\Providers\BoundedContexts\FrontOfHouse\Domain\DishName;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\Menu;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\MenuItem;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\FrontOfHouseSeeder;
@@ -84,7 +85,7 @@ test('the menu query does not load the menu aggregate', function () {
             throw new RuntimeException('Queries must not hydrate aggregates.');
         }
 
-        public function findByName(string $name): MenuItem
+        public function findByName(DishName $name): MenuItem
         {
             throw new RuntimeException('Queries must not hydrate aggregates.');
         }

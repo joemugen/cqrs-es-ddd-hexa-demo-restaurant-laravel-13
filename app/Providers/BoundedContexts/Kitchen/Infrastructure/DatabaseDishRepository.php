@@ -6,22 +6,24 @@ namespace App\Providers\BoundedContexts\Kitchen\Infrastructure;
 
 use App\Providers\BoundedContexts\Kitchen\Application\DishRepository;
 use App\Providers\BoundedContexts\Kitchen\Domain\Dish;
+use App\Providers\BoundedContexts\Kitchen\Domain\DishId;
+use App\Providers\BoundedContexts\Kitchen\Domain\DishName;
 use App\Providers\BoundedContexts\Kitchen\Domain\KitchenException;
 use Illuminate\Support\Facades\DB;
 
 final class DatabaseDishRepository implements DishRepository
 {
-    public function get(string $id): Dish
+    public function get(DishId $id): Dish
     {
-        $row = DB::table('kitchen_dishes')->where('id', $id)->first();
+        $row = DB::table('kitchen_dishes')->where('id', (string) $id)->first();
 
         if ($row === null) {
             throw new KitchenException("Unknown dish {$id}.", 404);
         }
 
         return Dish::restore(
-            (string) $row->id,
-            (string) $row->name,
+            new DishId((string) $row->id),
+            new DishName((string) $row->name),
             (string) $row->station,
             (int) $row->cooking_minutes,
             (bool) $row->in_stock,
@@ -30,7 +32,7 @@ final class DatabaseDishRepository implements DishRepository
 
     public function save(Dish $dish): void
     {
-        DB::table('kitchen_dishes')->where('id', $dish->id())->update([
+        DB::table('kitchen_dishes')->where('id', (string) $dish->id())->update([
             'in_stock' => $dish->isInStock(),
         ]);
     }

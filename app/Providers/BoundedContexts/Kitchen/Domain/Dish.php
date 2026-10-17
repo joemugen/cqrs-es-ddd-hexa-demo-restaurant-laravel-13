@@ -9,16 +9,16 @@ use App\Providers\BoundedContexts\SharedKernel\Domain\AggregateRoot;
 final class Dish implements AggregateRoot
 {
     private function __construct(
-        private readonly string $id,
-        private readonly string $name,
+        private readonly DishId $id,
+        private readonly DishName $name,
         private readonly string $station,
         private readonly int $cookingMinutes,
         private bool $inStock,
     ) {}
 
     public static function restore(
-        string $id,
-        string $name,
+        DishId $id,
+        DishName $name,
         string $station,
         int $cookingMinutes,
         bool $inStock,
@@ -40,12 +40,12 @@ final class Dish implements AggregateRoot
         return $this->inStock;
     }
 
-    public function id(): string
+    public function id(): DishId
     {
         return $this->id;
     }
 
-    public function name(): string
+    public function name(): DishName
     {
         return $this->name;
     }

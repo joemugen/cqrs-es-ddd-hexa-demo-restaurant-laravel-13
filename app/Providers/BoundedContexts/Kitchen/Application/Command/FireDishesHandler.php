@@ -27,7 +27,7 @@ final readonly class FireDishesHandler implements CommandHandler
         $this->tickets->save($ticket);
 
         return [
-            'kitchenTicketId' => $command->ticketId,
+            'kitchenTicketId' => (string) $command->ticketId,
             'accepted' => true,
         ];
     }

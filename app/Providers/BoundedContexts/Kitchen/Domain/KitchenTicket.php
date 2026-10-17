@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Providers\BoundedContexts\Kitchen\Domain;
 
+use App\Providers\BoundedContexts\SharedKernel\Domain\AggregateId;
 use App\Providers\BoundedContexts\SharedKernel\Domain\DomainEvent;
 use App\Providers\BoundedContexts\SharedKernel\Domain\DomainEvents;
 use App\Providers\BoundedContexts\SharedKernel\Domain\EventSourcedAggregate;
@@ -18,23 +19,23 @@ final class KitchenTicket implements EventSourcedAggregate
      */
     private array $lines = [];
 
-    private string $partyRef = '';
+    private PartyRef $partyRef;
 
-    private string $tableLabel = '';
+    private TableLabel $tableLabel;
 
     private bool $completed = false;
 
     private function __construct(
-        private readonly string $id,
+        private readonly KitchenTicketId $id,
         private int $version = 0,
     ) {
         $this->pending = new DomainEvents;
     }
 
     /**
-     * @param  list<array{lineId: string, dishName: string, station: string, cookingMinutes: int, quantity: int, course: string, allergens: list<string>}>  $lines
+     * @param  list<TicketLine>  $lines
      */
-    public static function open(string $id, string $partyRef, string $tableLabel, array $lines): self
+    public static function open(KitchenTicketId $id, PartyRef $partyRef, TableLabel $tableLabel, array $lines): self
     {
         if ($lines === []) {
             throw new KitchenException('A ticket needs at least one dish.');
@@ -42,17 +43,19 @@ final class KitchenTicket implements EventSourcedAggregate
 
         $ticket = new self($id);
         $ticket->record('kitchen.ticket_opened', [
-            'ticketId' => $id,
-            'partyRef' => $partyRef,
-            'tableLabel' => $tableLabel,
-            'lines' => $lines,
+            'ticketId' => (string) $id,
+            'partyRef' => (string) $partyRef,
+            'tableLabel' => (string) $tableLabel,
+            'lines' => array_map(fn (TicketLine $line): array => $line->toPayload(), $lines),
         ]);
 
         return $ticket;
     }
 
-    public static function fromHistory(string $id, DomainEvents $history): self
+    public static function fromHistory(AggregateId $id, DomainEvents $history): self
     {
+        assert($id instanceof KitchenTicketId);
+
         $ticket = new self($id);
 
         foreach ($history as $event) {
@@ -75,7 +78,7 @@ final class KitchenTicket implements EventSourcedAggregate
 
             $fired = true;
             $this->record('kitchen.dish_fired', [
-                'ticketId' => $this->id,
+                'ticketId' => (string) $this->id,
                 'lineId' => $lineId,
                 'course' => $course,
             ]);
@@ -86,35 +89,36 @@ final class KitchenTicket implements EventSourcedAggregate
         }
     }
 
-    public function markReady(string $lineId): void
+    public function markReady(LineId $lineId): void
     {
         $this->guardOpen();
+        $key = (string) $lineId;
 
-        if (! isset($this->lines[$lineId])) {
+        if (! isset($this->lines[$key])) {
             throw new KitchenException('That dish is not on this ticket.');
         }
 
-        if (! $this->lines[$lineId]['fired']) {
+        if (! $this->lines[$key]['fired']) {
             throw new KitchenException('Fire the dish before it can be ready.');
         }
 
-        if ($this->lines[$lineId]['ready']) {
+        if ($this->lines[$key]['ready']) {
             throw new KitchenException('That dish is already ready.');
         }
 
-        $line = $this->lines[$lineId];
+        $line = $this->lines[$key];
         $this->record('kitchen.dish_ready', [
-            'ticketId' => $this->id,
-            'lineId' => $lineId,
+            'ticketId' => (string) $this->id,
+            'lineId' => $key,
             'dishName' => $line['dishName'],
-            'partyRef' => $this->partyRef,
-            'tableLabel' => $this->tableLabel,
+            'partyRef' => (string) $this->partyRef,
+            'tableLabel' => (string) $this->tableLabel,
             'quantity' => $line['quantity'],
         ]);
 
         if ($this->everyDishReady()) {
             $this->record('kitchen.ticket_completed', [
-                'ticketId' => $this->id,
+                'ticketId' => (string) $this->id,
             ]);
         }
     }
@@ -124,7 +128,7 @@ final class KitchenTicket implements EventSourcedAggregate
         return $this->completed;
     }
 
-    public function id(): string
+    public function id(): KitchenTicketId
     {
         return $this->id;
     }
@@ -183,8 +187,8 @@ final class KitchenTicket implements EventSourcedAggregate
     private function apply(string $type, array $payload): void
     {
         if ($type === 'kitchen.ticket_opened') {
-            $this->partyRef = (string) $payload['partyRef'];
-            $this->tableLabel = (string) $payload['tableLabel'];
+            $this->partyRef = new PartyRef((string) $payload['partyRef']);
+            $this->tableLabel = new TableLabel((string) $payload['tableLabel']);
 
             foreach ($payload['lines'] as $line) {
                 $this->lines[(string) $line['lineId']] = [

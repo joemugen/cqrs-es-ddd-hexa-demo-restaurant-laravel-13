@@ -9,5 +9,5 @@ namespace App\Providers\BoundedContexts\SharedKernel\Domain;
  */
 interface AggregateRoot
 {
-    public function id(): string;
+    public function id(): AggregateId;
 }

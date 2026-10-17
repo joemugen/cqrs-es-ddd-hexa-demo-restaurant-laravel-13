@@ -9,12 +9,12 @@ use App\Providers\BoundedContexts\SharedKernel\Domain\AggregateRoot;
 final class Table implements AggregateRoot
 {
     private function __construct(
-        private readonly string $id,
-        private readonly string $label,
+        private readonly TableId $id,
+        private readonly TableLabel $label,
         private int $guestCount,
     ) {}
 
-    public static function restore(string $id, string $label, int $guestCount): self
+    public static function restore(TableId $id, TableLabel $label, int $guestCount): self
     {
         return new self($id, $label, $guestCount);
     }
@@ -42,12 +42,12 @@ final class Table implements AggregateRoot
         return $this->guestCount > 0;
     }
 
-    public function id(): string
+    public function id(): TableId
     {
         return $this->id;
     }
 
-    public function label(): string
+    public function label(): TableLabel
     {
         return $this->label;
     }

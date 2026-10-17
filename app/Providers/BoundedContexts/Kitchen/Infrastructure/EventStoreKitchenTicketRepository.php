@@ -10,6 +10,7 @@ use App\Providers\BoundedContexts\EventStore\Domain\StoredEvent;
 use App\Providers\BoundedContexts\Kitchen\Application\KitchenTicketRepository;
 use App\Providers\BoundedContexts\Kitchen\Domain\KitchenException;
 use App\Providers\BoundedContexts\Kitchen\Domain\KitchenTicket;
+use App\Providers\BoundedContexts\Kitchen\Domain\KitchenTicketId;
 use App\Providers\BoundedContexts\SharedKernel\Domain\DomainEvent;
 use App\Providers\BoundedContexts\SharedKernel\Domain\DomainEvents;
 use App\Providers\BoundedContexts\SharedKernel\Domain\StreamId;
@@ -20,12 +21,12 @@ final class EventStoreKitchenTicketRepository implements KitchenTicketRepository
 {
     public function __construct(private EventStore $events) {}
 
-    public function exists(string $id): bool
+    public function exists(KitchenTicketId $id): bool
     {
         return $this->events->readStream($this->stream($id)) !== [];
     }
 
-    public function get(string $id): KitchenTicket
+    public function get(KitchenTicketId $id): KitchenTicket
     {
         $history = $this->events->readStream($this->stream($id));
 
@@ -62,7 +63,7 @@ final class EventStoreKitchenTicketRepository implements KitchenTicketRepository
         $ticket->commit($expected + count($pending));
     }
 
-    private function stream(string $id): StreamId
+    private function stream(KitchenTicketId $id): StreamId
     {
         return new StreamId('kitchen-ticket-'.$id);
     }

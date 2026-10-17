@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace App\Providers\BoundedContexts\Billing\Infrastructure\Processors;
 
 use App\Providers\BoundedContexts\Billing\Application\ServedLedger;
+use App\Providers\BoundedContexts\Billing\Domain\CoverRef;
 use App\Providers\BoundedContexts\Billing\Domain\ServedDish;
+use App\Providers\BoundedContexts\Billing\Domain\SourceKey;
 use App\Providers\BoundedContexts\EventStore\Domain\CheckpointStore;
 use App\Providers\BoundedContexts\EventStore\Domain\EventStore;
 use App\Providers\BoundedContexts\SharedKernel\Application\Processor;
@@ -30,8 +32,8 @@ final class RecordServedDishes implements Processor
         foreach ($this->events->readAllFrom($position) as $event) {
             if ($event->type->is('front_of_house.dish_served')) {
                 $payload = $event->payload;
-                $this->served->record((string) $payload['tableId'], new ServedDish(
-                    sourceKey: (string) $payload['sourceKey'],
+                $this->served->record(new CoverRef((string) $payload['tableId']), new ServedDish(
+                    sourceKey: new SourceKey((string) $payload['sourceKey']),
                     description: (string) $payload['description'],
                     quantity: (int) $payload['quantity'],
                     unitPriceCents: (int) $payload['unitPriceCents'],

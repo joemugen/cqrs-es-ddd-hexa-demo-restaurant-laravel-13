@@ -23,7 +23,7 @@ final class GetBillHandler implements QueryHandler
         assert($query instanceof GetBill);
 
         $bill = DB::table('billing_bills')
-            ->where('cover_ref', $query->coverRef)
+            ->where('cover_ref', (string) $query->coverRef)
             ->orderByDesc('id')
             ->first();
 

@@ -9,6 +9,12 @@ use App\Providers\BoundedContexts\EventStore\Domain\EventStore;
 use App\Providers\BoundedContexts\Kitchen\Application\Command\OpenKitchenTicket;
 use App\Providers\BoundedContexts\Kitchen\Application\Command\OpenKitchenTicketHandler;
 use App\Providers\BoundedContexts\Kitchen\Application\DishCatalog;
+use App\Providers\BoundedContexts\Kitchen\Domain\DishName;
+use App\Providers\BoundedContexts\Kitchen\Domain\KitchenTicketId;
+use App\Providers\BoundedContexts\Kitchen\Domain\LineId;
+use App\Providers\BoundedContexts\Kitchen\Domain\OrderedLine;
+use App\Providers\BoundedContexts\Kitchen\Domain\PartyRef;
+use App\Providers\BoundedContexts\Kitchen\Domain\TableLabel;
 use App\Providers\BoundedContexts\SharedKernel\Application\Processor;
 
 /**
@@ -32,10 +38,10 @@ final class OpenKitchenTicketProcessor implements Processor
         foreach ($this->events->readAllFrom($position) as $event) {
             if ($event->type->is('front_of_house.table_order_placed')) {
                 $this->handler->handle(new OpenKitchenTicket(
-                    ticketId: (string) $event->payload['tableOrderId'],
-                    partyRef: (string) $event->payload['tableId'],
-                    tableLabel: (string) $event->payload['tableLabel'],
-                    lines: $this->dishes->linesFor($event->payload['lines']),
+                    ticketId: new KitchenTicketId((string) $event->payload['tableOrderId']),
+                    partyRef: new PartyRef((string) $event->payload['tableId']),
+                    tableLabel: new TableLabel((string) $event->payload['tableLabel']),
+                    lines: $this->dishes->linesFor($this->orderedLines($event->payload['lines'])),
                 ));
             }
 
@@ -43,5 +49,20 @@ final class OpenKitchenTicketProcessor implements Processor
         }
 
         $this->checkpoints->put(self::CHECKPOINT, $position);
+    }
+
+    /**
+     * @param  list<array{lineId: string, name: string, quantity: int, course: string, allergens: list<string>}>  $lines
+     * @return list<OrderedLine>
+     */
+    private function orderedLines(array $lines): array
+    {
+        return array_map(fn (array $line): OrderedLine => new OrderedLine(
+            new LineId((string) $line['lineId']),
+            new DishName((string) $line['name']),
+            (int) $line['quantity'],
+            (string) $line['course'],
+            array_values($line['allergens']),
+        ), $lines);
     }
 }

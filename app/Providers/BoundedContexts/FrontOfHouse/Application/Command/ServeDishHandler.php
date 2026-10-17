@@ -37,8 +37,8 @@ final readonly class ServeDishHandler implements CommandHandler
             $item = $this->menus->findByName($dish->dishName());
             $this->passes->save($dish);
             $this->bus->publish(IntegrationEvent::named('front_of_house.dish_served', [
-                'tableId' => $dish->tableId(),
-                'description' => $item->name(),
+                'tableId' => (string) $dish->tableId(),
+                'description' => (string) $item->name(),
                 'quantity' => $dish->quantity(),
                 'unitPriceCents' => $item->priceCents(),
                 'kind' => $item->kind(),
@@ -47,7 +47,7 @@ final readonly class ServeDishHandler implements CommandHandler
         });
 
         return [
-            'toServeId' => $command->toServeId,
+            'toServeId' => (string) $command->toServeId,
             'accepted' => true,
         ];
     }

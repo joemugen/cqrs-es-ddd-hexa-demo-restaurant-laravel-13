@@ -38,7 +38,7 @@ final readonly class FreeTableHandler implements CommandHandler
         });
 
         return [
-            'tableId' => $command->tableId,
+            'tableId' => (string) $command->tableId,
             'accepted' => true,
         ];
     }

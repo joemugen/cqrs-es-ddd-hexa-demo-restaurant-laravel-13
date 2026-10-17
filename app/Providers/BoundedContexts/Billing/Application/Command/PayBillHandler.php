@@ -36,14 +36,14 @@ final readonly class PayBillHandler implements CommandHandler
 
             if ($bill->isPaid()) {
                 $this->bus->publish(IntegrationEvent::named('billing.bill_paid', [
-                    'coverRef' => $bill->coverRef(),
-                    'billId' => $bill->id(),
+                    'coverRef' => (string) $bill->coverRef(),
+                    'billId' => (string) $bill->id(),
                 ]));
             }
         });
 
         return [
-            'billId' => $command->billId,
+            'billId' => (string) $command->billId,
             'accepted' => true,
         ];
     }

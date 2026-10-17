@@ -5,10 +5,11 @@ declare(strict_types=1);
 namespace App\Providers\BoundedContexts\FrontOfHouse\Application;
 
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\DishAtThePass;
+use App\Providers\BoundedContexts\FrontOfHouse\Domain\DishAtThePassId;
 
 interface PassRepository
 {
-    public function find(string $id): DishAtThePass;
+    public function find(DishAtThePassId $id): DishAtThePass;
 
     public function save(DishAtThePass $dish): void;
 }

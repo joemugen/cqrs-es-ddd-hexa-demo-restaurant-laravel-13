@@ -2,6 +2,8 @@
 
 use App\Providers\BoundedContexts\Billing\Application\BillRepository;
 use App\Providers\BoundedContexts\Billing\Domain\Bill;
+use App\Providers\BoundedContexts\Billing\Domain\BillId;
+use App\Providers\BoundedContexts\Billing\Domain\CoverRef;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\FrontOfHouseSeeder;
 use App\Providers\BoundedContexts\Kitchen\Infrastructure\KitchenSeeder;
 
@@ -132,7 +134,7 @@ test('the bill query does not load the bill aggregate', function () {
 
     $this->app->instance(BillRepository::class, new class implements BillRepository
     {
-        public function get(string $id): Bill
+        public function get(BillId $id): Bill
         {
             throw new RuntimeException('Queries must not hydrate aggregates.');
         }
@@ -142,7 +144,7 @@ test('the bill query does not load the bill aggregate', function () {
             throw new RuntimeException('Queries must not hydrate aggregates.');
         }
 
-        public function openFor(string $coverRef): ?Bill
+        public function openFor(CoverRef $coverRef): ?Bill
         {
             throw new RuntimeException('Queries must not hydrate aggregates.');
         }

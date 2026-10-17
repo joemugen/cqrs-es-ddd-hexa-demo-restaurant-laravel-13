@@ -38,12 +38,12 @@ final readonly class RequestBillHandler implements CommandHandler
             }
 
             $this->bus->publish(IntegrationEvent::named('front_of_house.bill_requested', [
-                'tableId' => $table->id(),
+                'tableId' => (string) $table->id(),
             ]));
         });
 
         return [
-            'tableId' => $command->tableId,
+            'tableId' => (string) $command->tableId,
             'accepted' => true,
         ];
     }
