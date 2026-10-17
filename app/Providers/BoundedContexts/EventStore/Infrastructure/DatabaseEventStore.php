@@ -1,0 +1,102 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Providers\BoundedContexts\EventStore\Infrastructure;
+
+use App\Providers\BoundedContexts\EventStore\Application\AfterAppend;
+use App\Providers\BoundedContexts\EventStore\Domain\EventStore;
+use App\Providers\BoundedContexts\EventStore\Domain\OptimisticConcurrencyException;
+use App\Providers\BoundedContexts\EventStore\Domain\StoredEvent;
+use Illuminate\Database\UniqueConstraintViolationException;
+use Illuminate\Support\Facades\DB;
+
+final class DatabaseEventStore implements EventStore
+{
+    public function __construct(private AfterAppend $afterAppend) {}
+
+    public function append(string $streamId, int $expectedVersion, array $events): void
+    {
+        if ($events === []) {
+            return;
+        }
+
+        $table = (string) config('event_store.events_table');
+
+        DB::transaction(function () use ($streamId, $expectedVersion, $events, $table): void {
+            $actual = $this->version($table, $streamId);
+
+            if ($actual !== $expectedVersion) {
+                throw new OptimisticConcurrencyException($streamId, $expectedVersion, $actual);
+            }
+
+            $version = $expectedVersion;
+
+            foreach ($events as $event) {
+                $version++;
+
+                try {
+                    DB::table($table)->insert([
+                        'stream_id' => $streamId,
+                        'version' => $version,
+                        'type' => $event->type(),
+                        'payload' => json_encode($event->payload(), JSON_THROW_ON_ERROR),
+                        'occurred_at' => $event->occurredAt(),
+                    ]);
+                } catch (UniqueConstraintViolationException) {
+                    throw new OptimisticConcurrencyException(
+                        $streamId,
+                        $expectedVersion,
+                        $this->version($table, $streamId),
+                    );
+                }
+            }
+        });
+
+        $this->afterAppend->notify();
+    }
+
+    public function readStream(string $streamId): array
+    {
+        $rows = DB::table((string) config('event_store.events_table'))
+            ->where('stream_id', $streamId)
+            ->orderBy('version')
+            ->get();
+
+        return $rows->map(fn (object $row): StoredEvent => $this->stored($row))->all();
+    }
+
+    public function readAllFrom(int $position): array
+    {
+        $rows = DB::table((string) config('event_store.events_table'))
+            ->where('position', '>', $position)
+            ->orderBy('position')
+            ->get();
+
+        return $rows->map(fn (object $row): StoredEvent => $this->stored($row))->all();
+    }
+
+    private function version(string $table, string $streamId): int
+    {
+        $version = DB::table($table)->where('stream_id', $streamId)->max('version');
+
+        return $version === null ? 0 : (int) $version;
+    }
+
+    private function stored(object $row): StoredEvent
+    {
+        $payload = $row->payload;
+        if (is_string($payload)) {
+            $payload = json_decode($payload, true, 512, JSON_THROW_ON_ERROR);
+        }
+
+        return new StoredEvent(
+            position: (int) $row->position,
+            streamId: (string) $row->stream_id,
+            version: (int) $row->version,
+            type: (string) $row->type,
+            payload: is_array($payload) ? $payload : [],
+            occurredAt: (string) $row->occurred_at,
+        );
+    }
+}
