@@ -5,41 +5,43 @@ declare(strict_types=1);
 namespace App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Query;
 
 use App\Providers\BoundedContexts\FrontOfHouse\Application\Query\ListMenu;
+use App\Providers\BoundedContexts\FrontOfHouse\Application\Query\Response\MenuEntry;
+use App\Providers\BoundedContexts\FrontOfHouse\Application\Query\Response\MenuView;
+use App\Providers\BoundedContexts\FrontOfHouse\Domain\DishName;
+use App\Providers\BoundedContexts\FrontOfHouse\Domain\MenuItemId;
 use App\Providers\BoundedContexts\SharedKernel\Application\Query;
 use App\Providers\BoundedContexts\SharedKernel\Application\QueryHandler;
 use Illuminate\Support\Facades\DB;
 
 /**
- * @implements QueryHandler<ListMenu>
+ * @implements QueryHandler<ListMenu, MenuView>
  */
 final class ListMenuHandler implements QueryHandler
 {
     /**
      * The menu the guest reads. It is not the kitchen ticket.
-     *
-     * @return list<array{menuItemId: string, name: string, description: string, priceCents: int, allergens: list<string>, available: bool, kind: string}>
      */
-    public function handle(Query $query): array
+    public function handle(Query $query): MenuView
     {
-        return DB::table('foh_menu_items')
+        return new MenuView(DB::table('foh_menu_items')
             ->orderBy('name')
             ->get()
-            ->map(function (object $row): array {
+            ->map(function (object $row): MenuEntry {
                 $allergens = $row->allergens;
                 if (is_string($allergens)) {
                     $allergens = json_decode($allergens, true, 512, JSON_THROW_ON_ERROR);
                 }
 
-                return [
-                    'menuItemId' => (string) $row->id,
-                    'name' => (string) $row->name,
-                    'description' => (string) $row->description,
-                    'priceCents' => (int) $row->price_cents,
-                    'allergens' => is_array($allergens) ? array_values($allergens) : [],
-                    'available' => (bool) $row->available,
-                    'kind' => (string) $row->kind,
-                ];
+                return new MenuEntry(
+                    new MenuItemId((string) $row->id),
+                    new DishName((string) $row->name),
+                    (string) $row->description,
+                    (int) $row->price_cents,
+                    is_array($allergens) ? array_values($allergens) : [],
+                    (bool) $row->available,
+                    (string) $row->kind,
+                );
             })
-            ->all();
+            ->all());
     }
 }

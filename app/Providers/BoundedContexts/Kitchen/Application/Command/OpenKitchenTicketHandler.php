@@ -4,30 +4,25 @@ declare(strict_types=1);
 
 namespace App\Providers\BoundedContexts\Kitchen\Application\Command;
 
+use App\Providers\BoundedContexts\Kitchen\Application\Command\Response\TicketOpened;
 use App\Providers\BoundedContexts\Kitchen\Application\KitchenTicketRepository;
 use App\Providers\BoundedContexts\Kitchen\Domain\KitchenTicket;
 use App\Providers\BoundedContexts\SharedKernel\Application\Command;
 use App\Providers\BoundedContexts\SharedKernel\Application\CommandHandler;
 
 /**
- * @implements CommandHandler<OpenKitchenTicket>
+ * @implements CommandHandler<OpenKitchenTicket, TicketOpened>
  */
 final readonly class OpenKitchenTicketHandler implements CommandHandler
 {
     public function __construct(private KitchenTicketRepository $tickets) {}
 
-    /**
-     * @return array{kitchenTicketId: string, accepted: true}
-     */
-    public function handle(Command $command): array
+    public function handle(Command $command): TicketOpened
     {
         assert($command instanceof OpenKitchenTicket);
 
         if ($this->tickets->exists($command->ticketId)) {
-            return [
-                'kitchenTicketId' => (string) $command->ticketId,
-                'accepted' => true,
-            ];
+            return new TicketOpened($command->ticketId);
         }
 
         $this->tickets->save(KitchenTicket::open(
@@ -37,9 +32,6 @@ final readonly class OpenKitchenTicketHandler implements CommandHandler
             $command->lines,
         ));
 
-        return [
-            'kitchenTicketId' => (string) $command->ticketId,
-            'accepted' => true,
-        ];
+        return new TicketOpened($command->ticketId);
     }
 }

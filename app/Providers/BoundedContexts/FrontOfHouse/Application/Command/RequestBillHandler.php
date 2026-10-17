@@ -6,6 +6,7 @@ namespace App\Providers\BoundedContexts\FrontOfHouse\Application\Command;
 
 use App\Providers\BoundedContexts\EventStore\Application\IntegrationBus;
 use App\Providers\BoundedContexts\EventStore\Domain\IntegrationEvent;
+use App\Providers\BoundedContexts\FrontOfHouse\Application\Command\Response\BillRequested;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\TableRepository;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\UnitOfWork;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\FrontOfHouseException;
@@ -13,7 +14,7 @@ use App\Providers\BoundedContexts\SharedKernel\Application\Command;
 use App\Providers\BoundedContexts\SharedKernel\Application\CommandHandler;
 
 /**
- * @implements CommandHandler<RequestBill>
+ * @implements CommandHandler<RequestBill, BillRequested>
  */
 final readonly class RequestBillHandler implements CommandHandler
 {
@@ -23,10 +24,7 @@ final readonly class RequestBillHandler implements CommandHandler
         private UnitOfWork $unitOfWork,
     ) {}
 
-    /**
-     * @return array{tableId: string, accepted: true}
-     */
-    public function handle(Command $command): array
+    public function handle(Command $command): BillRequested
     {
         assert($command instanceof RequestBill);
 
@@ -42,9 +40,6 @@ final readonly class RequestBillHandler implements CommandHandler
             ]));
         });
 
-        return [
-            'tableId' => (string) $command->tableId,
-            'accepted' => true,
-        ];
+        return new BillRequested($command->tableId);
     }
 }

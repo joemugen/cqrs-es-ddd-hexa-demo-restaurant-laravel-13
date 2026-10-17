@@ -6,6 +6,7 @@ namespace App\Providers\BoundedContexts\FrontOfHouse\Application\Command;
 
 use App\Providers\BoundedContexts\EventStore\Application\IntegrationBus;
 use App\Providers\BoundedContexts\EventStore\Domain\IntegrationEvent;
+use App\Providers\BoundedContexts\FrontOfHouse\Application\Command\Response\DishServed;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\MenuRepository;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\PassRepository;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\UnitOfWork;
@@ -13,7 +14,7 @@ use App\Providers\BoundedContexts\SharedKernel\Application\Command;
 use App\Providers\BoundedContexts\SharedKernel\Application\CommandHandler;
 
 /**
- * @implements CommandHandler<ServeDish>
+ * @implements CommandHandler<ServeDish, DishServed>
  */
 final readonly class ServeDishHandler implements CommandHandler
 {
@@ -24,10 +25,7 @@ final readonly class ServeDishHandler implements CommandHandler
         private UnitOfWork $unitOfWork,
     ) {}
 
-    /**
-     * @return array{toServeId: string, accepted: true}
-     */
-    public function handle(Command $command): array
+    public function handle(Command $command): DishServed
     {
         assert($command instanceof ServeDish);
 
@@ -46,9 +44,6 @@ final readonly class ServeDishHandler implements CommandHandler
             ]));
         });
 
-        return [
-            'toServeId' => (string) $command->toServeId,
-            'accepted' => true,
-        ];
+        return new DishServed($command->toServeId);
     }
 }

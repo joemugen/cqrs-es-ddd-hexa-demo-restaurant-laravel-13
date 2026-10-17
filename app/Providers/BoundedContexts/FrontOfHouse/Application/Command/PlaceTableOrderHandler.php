@@ -6,6 +6,7 @@ namespace App\Providers\BoundedContexts\FrontOfHouse\Application\Command;
 
 use App\Providers\BoundedContexts\EventStore\Application\IntegrationBus;
 use App\Providers\BoundedContexts\EventStore\Domain\IntegrationEvent;
+use App\Providers\BoundedContexts\FrontOfHouse\Application\Command\Response\TableOrderPlaced;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\MenuRepository;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\TableOrderRepository;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\TableRepository;
@@ -17,7 +18,7 @@ use App\Providers\BoundedContexts\SharedKernel\Application\Command;
 use App\Providers\BoundedContexts\SharedKernel\Application\CommandHandler;
 
 /**
- * @implements CommandHandler<PlaceTableOrder>
+ * @implements CommandHandler<PlaceTableOrder, TableOrderPlaced>
  */
 final readonly class PlaceTableOrderHandler implements CommandHandler
 {
@@ -29,10 +30,7 @@ final readonly class PlaceTableOrderHandler implements CommandHandler
         private UnitOfWork $unitOfWork,
     ) {}
 
-    /**
-     * @return array{tableOrderId: string, accepted: true}
-     */
-    public function handle(Command $command): array
+    public function handle(Command $command): TableOrderPlaced
     {
         assert($command instanceof PlaceTableOrder);
 
@@ -53,9 +51,6 @@ final readonly class PlaceTableOrderHandler implements CommandHandler
             ]));
         });
 
-        return [
-            'tableOrderId' => (string) $command->tableOrderId,
-            'accepted' => true,
-        ];
+        return new TableOrderPlaced($command->tableOrderId);
     }
 }

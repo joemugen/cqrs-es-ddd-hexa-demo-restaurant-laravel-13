@@ -6,12 +6,13 @@ namespace App\Providers\BoundedContexts\SharedKernel\Application;
 
 /**
  * @template TQuery of Query
+ * @template TResponse of QueryResponse
  */
 interface QueryHandler
 {
     /**
      * @param  TQuery  $query
-     * @return array<array-key, mixed>
+     * @return TResponse
      */
-    public function handle(Query $query): array;
+    public function handle(Query $query): QueryResponse;
 }

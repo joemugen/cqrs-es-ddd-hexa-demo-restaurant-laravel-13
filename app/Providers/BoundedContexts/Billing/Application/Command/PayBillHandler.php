@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Providers\BoundedContexts\Billing\Application\Command;
 
 use App\Providers\BoundedContexts\Billing\Application\BillRepository;
+use App\Providers\BoundedContexts\Billing\Application\Command\Response\PaymentAccepted;
 use App\Providers\BoundedContexts\Billing\Application\UnitOfWork;
 use App\Providers\BoundedContexts\EventStore\Application\IntegrationBus;
 use App\Providers\BoundedContexts\EventStore\Domain\IntegrationEvent;
@@ -12,7 +13,7 @@ use App\Providers\BoundedContexts\SharedKernel\Application\Command;
 use App\Providers\BoundedContexts\SharedKernel\Application\CommandHandler;
 
 /**
- * @implements CommandHandler<PayBill>
+ * @implements CommandHandler<PayBill, PaymentAccepted>
  */
 final readonly class PayBillHandler implements CommandHandler
 {
@@ -22,10 +23,7 @@ final readonly class PayBillHandler implements CommandHandler
         private UnitOfWork $unitOfWork,
     ) {}
 
-    /**
-     * @return array{billId: string, accepted: true}
-     */
-    public function handle(Command $command): array
+    public function handle(Command $command): PaymentAccepted
     {
         assert($command instanceof PayBill);
 
@@ -42,9 +40,6 @@ final readonly class PayBillHandler implements CommandHandler
             }
         });
 
-        return [
-            'billId' => (string) $command->billId,
-            'accepted' => true,
-        ];
+        return new PaymentAccepted($command->billId);
     }
 }

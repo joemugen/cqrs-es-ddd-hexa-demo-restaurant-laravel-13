@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Providers\BoundedContexts\FrontOfHouse\Application\Command;
 
+use App\Providers\BoundedContexts\FrontOfHouse\Application\Command\Response\TableFreed;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\FloorPlan;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\TableRepository;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\UnitOfWork;
@@ -11,7 +12,7 @@ use App\Providers\BoundedContexts\SharedKernel\Application\Command;
 use App\Providers\BoundedContexts\SharedKernel\Application\CommandHandler;
 
 /**
- * @implements CommandHandler<FreeTable>
+ * @implements CommandHandler<FreeTable, TableFreed>
  */
 final readonly class FreeTableHandler implements CommandHandler
 {
@@ -23,10 +24,8 @@ final readonly class FreeTableHandler implements CommandHandler
 
     /**
      * The table and the floor plan move together, as they did when the guests sat down.
-     *
-     * @return array{tableId: string, accepted: true}
      */
-    public function handle(Command $command): array
+    public function handle(Command $command): TableFreed
     {
         assert($command instanceof FreeTable);
 
@@ -37,9 +36,6 @@ final readonly class FreeTableHandler implements CommandHandler
             $this->floorPlan->sync($table);
         });
 
-        return [
-            'tableId' => (string) $command->tableId,
-            'accepted' => true,
-        ];
+        return new TableFreed($command->tableId);
     }
 }

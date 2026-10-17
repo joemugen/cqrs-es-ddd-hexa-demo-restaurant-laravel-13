@@ -6,13 +6,14 @@ namespace App\Providers\BoundedContexts\Kitchen\Application\Command;
 
 use App\Providers\BoundedContexts\EventStore\Application\IntegrationBus;
 use App\Providers\BoundedContexts\EventStore\Domain\IntegrationEvent;
+use App\Providers\BoundedContexts\Kitchen\Application\Command\Response\DishEightySixed;
 use App\Providers\BoundedContexts\Kitchen\Application\DishRepository;
 use App\Providers\BoundedContexts\Kitchen\Application\UnitOfWork;
 use App\Providers\BoundedContexts\SharedKernel\Application\Command;
 use App\Providers\BoundedContexts\SharedKernel\Application\CommandHandler;
 
 /**
- * @implements CommandHandler<DeclareDishEightySixed>
+ * @implements CommandHandler<DeclareDishEightySixed, DishEightySixed>
  */
 final readonly class DeclareDishEightySixedHandler implements CommandHandler
 {
@@ -22,10 +23,7 @@ final readonly class DeclareDishEightySixedHandler implements CommandHandler
         private UnitOfWork $unitOfWork,
     ) {}
 
-    /**
-     * @return array{dishId: string, accepted: true}
-     */
-    public function handle(Command $command): array
+    public function handle(Command $command): DishEightySixed
     {
         assert($command instanceof DeclareDishEightySixed);
 
@@ -38,9 +36,6 @@ final readonly class DeclareDishEightySixedHandler implements CommandHandler
             ]));
         });
 
-        return [
-            'dishId' => (string) $command->dishId,
-            'accepted' => true,
-        ];
+        return new DishEightySixed($command->dishId);
     }
 }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Providers\BoundedContexts\FrontOfHouse\Application\Command;
 
+use App\Providers\BoundedContexts\FrontOfHouse\Application\Command\Response\TableSeated;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\FloorPlan;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\TableRepository;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\UnitOfWork;
@@ -11,7 +12,7 @@ use App\Providers\BoundedContexts\SharedKernel\Application\Command;
 use App\Providers\BoundedContexts\SharedKernel\Application\CommandHandler;
 
 /**
- * @implements CommandHandler<SeatGuests>
+ * @implements CommandHandler<SeatGuests, TableSeated>
  */
 final readonly class SeatGuestsHandler implements CommandHandler
 {
@@ -23,10 +24,8 @@ final readonly class SeatGuestsHandler implements CommandHandler
 
     /**
      * The table decides. The floor plan, a second table, moves in the same transaction.
-     *
-     * @return array{tableId: string, accepted: true}
      */
-    public function handle(Command $command): array
+    public function handle(Command $command): TableSeated
     {
         assert($command instanceof SeatGuests);
 
@@ -37,9 +36,6 @@ final readonly class SeatGuestsHandler implements CommandHandler
             $this->floorPlan->sync($table);
         });
 
-        return [
-            'tableId' => (string) $command->tableId,
-            'accepted' => true,
-        ];
+        return new TableSeated($command->tableId);
     }
 }

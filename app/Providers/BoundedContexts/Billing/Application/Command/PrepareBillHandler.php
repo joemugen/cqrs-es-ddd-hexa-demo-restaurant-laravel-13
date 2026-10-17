@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Providers\BoundedContexts\Billing\Application\Command;
 
 use App\Providers\BoundedContexts\Billing\Application\BillRepository;
+use App\Providers\BoundedContexts\Billing\Application\Command\Response\BillPrepared;
 use App\Providers\BoundedContexts\Billing\Application\ServedLedger;
 use App\Providers\BoundedContexts\Billing\Application\UnitOfWork;
 use App\Providers\BoundedContexts\Billing\Domain\Bill;
@@ -14,7 +15,7 @@ use App\Providers\BoundedContexts\SharedKernel\Application\Command;
 use App\Providers\BoundedContexts\SharedKernel\Application\CommandHandler;
 
 /**
- * @implements CommandHandler<PrepareBill>
+ * @implements CommandHandler<PrepareBill, BillPrepared>
  */
 final readonly class PrepareBillHandler implements CommandHandler
 {
@@ -24,21 +25,15 @@ final readonly class PrepareBillHandler implements CommandHandler
         private UnitOfWork $unitOfWork,
     ) {}
 
-    /**
-     * @return array{billId: string, accepted: true}|null
-     */
-    public function handle(Command $command): ?array
+    public function handle(Command $command): ?BillPrepared
     {
         assert($command instanceof PrepareBill);
 
-        return $this->unitOfWork->execute(function () use ($command): ?array {
+        return $this->unitOfWork->execute(function () use ($command): ?BillPrepared {
             $open = $this->bills->openFor($command->coverRef);
 
             if ($open !== null) {
-                return [
-                    'billId' => (string) $open->id(),
-                    'accepted' => true,
-                ];
+                return new BillPrepared($open->id());
             }
 
             $lines = $this->served->unbilled($command->coverRef);
@@ -54,10 +49,7 @@ final readonly class PrepareBillHandler implements CommandHandler
                 $bill->lines(),
             ));
 
-            return [
-                'billId' => (string) $bill->id(),
-                'accepted' => true,
-            ];
+            return new BillPrepared($bill->id());
         });
     }
 }

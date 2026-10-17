@@ -5,33 +5,38 @@ declare(strict_types=1);
 namespace App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Query;
 
 use App\Providers\BoundedContexts\FrontOfHouse\Application\Query\ListToServe;
+use App\Providers\BoundedContexts\FrontOfHouse\Application\Query\Response\ToServeEntry;
+use App\Providers\BoundedContexts\FrontOfHouse\Application\Query\Response\ToServeView;
+use App\Providers\BoundedContexts\FrontOfHouse\Domain\DishAtThePassId;
+use App\Providers\BoundedContexts\FrontOfHouse\Domain\DishName;
+use App\Providers\BoundedContexts\FrontOfHouse\Domain\LineId;
+use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableId;
+use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableLabel;
+use App\Providers\BoundedContexts\FrontOfHouse\Domain\TicketId;
 use App\Providers\BoundedContexts\SharedKernel\Application\Query;
 use App\Providers\BoundedContexts\SharedKernel\Application\QueryHandler;
 use Illuminate\Support\Facades\DB;
 
 /**
- * @implements QueryHandler<ListToServe>
+ * @implements QueryHandler<ListToServe, ToServeView>
  */
 final class ListToServeHandler implements QueryHandler
 {
-    /**
-     * @return list<array{id: string, tableId: string, tableLabel: string, dishName: string, quantity: int, ticketId: string, lineId: string}>
-     */
-    public function handle(Query $query): array
+    public function handle(Query $query): ToServeView
     {
-        return DB::table('foh_to_serve')
+        return new ToServeView(DB::table('foh_to_serve')
             ->whereNull('served_at')
             ->orderBy('id')
             ->get()
-            ->map(fn (object $row): array => [
-                'id' => (string) $row->id,
-                'tableId' => (string) $row->table_id,
-                'tableLabel' => (string) $row->table_label,
-                'dishName' => (string) $row->dish_name,
-                'quantity' => (int) $row->quantity,
-                'ticketId' => (string) $row->ticket_id,
-                'lineId' => (string) $row->line_id,
-            ])
-            ->all();
+            ->map(fn (object $row): ToServeEntry => new ToServeEntry(
+                new DishAtThePassId((string) $row->id),
+                new TableId((string) $row->table_id),
+                new TableLabel((string) $row->table_label),
+                new DishName((string) $row->dish_name),
+                (int) $row->quantity,
+                new TicketId((string) $row->ticket_id),
+                new LineId((string) $row->line_id),
+            ))
+            ->all());
     }
 }

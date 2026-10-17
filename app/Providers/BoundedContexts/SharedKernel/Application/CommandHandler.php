@@ -6,12 +6,13 @@ namespace App\Providers\BoundedContexts\SharedKernel\Application;
 
 /**
  * @template TCommand of Command
+ * @template TResponse of CommandResponse
  */
 interface CommandHandler
 {
     /**
      * @param  TCommand  $command
-     * @return array<string, mixed>|null null when there was nothing to acknowledge
+     * @return TResponse|null null when there was nothing to acknowledge
      */
-    public function handle(Command $command): ?array;
+    public function handle(Command $command): ?CommandResponse;
 }
