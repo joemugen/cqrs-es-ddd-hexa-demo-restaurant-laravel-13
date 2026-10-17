@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Providers\BoundedContexts\FrontOfHouse\Domain;
 
-final class DishAtThePass
+use App\Providers\BoundedContexts\SharedKernel\Domain\AggregateRoot;
+
+final class DishAtThePass implements AggregateRoot
 {
     public function __construct(
         private readonly string $id,

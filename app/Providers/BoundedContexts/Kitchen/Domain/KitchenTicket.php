@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace App\Providers\BoundedContexts\Kitchen\Domain;
 
+use App\Providers\BoundedContexts\SharedKernel\Domain\EventSourcedAggregate;
 use DateTimeImmutable;
 use DateTimeZone;
 
-final class KitchenTicket
+final class KitchenTicket implements EventSourcedAggregate
 {
     /** @var list<array{type: string, payload: array<string, mixed>, occurredAt: string}> */
     private array $pending = [];

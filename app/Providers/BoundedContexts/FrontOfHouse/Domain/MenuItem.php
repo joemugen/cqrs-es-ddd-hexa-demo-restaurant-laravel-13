@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Providers\BoundedContexts\FrontOfHouse\Domain;
 
-final class MenuItem
+use App\Providers\BoundedContexts\SharedKernel\Domain\AggregateRoot;
+
+final class MenuItem implements AggregateRoot
 {
     /**
      * @param  list<string>  $allergens

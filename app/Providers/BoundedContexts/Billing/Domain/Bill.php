@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Providers\BoundedContexts\Billing\Domain;
 
-final class Bill
+use App\Providers\BoundedContexts\SharedKernel\Domain\AggregateRoot;
+
+final class Bill implements AggregateRoot
 {
     /**
      * @param  list<ServedDish>  $lines

@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Providers\BoundedContexts\FrontOfHouse\Domain;
 
-final readonly class TableOrder
+use App\Providers\BoundedContexts\SharedKernel\Domain\AggregateRoot;
+
+final readonly class TableOrder implements AggregateRoot
 {
     /**
      * @param  list<array{lineId: string, menuItemId: string, name: string, quantity: int, course: string, unitPriceCents: int, kind: string, allergens: list<string>}>  $lines

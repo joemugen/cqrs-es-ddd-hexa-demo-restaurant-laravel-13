@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Providers\BoundedContexts\Kitchen\Domain;
 
-final class Dish
+use App\Providers\BoundedContexts\SharedKernel\Domain\AggregateRoot;
+
+final class Dish implements AggregateRoot
 {
     private function __construct(
         private readonly string $id,

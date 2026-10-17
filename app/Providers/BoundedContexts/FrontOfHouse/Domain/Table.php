@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Providers\BoundedContexts\FrontOfHouse\Domain;
 
-final class Table
+use App\Providers\BoundedContexts\SharedKernel\Domain\AggregateRoot;
+
+final class Table implements AggregateRoot
 {
     private function __construct(
         private readonly string $id,
