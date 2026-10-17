@@ -2,9 +2,11 @@
 
 declare(strict_types=1);
 
-namespace App\Providers\BoundedContexts\Kitchen\Application;
+namespace App\Providers\BoundedContexts\Kitchen\Application\Command;
 
-final readonly class OpenKitchenTicket
+use App\Providers\BoundedContexts\SharedKernel\Application\Command;
+
+final readonly class OpenKitchenTicket implements Command
 {
     /**
      * @param  list<array{lineId: string, dishName: string, station: string, cookingMinutes: int, quantity: int, course: string, allergens: list<string>}>  $lines

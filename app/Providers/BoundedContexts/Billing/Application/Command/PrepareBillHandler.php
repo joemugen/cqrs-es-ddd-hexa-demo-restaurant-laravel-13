@@ -2,11 +2,19 @@
 
 declare(strict_types=1);
 
-namespace App\Providers\BoundedContexts\Billing\Application;
+namespace App\Providers\BoundedContexts\Billing\Application\Command;
 
+use App\Providers\BoundedContexts\Billing\Application\BillRepository;
+use App\Providers\BoundedContexts\Billing\Application\ServedLedger;
+use App\Providers\BoundedContexts\Billing\Application\UnitOfWork;
 use App\Providers\BoundedContexts\Billing\Domain\Bill;
+use App\Providers\BoundedContexts\SharedKernel\Application\Command;
+use App\Providers\BoundedContexts\SharedKernel\Application\CommandHandler;
 
-final readonly class PrepareBillHandler
+/**
+ * @implements CommandHandler<PrepareBill>
+ */
+final readonly class PrepareBillHandler implements CommandHandler
 {
     public function __construct(
         private BillRepository $bills,
@@ -17,8 +25,10 @@ final readonly class PrepareBillHandler
     /**
      * @return array{billId: string, accepted: true}|null
      */
-    public function handle(PrepareBill $command): ?array
+    public function handle(Command $command): ?array
     {
+        assert($command instanceof PrepareBill);
+
         return $this->unitOfWork->execute(function () use ($command): ?array {
             $open = $this->bills->openFor($command->coverRef);
 

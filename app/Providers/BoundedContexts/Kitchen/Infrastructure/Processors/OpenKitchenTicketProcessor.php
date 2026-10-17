@@ -6,9 +6,9 @@ namespace App\Providers\BoundedContexts\Kitchen\Infrastructure\Processors;
 
 use App\Providers\BoundedContexts\EventStore\Domain\CheckpointStore;
 use App\Providers\BoundedContexts\EventStore\Domain\EventStore;
+use App\Providers\BoundedContexts\Kitchen\Application\Command\OpenKitchenTicket;
+use App\Providers\BoundedContexts\Kitchen\Application\Command\OpenKitchenTicketHandler;
 use App\Providers\BoundedContexts\Kitchen\Application\DishCatalog;
-use App\Providers\BoundedContexts\Kitchen\Application\OpenKitchenTicket;
-use App\Providers\BoundedContexts\Kitchen\Application\OpenKitchenTicketHandler;
 
 /**
  * A processor reacts once. It is not a projection: replaying it would open tickets again.

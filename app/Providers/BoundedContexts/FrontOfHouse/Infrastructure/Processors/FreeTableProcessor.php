@@ -6,8 +6,8 @@ namespace App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Processors;
 
 use App\Providers\BoundedContexts\EventStore\Domain\CheckpointStore;
 use App\Providers\BoundedContexts\EventStore\Domain\EventStore;
-use App\Providers\BoundedContexts\FrontOfHouse\Application\FreeTable;
-use App\Providers\BoundedContexts\FrontOfHouse\Application\FreeTableHandler;
+use App\Providers\BoundedContexts\FrontOfHouse\Application\Command\FreeTable;
+use App\Providers\BoundedContexts\FrontOfHouse\Application\Command\FreeTableHandler;
 
 /**
  * The dining room hears that the bill is paid and clears the table. Once.

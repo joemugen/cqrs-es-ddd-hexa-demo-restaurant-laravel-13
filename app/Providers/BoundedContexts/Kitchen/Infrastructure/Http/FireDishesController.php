@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Providers\BoundedContexts\Kitchen\Infrastructure\Http;
 
-use App\Providers\BoundedContexts\Kitchen\Application\FireDishes;
-use App\Providers\BoundedContexts\Kitchen\Application\FireDishesHandler;
+use App\Providers\BoundedContexts\Kitchen\Application\Command\FireDishes;
+use App\Providers\BoundedContexts\Kitchen\Application\Command\FireDishesHandler;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 

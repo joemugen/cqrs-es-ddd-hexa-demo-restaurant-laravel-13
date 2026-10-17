@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Http;
 
-use App\Providers\BoundedContexts\FrontOfHouse\Application\PlaceTableOrder;
-use App\Providers\BoundedContexts\FrontOfHouse\Application\PlaceTableOrderHandler;
+use App\Providers\BoundedContexts\FrontOfHouse\Application\Command\PlaceTableOrder;
+use App\Providers\BoundedContexts\FrontOfHouse\Application\Command\PlaceTableOrderHandler;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;

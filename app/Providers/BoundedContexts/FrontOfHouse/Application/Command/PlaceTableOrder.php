@@ -2,9 +2,11 @@
 
 declare(strict_types=1);
 
-namespace App\Providers\BoundedContexts\FrontOfHouse\Application;
+namespace App\Providers\BoundedContexts\FrontOfHouse\Application\Command;
 
-final readonly class PlaceTableOrder
+use App\Providers\BoundedContexts\SharedKernel\Application\Command;
+
+final readonly class PlaceTableOrder implements Command
 {
     /**
      * @param  list<array{menuItemId: string, quantity: int, course: string}>  $lines

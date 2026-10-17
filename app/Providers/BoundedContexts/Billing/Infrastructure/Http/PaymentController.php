@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Providers\BoundedContexts\Billing\Infrastructure\Http;
 
-use App\Providers\BoundedContexts\Billing\Application\PayBill;
-use App\Providers\BoundedContexts\Billing\Application\PayBillHandler;
+use App\Providers\BoundedContexts\Billing\Application\Command\PayBill;
+use App\Providers\BoundedContexts\Billing\Application\Command\PayBillHandler;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 

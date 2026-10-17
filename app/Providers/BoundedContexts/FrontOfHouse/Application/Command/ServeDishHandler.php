@@ -2,11 +2,19 @@
 
 declare(strict_types=1);
 
-namespace App\Providers\BoundedContexts\FrontOfHouse\Application;
+namespace App\Providers\BoundedContexts\FrontOfHouse\Application\Command;
 
 use App\Providers\BoundedContexts\EventStore\Application\IntegrationBus;
+use App\Providers\BoundedContexts\FrontOfHouse\Application\MenuRepository;
+use App\Providers\BoundedContexts\FrontOfHouse\Application\PassRepository;
+use App\Providers\BoundedContexts\FrontOfHouse\Application\UnitOfWork;
+use App\Providers\BoundedContexts\SharedKernel\Application\Command;
+use App\Providers\BoundedContexts\SharedKernel\Application\CommandHandler;
 
-final readonly class ServeDishHandler
+/**
+ * @implements CommandHandler<ServeDish>
+ */
+final readonly class ServeDishHandler implements CommandHandler
 {
     public function __construct(
         private PassRepository $passes,
@@ -18,8 +26,10 @@ final readonly class ServeDishHandler
     /**
      * @return array{toServeId: string, accepted: true}
      */
-    public function handle(ServeDish $command): array
+    public function handle(Command $command): array
     {
+        assert($command instanceof ServeDish);
+
         $this->unitOfWork->execute(function () use ($command): void {
             $dish = $this->passes->find($command->toServeId);
             $dish->serve();

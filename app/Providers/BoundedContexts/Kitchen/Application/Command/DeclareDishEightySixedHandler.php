@@ -2,11 +2,18 @@
 
 declare(strict_types=1);
 
-namespace App\Providers\BoundedContexts\Kitchen\Application;
+namespace App\Providers\BoundedContexts\Kitchen\Application\Command;
 
 use App\Providers\BoundedContexts\EventStore\Application\IntegrationBus;
+use App\Providers\BoundedContexts\Kitchen\Application\DishRepository;
+use App\Providers\BoundedContexts\Kitchen\Application\UnitOfWork;
+use App\Providers\BoundedContexts\SharedKernel\Application\Command;
+use App\Providers\BoundedContexts\SharedKernel\Application\CommandHandler;
 
-final readonly class DeclareDishEightySixedHandler
+/**
+ * @implements CommandHandler<DeclareDishEightySixed>
+ */
+final readonly class DeclareDishEightySixedHandler implements CommandHandler
 {
     public function __construct(
         private DishRepository $dishes,
@@ -17,8 +24,10 @@ final readonly class DeclareDishEightySixedHandler
     /**
      * @return array{dishId: string, accepted: true}
      */
-    public function handle(DeclareDishEightySixed $command): array
+    public function handle(Command $command): array
     {
+        assert($command instanceof DeclareDishEightySixed);
+
         $this->unitOfWork->execute(function () use ($command): void {
             $dish = $this->dishes->get($command->dishId);
             $dish->eightySix();

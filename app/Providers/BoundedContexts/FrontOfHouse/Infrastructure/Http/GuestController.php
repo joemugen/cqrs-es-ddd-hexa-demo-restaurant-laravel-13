@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Http;
 
-use App\Providers\BoundedContexts\FrontOfHouse\Application\SeatGuests;
-use App\Providers\BoundedContexts\FrontOfHouse\Application\SeatGuestsHandler;
+use App\Providers\BoundedContexts\FrontOfHouse\Application\Command\SeatGuests;
+use App\Providers\BoundedContexts\FrontOfHouse\Application\Command\SeatGuestsHandler;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 

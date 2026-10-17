@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Providers\BoundedContexts\Billing\Infrastructure\Processors;
 
-use App\Providers\BoundedContexts\Billing\Application\PrepareBill;
-use App\Providers\BoundedContexts\Billing\Application\PrepareBillHandler;
+use App\Providers\BoundedContexts\Billing\Application\Command\PrepareBill;
+use App\Providers\BoundedContexts\Billing\Application\Command\PrepareBillHandler;
 use App\Providers\BoundedContexts\EventStore\Domain\CheckpointStore;
 use App\Providers\BoundedContexts\EventStore\Domain\EventStore;
 use Illuminate\Support\Str;

@@ -2,12 +2,19 @@
 
 declare(strict_types=1);
 
-namespace App\Providers\BoundedContexts\FrontOfHouse\Application;
+namespace App\Providers\BoundedContexts\FrontOfHouse\Application\Command;
 
 use App\Providers\BoundedContexts\EventStore\Application\IntegrationBus;
+use App\Providers\BoundedContexts\FrontOfHouse\Application\TableRepository;
+use App\Providers\BoundedContexts\FrontOfHouse\Application\UnitOfWork;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\FrontOfHouseException;
+use App\Providers\BoundedContexts\SharedKernel\Application\Command;
+use App\Providers\BoundedContexts\SharedKernel\Application\CommandHandler;
 
-final readonly class RequestBillHandler
+/**
+ * @implements CommandHandler<RequestBill>
+ */
+final readonly class RequestBillHandler implements CommandHandler
 {
     public function __construct(
         private TableRepository $tables,
@@ -18,8 +25,10 @@ final readonly class RequestBillHandler
     /**
      * @return array{tableId: string, accepted: true}
      */
-    public function handle(RequestBill $command): array
+    public function handle(Command $command): array
     {
+        assert($command instanceof RequestBill);
+
         $this->unitOfWork->execute(function () use ($command): void {
             $table = $this->tables->get($command->tableId);
 

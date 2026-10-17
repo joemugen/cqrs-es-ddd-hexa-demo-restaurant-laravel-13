@@ -11,7 +11,7 @@ interface CommandHandler
 {
     /**
      * @param  TCommand  $command
-     * @return array<string, mixed>
+     * @return array<string, mixed>|null null when there was nothing to acknowledge
      */
-    public function handle(Command $command): array;
+    public function handle(Command $command): ?array;
 }

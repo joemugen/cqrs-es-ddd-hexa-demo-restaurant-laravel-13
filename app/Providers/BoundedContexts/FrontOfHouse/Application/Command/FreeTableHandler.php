@@ -2,9 +2,18 @@
 
 declare(strict_types=1);
 
-namespace App\Providers\BoundedContexts\FrontOfHouse\Application;
+namespace App\Providers\BoundedContexts\FrontOfHouse\Application\Command;
 
-final readonly class FreeTableHandler
+use App\Providers\BoundedContexts\FrontOfHouse\Application\FloorPlan;
+use App\Providers\BoundedContexts\FrontOfHouse\Application\TableRepository;
+use App\Providers\BoundedContexts\FrontOfHouse\Application\UnitOfWork;
+use App\Providers\BoundedContexts\SharedKernel\Application\Command;
+use App\Providers\BoundedContexts\SharedKernel\Application\CommandHandler;
+
+/**
+ * @implements CommandHandler<FreeTable>
+ */
+final readonly class FreeTableHandler implements CommandHandler
 {
     public function __construct(
         private TableRepository $tables,
@@ -17,8 +26,10 @@ final readonly class FreeTableHandler
      *
      * @return array{tableId: string, accepted: true}
      */
-    public function handle(FreeTable $command): array
+    public function handle(Command $command): array
     {
+        assert($command instanceof FreeTable);
+
         $this->unitOfWork->execute(function () use ($command): void {
             $table = $this->tables->get($command->tableId);
             $table->free();
