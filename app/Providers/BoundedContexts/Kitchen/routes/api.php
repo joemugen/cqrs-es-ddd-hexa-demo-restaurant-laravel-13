@@ -1,5 +1,6 @@
 <?php
 
+use App\Providers\BoundedContexts\Kitchen\Infrastructure\Http\EightySixController;
 use App\Providers\BoundedContexts\Kitchen\Infrastructure\Http\FireDishesController;
 use App\Providers\BoundedContexts\Kitchen\Infrastructure\Http\KitchenScreenController;
 use App\Providers\BoundedContexts\Kitchen\Infrastructure\Http\MarkDishReadyController;
@@ -13,3 +14,6 @@ Route::post('/tickets/{ticketId}/fire', [FireDishesController::class, 'store'])
 
 Route::post('/tickets/{ticketId}/lines/{lineId}/ready', [MarkDishReadyController::class, 'store'])
     ->name('kitchen.tickets.ready');
+
+Route::post('/dishes/{dishId}/eighty-six', [EightySixController::class, 'store'])
+    ->name('kitchen.dishes.eighty-six');

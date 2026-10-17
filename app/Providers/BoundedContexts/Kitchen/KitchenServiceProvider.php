@@ -6,9 +6,13 @@ namespace App\Providers\BoundedContexts\Kitchen;
 
 use App\Providers\BoundedContexts\EventStore\Application\AfterAppend;
 use App\Providers\BoundedContexts\Kitchen\Application\DishCatalog;
+use App\Providers\BoundedContexts\Kitchen\Application\DishRepository;
 use App\Providers\BoundedContexts\Kitchen\Application\KitchenTicketRepository;
+use App\Providers\BoundedContexts\Kitchen\Application\UnitOfWork;
 use App\Providers\BoundedContexts\Kitchen\Domain\KitchenException;
 use App\Providers\BoundedContexts\Kitchen\Infrastructure\DatabaseDishCatalog;
+use App\Providers\BoundedContexts\Kitchen\Infrastructure\DatabaseDishRepository;
+use App\Providers\BoundedContexts\Kitchen\Infrastructure\DatabaseUnitOfWork;
 use App\Providers\BoundedContexts\Kitchen\Infrastructure\EventStoreKitchenTicketRepository;
 use App\Providers\BoundedContexts\Kitchen\Infrastructure\Processors\OpenKitchenTicketProcessor;
 use App\Providers\BoundedContexts\Kitchen\Infrastructure\Projection\KitchenScreenProjector;
@@ -25,6 +29,8 @@ final class KitchenServiceProvider extends ServiceProvider
 
         $this->app->bind(KitchenTicketRepository::class, EventStoreKitchenTicketRepository::class);
         $this->app->bind(DishCatalog::class, DatabaseDishCatalog::class);
+        $this->app->bind(DishRepository::class, DatabaseDishRepository::class);
+        $this->app->bind(UnitOfWork::class, DatabaseUnitOfWork::class);
     }
 
     public function boot(): void

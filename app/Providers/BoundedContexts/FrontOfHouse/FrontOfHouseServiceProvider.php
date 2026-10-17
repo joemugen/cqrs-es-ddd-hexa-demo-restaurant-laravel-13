@@ -19,6 +19,7 @@ use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\DatabasePassReposi
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\DatabaseTableOrderRepository;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\DatabaseTableRepository;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\DatabaseUnitOfWork;
+use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Processors\MarkMenuItemUnavailableProcessor;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Projection\ProjectToServeList;
 use Illuminate\Contracts\Debug\ExceptionHandler;
 use Illuminate\Foundation\Exceptions\Handler;
@@ -55,8 +56,12 @@ final class FrontOfHouseServiceProvider extends ServiceProvider
 
         $this->commands([RunProjections::class]);
 
-        $this->app->make(AfterAppend::class)->listen(function (): void {
+        $afterAppend = $this->app->make(AfterAppend::class);
+        $afterAppend->listen(function (): void {
             ProjectToServeList::dispatch();
+        });
+        $afterAppend->listen(function (): void {
+            $this->app->make(MarkMenuItemUnavailableProcessor::class)->run();
         });
 
         Route::middleware('api')
