@@ -46,6 +46,7 @@ Prices on the bill are tax-inclusive. Food eaten in is 10% (`gross * 10 / 110`) 
 
 ```
 app/Providers/BoundedContexts/
+  SharedKernel/        the contracts every context implements
   EventStore/          the log, the checkpoints, the in-process wake-up
   FrontOfHouse/        dining room
   Kitchen/             tickets and the pass screen
@@ -56,9 +57,11 @@ Each module is a bounded context with its own service provider, registered in `b
 
 Inside a context:
 
-- `Domain` — aggregates, value objects, domain exceptions. No Laravel.
-- `Application` — commands, handlers, ports.
-- `Infrastructure` — SQL adapters, HTTP controllers, processors, projectors, queue jobs.
+- `Domain` — aggregates (`AggregateRoot`, or `EventSourcedAggregate`), value objects, domain exceptions. No Laravel.
+- `Application` — ports at the root. `Command` holds the commands (`Command`) and their handlers (`CommandHandler`). `Query` holds the queries (`Query`).
+- `Infrastructure` — SQL adapters, HTTP controllers, query handlers in `Query` (`QueryHandler`), processors (`Processor`), projectors (`Projector`, `RebuildableProjector`), queue jobs.
+
+The contracts live in `SharedKernel`. A Pest test in `SharedKernel/tests/Unit/ContractsTest.php` walks every context and fails when a class misses its contract.
 
 ## Install
 
@@ -102,14 +105,14 @@ The kitchen screen catches up after the order's transaction commits, before the 
 
 | Step | Lines |
 | --- | --- |
-| 1. Seat guests and the floor plan | `app/Providers/BoundedContexts/FrontOfHouse/Application/SeatGuestsHandler.php#L20-L34` |
-| 2. Place a table order | `app/Providers/BoundedContexts/FrontOfHouse/Application/PlaceTableOrderHandler.php#L23-L43` |
-| 3. Open a kitchen ticket | `app/Providers/BoundedContexts/Kitchen/Infrastructure/Processors/OpenKitchenTicketProcessor.php#L27-L45`, `app/Providers/BoundedContexts/Kitchen/Domain/KitchenTicket.php#L34-L49` |
-| 4. Fire, ready, kitchen screen | `app/Providers/BoundedContexts/Kitchen/Domain/KitchenTicket.php#L66-L120`, `app/Providers/BoundedContexts/Kitchen/Infrastructure/Projection/KitchenScreenProjector.php#L46-L90` |
-| 5. Queued pass, then serve | `app/Providers/BoundedContexts/FrontOfHouse/Infrastructure/Projection/ToServeProjector.php#L23-L47`, `app/Providers/BoundedContexts/FrontOfHouse/Infrastructure/Projection/ProjectToServeList.php#L10-L18`, `app/Providers/BoundedContexts/FrontOfHouse/Application/ServeDishHandler.php#L21-L42` |
+| 1. Seat guests and the floor plan | `app/Providers/BoundedContexts/FrontOfHouse/Application/Command/SeatGuestsHandler.php#L29-L45` |
+| 2. Place a table order | `app/Providers/BoundedContexts/FrontOfHouse/Application/Command/PlaceTableOrderHandler.php#L32-L54` |
+| 3. Open a kitchen ticket | `app/Providers/BoundedContexts/Kitchen/Infrastructure/Processors/OpenKitchenTicketProcessor.php#L28-L46`, `app/Providers/BoundedContexts/Kitchen/Domain/KitchenTicket.php#L35-L50` |
+| 4. Fire, ready, kitchen screen | `app/Providers/BoundedContexts/Kitchen/Domain/KitchenTicket.php#L67-L121`, `app/Providers/BoundedContexts/Kitchen/Infrastructure/Projection/KitchenScreenProjector.php#L54-L102` |
+| 5. Queued pass, then serve | `app/Providers/BoundedContexts/FrontOfHouse/Infrastructure/Projection/ToServeProjector.php#L24-L48`, `app/Providers/BoundedContexts/FrontOfHouse/Infrastructure/Projection/ProjectToServeList.php#L10-L18`, `app/Providers/BoundedContexts/FrontOfHouse/Application/Command/ServeDishHandler.php#L29-L52` |
 | 6. Second order | `tests/Feature/FullServiceTest.php#L52-L67` |
-| 7. 86 the menu | `app/Providers/BoundedContexts/Kitchen/Domain/Dish.php#L27-L34`, `app/Providers/BoundedContexts/Kitchen/Application/DeclareDishEightySixedHandler.php#L20-L35`, `app/Providers/BoundedContexts/FrontOfHouse/Infrastructure/Processors/MarkMenuItemUnavailableProcessor.php#L24-L39` |
-| 8. Bill, pay, free the table | `app/Providers/BoundedContexts/FrontOfHouse/Application/RequestBillHandler.php#L21-L39`, `app/Providers/BoundedContexts/Billing/Infrastructure/Processors/RecordServedDishes.php#L25-L45`, `app/Providers/BoundedContexts/Billing/Application/PrepareBillHandler.php#L20-L49`, `app/Providers/BoundedContexts/Billing/Domain/Bill.php#L42-L68`, `app/Providers/BoundedContexts/Billing/Application/PayBillHandler.php#L20-L39`, `app/Providers/BoundedContexts/FrontOfHouse/Application/FreeTableHandler.php#L20-L33` |
-| Level 1 | `SeatGuestsHandler.php#L20-L34` and `FreeTableHandler.php#L20-L33` |
-| Level 2 | `ToServeProjector.php#L23-L47` and `ProjectToServeList.php#L10-L18` |
+| 7. 86 the menu | `app/Providers/BoundedContexts/Kitchen/Domain/Dish.php#L29-L36`, `app/Providers/BoundedContexts/Kitchen/Application/Command/DeclareDishEightySixedHandler.php#L27-L44`, `app/Providers/BoundedContexts/FrontOfHouse/Infrastructure/Processors/MarkMenuItemUnavailableProcessor.php#L25-L40` |
+| 8. Bill, pay, free the table | `app/Providers/BoundedContexts/FrontOfHouse/Application/Command/RequestBillHandler.php#L28-L48`, `app/Providers/BoundedContexts/Billing/Infrastructure/Processors/RecordServedDishes.php#L26-L46`, `app/Providers/BoundedContexts/Billing/Application/Command/PrepareBillHandler.php#L28-L59`, `app/Providers/BoundedContexts/Billing/Domain/Bill.php#L44-L70`, `app/Providers/BoundedContexts/Billing/Application/Command/PayBillHandler.php#L27-L48`, `app/Providers/BoundedContexts/FrontOfHouse/Application/Command/FreeTableHandler.php#L29-L44` |
+| Level 1 | `SeatGuestsHandler.php#L29-L45` and `FreeTableHandler.php#L29-L44` |
+| Level 2 | `ToServeProjector.php#L24-L48` and `ProjectToServeList.php#L10-L18` |
 | Level 3 | `app/Providers/BoundedContexts/EventStore/Infrastructure/DatabaseEventStore.php#L18-L61`, `app/Providers/BoundedContexts/Kitchen/Infrastructure/EventStoreKitchenTicketRepository.php#L37-L61`, `app/Providers/BoundedContexts/EventStore/Infrastructure/InProcessAfterAppend.php#L52-L58` |
