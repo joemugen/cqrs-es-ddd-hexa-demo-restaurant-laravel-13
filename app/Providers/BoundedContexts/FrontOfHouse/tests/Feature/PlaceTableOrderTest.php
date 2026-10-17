@@ -5,12 +5,10 @@ use App\Providers\BoundedContexts\FrontOfHouse\Application\MenuRepository;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\Menu;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\MenuItem;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\FrontOfHouseSeeder;
-use App\Providers\BoundedContexts\Kitchen\Infrastructure\KitchenSeeder;
 use Illuminate\Support\Facades\DB;
 
 beforeEach(function () {
     $this->seed(FrontOfHouseSeeder::class);
-    $this->seed(KitchenSeeder::class);
 });
 
 test('placing an order acknowledges it and does not return the menu', function () {
@@ -41,6 +39,8 @@ test('placing an order acknowledges it and does not return the menu', function (
         ])
         ->and($event->payload['lines'][0])->not->toHaveKey('unitPriceCents')
         ->and(DB::table('foh_table_order_lines')->where('name', 'House red')->value('unit_price_cents'))->toBe(600);
+
+    $this->getJson('/api/kitchen/screen')->assertExactJson([]);
 });
 
 test('a free table cannot take an order', function () {

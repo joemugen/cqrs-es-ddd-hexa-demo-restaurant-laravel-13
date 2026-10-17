@@ -15,11 +15,11 @@ final readonly class PrepareBillHandler
     ) {}
 
     /**
-     * @return array{billId: string, accepted: true}
+     * @return array{billId: string, accepted: true}|null
      */
-    public function handle(PrepareBill $command): array
+    public function handle(PrepareBill $command): ?array
     {
-        return $this->unitOfWork->execute(function () use ($command): array {
+        return $this->unitOfWork->execute(function () use ($command): ?array {
             $open = $this->bills->openFor($command->coverRef);
 
             if ($open !== null) {
@@ -30,6 +30,11 @@ final readonly class PrepareBillHandler
             }
 
             $lines = $this->served->unbilled($command->coverRef);
+
+            if ($lines === []) {
+                return null;
+            }
+
             $bill = Bill::prepare($command->billId, $command->coverRef, $lines);
             $this->bills->save($bill);
             $this->served->attach($bill->id(), array_map(

@@ -53,7 +53,11 @@ final class DatabaseEventStore implements EventStore
             }
         });
 
-        $this->afterAppend->notify();
+        // Bind to the writer's transaction when one is still open, so a consumer
+        // cannot roll that write back. With no writer left, this runs now.
+        DB::afterCommit(function (): void {
+            $this->afterAppend->notify();
+        });
     }
 
     public function readStream(string $streamId): array

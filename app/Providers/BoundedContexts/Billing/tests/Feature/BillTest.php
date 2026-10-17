@@ -16,12 +16,11 @@ test('an empty table cannot request a bill', function () {
         ->assertJson(['message' => 'This table has no guests to bill.']);
 });
 
-test('a bill is refused when nothing has been served', function () {
+test('asking for a bill before anything is served does not open one', function () {
     $this->postJson('/api/front-of-house/tables/table-4/guests', ['guestCount' => 2])->assertOk();
 
     $this->postJson('/api/front-of-house/tables/table-4/bill')
-        ->assertUnprocessable()
-        ->assertJson(['message' => 'Nothing has been served.']);
+        ->assertExactJson(['tableId' => 'table-4', 'accepted' => true]);
 
     $this->getJson('/api/billing/covers/table-4/bill')->assertNotFound();
 });
