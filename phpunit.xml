@@ -7,10 +7,12 @@
     <testsuites>
         <testsuite name="Unit">
             <directory>tests/Unit</directory>
+            <directory suffix="Test.php">app/Providers/BoundedContexts/FrontOfHouse/tests/Unit</directory>
         </testsuite>
         <testsuite name="Feature">
             <directory>tests/Feature</directory>
             <directory suffix="Test.php">app/Providers/BoundedContexts/EventStore/tests/Feature</directory>
+            <directory suffix="Test.php">app/Providers/BoundedContexts/FrontOfHouse/tests/Feature</directory>
         </testsuite>
     </testsuites>
     <source>
