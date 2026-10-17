@@ -9,7 +9,7 @@ use App\Providers\BoundedContexts\EventStore\Domain\EventStore;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Folds the ticket stream into the pass screen. It decides nothing.
+ * Folds the ticket stream into the kitchen screen. It decides nothing.
  */
 final class KitchenScreenProjector
 {

@@ -1,58 +1,99 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# CQRS in Laravel
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Companion code for a follow-up to [CQRS, separating the command from the query](https://joemugen.medium.com/cqrs-separating-the-command-from-the-query-2868b1fe373b).
 
-## About Laravel
+Laravel post: coming soon
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+The metaphor stays the same. The menu is not the kitchen ticket. A guest reads a name, a price, and a list of allergens. The kitchen cooks a dish at a station for a number of minutes, and never sees the price. The till charges what actually left the pass. Same evening, three models, no shared class.
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Three levels
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+The base post separates three ways to keep a write model and a read model apart. This restaurant uses all three.
 
-## Learning Laravel
+1. **Same transaction.** Seating guests updates the table and the floor-plan screen together. There is no bus. `SeatGuestsHandler` loads the table, lets it decide, saves it, and syncs the floor plan inside one unit of work.
+2. **Asynchronous projector.** When a dish is ready, a queued job folds that fact into the "to serve" list and advances a checkpoint. Until a worker runs, the pass is behind the kitchen. The screen can lag. `php artisan projections:run to-serve` catches the same list up in process.
+3. **Event stream.** A kitchen ticket is the stream. `KitchenTicketRepository` appends with the version it loaded. A conflicting version is refused. The kitchen screen folds the stream and can be rebuilt. It does not decide. The processor that opens a ticket is not a projection: it runs once and is not replayed.
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+A command is a message: intent and data, no rules. The aggregate decides. The handler loads, delegates, saves, and returns only an acknowledgement such as `{"tableOrderId": "…", "accepted": true}`. A query reads a read model and does not hydrate the aggregate.
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+## Bounded contexts
 
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
+Each context names the evening differently.
 
-## Agentic Development
+| Evening | Front of house | Kitchen | Billing |
+| --- | --- | --- | --- |
+| Who is here | `Table` (`table-4`, label, guest count) | `partyRef` on a ticket | `coverRef` on a bill |
+| What was asked for | `TableOrder` of `MenuItem`s (name, price, description, allergens, availability) | `KitchenTicket` of dishes (station, cooking time, course, no price) | `Bill` lines copied from dishes that were served |
+| Out of stock | Menu item `available: false` | `Dish` declared 86 | — |
+| Money | Price on the menu | Not present | VAT-inclusive totals, payments, tip |
 
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+They never call each other. A context publishes an integration event (a type string and a payload). Another context's processor reacts. The only shared module is `EventStore`, a technical log: append-only `events` (`stream_id`, `version`, `type`, `payload`, `occurred_at`, `position`) with an expected version, plus a `checkpoints` table.
 
-```bash
-composer require laravel/boost --dev
+Prices on the bill are tax-inclusive. Food eaten in is 10% (`gross * 10 / 110`) and alcohol is 20% (`gross * 20 / 120`).
 
-php artisan boost:install
+## One service
+
+1. `SeatGuests` — the floor plan updates in the same transaction.
+2. `PlaceTableOrder` publishes `TableOrderPlaced`. The payload has no price.
+3. A processor opens a `KitchenTicket` in the event store (version checked on every save).
+4. The kitchen fires a course and marks a dish ready. The kitchen screen is a projection of that stream.
+5. Front of house projects a queued "to serve" list. `ServeDish` publishes `DishServed`.
+6. A second order on the same table (the desserts) opens a second ticket.
+7. The kitchen declares the steak 86. The menu marks that item unavailable. A new order is refused. The steak already on a ticket can still be cooked.
+8. `RequestBill` asks the till to prepare a `Bill` from served dishes only. `PayBill` may be split, and a tip does not reduce the balance. A paid bill is immutable. `BillPaid` frees the table, and the floor plan moves with it.
+
+## Layout
+
+```
+app/Providers/BoundedContexts/
+  EventStore/          the log, the checkpoints, the in-process wake-up
+  FrontOfHouse/        dining room
+  Kitchen/             tickets and the pass screen
+  Billing/             the till
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+Each module is a bounded context with its own service provider, registered in `bootstrap/providers.php`. The provider loads that module's config, routes, and migrations, and binds ports to adapters. Pest discovers `tests/Unit` and `tests/Feature` inside the module.
 
-## Contributing
+Inside a context:
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+- `Domain` — aggregates, value objects, domain exceptions. No Laravel.
+- `Application` — commands, handlers, ports.
+- `Infrastructure` — SQL adapters, HTTP controllers, processors, projectors, queue jobs.
 
-## Code of Conduct
+## Install
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+PHP 8.5 is pinned in `mise.toml` (8.5.11). Laravel 13.38 and Pest 5 run the project. SQLite is the database. There is no UI and no CQRS package.
 
-## Security Vulnerabilities
+```bash
+mise install
+composer install
+cp .env.example .env
+php artisan key:generate
+touch database/database.sqlite
+```
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+`.env.example` sets `QUEUE_CONNECTION=database`, which is what makes the pass lag.
 
-## License
+## Tests
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+```bash
+php artisan test
+```
+
+Domain rules are pure Pest tests and do not boot Laravel. Each step of the service has an HTTP feature test. `tests/Feature/FullServiceTest.php` replays the evening from the welcome to the departure, including the moment the pass is empty until `queue:work` runs.
+
+## Replay
+
+```bash
+bash scripts/demo.sh
+```
+
+The script migrates a fresh SQLite database, starts `php artisan serve`, and walks the JSON API with curl. After the starter is ready it prints an empty to-serve list, runs `php artisan queue:work database --stop-when-empty`, and only then serves the dish.
+
+To catch the pass up without a worker:
+
+```bash
+php artisan projections:run to-serve
+```
+
+The kitchen screen projection runs in the request that appended the ticket event, and it can be rebuilt from the stream. The processors (open a ticket, mark the menu 86, record a served dish, prepare a bill, free a table) keep their own checkpoints and are not rebuilt.
