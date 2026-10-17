@@ -1,5 +1,6 @@
 <?php
 
+use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Http\BillRequestController;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Http\FloorPlanController;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Http\GuestController;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Http\MenuController;
@@ -24,3 +25,6 @@ Route::get('/to-serve', [ToServeController::class, 'index'])
 
 Route::post('/to-serve/{toServeId}/serve', [ToServeController::class, 'serve'])
     ->name('front-of-house.to-serve.serve');
+
+Route::post('/tables/{tableId}/bill', [BillRequestController::class, 'store'])
+    ->name('front-of-house.bills.store');
