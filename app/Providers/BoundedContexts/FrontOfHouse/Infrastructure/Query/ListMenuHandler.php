@@ -2,18 +2,24 @@
 
 declare(strict_types=1);
 
-namespace App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Queries;
+namespace App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Query;
 
+use App\Providers\BoundedContexts\FrontOfHouse\Application\Query\ListMenu;
+use App\Providers\BoundedContexts\SharedKernel\Application\Query;
+use App\Providers\BoundedContexts\SharedKernel\Application\QueryHandler;
 use Illuminate\Support\Facades\DB;
 
-final class MenuQuery
+/**
+ * @implements QueryHandler<ListMenu>
+ */
+final class ListMenuHandler implements QueryHandler
 {
     /**
      * The menu the guest reads. It is not the kitchen ticket.
      *
      * @return list<array{menuItemId: string, name: string, description: string, priceCents: int, allergens: list<string>, available: bool, kind: string}>
      */
-    public function all(): array
+    public function handle(Query $query): array
     {
         return DB::table('foh_menu_items')
             ->orderBy('name')

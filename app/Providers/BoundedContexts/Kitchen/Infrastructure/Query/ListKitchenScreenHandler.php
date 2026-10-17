@@ -2,16 +2,22 @@
 
 declare(strict_types=1);
 
-namespace App\Providers\BoundedContexts\Kitchen\Infrastructure\Queries;
+namespace App\Providers\BoundedContexts\Kitchen\Infrastructure\Query;
 
+use App\Providers\BoundedContexts\Kitchen\Application\Query\ListKitchenScreen;
+use App\Providers\BoundedContexts\SharedKernel\Application\Query;
+use App\Providers\BoundedContexts\SharedKernel\Application\QueryHandler;
 use Illuminate\Support\Facades\DB;
 
-final class KitchenScreenQuery
+/**
+ * @implements QueryHandler<ListKitchenScreen>
+ */
+final class ListKitchenScreenHandler implements QueryHandler
 {
     /**
      * @return list<array{ticketId: string, partyRef: string, tableLabel: string, done: bool, lines: list<array<string, mixed>>}>
      */
-    public function all(): array
+    public function handle(Query $query): array
     {
         $lines = DB::table('kitchen_screen_lines')->orderBy('id')->get()->groupBy('ticket_id');
 

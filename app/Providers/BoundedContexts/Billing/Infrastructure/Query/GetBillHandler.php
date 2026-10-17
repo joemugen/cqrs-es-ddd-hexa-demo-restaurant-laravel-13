@@ -2,20 +2,28 @@
 
 declare(strict_types=1);
 
-namespace App\Providers\BoundedContexts\Billing\Infrastructure\Queries;
+namespace App\Providers\BoundedContexts\Billing\Infrastructure\Query;
 
+use App\Providers\BoundedContexts\Billing\Application\Query\GetBill;
 use App\Providers\BoundedContexts\Billing\Domain\BillingException;
+use App\Providers\BoundedContexts\SharedKernel\Application\Query;
+use App\Providers\BoundedContexts\SharedKernel\Application\QueryHandler;
 use Illuminate\Support\Facades\DB;
 
-final class BillQuery
+/**
+ * @implements QueryHandler<GetBill>
+ */
+final class GetBillHandler implements QueryHandler
 {
     /**
      * @return array<string, mixed>
      */
-    public function forCover(string $coverRef): array
+    public function handle(Query $query): array
     {
+        assert($query instanceof GetBill);
+
         $bill = DB::table('billing_bills')
-            ->where('cover_ref', $coverRef)
+            ->where('cover_ref', $query->coverRef)
             ->orderByDesc('id')
             ->first();
 

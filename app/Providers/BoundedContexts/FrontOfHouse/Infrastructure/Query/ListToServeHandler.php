@@ -2,16 +2,22 @@
 
 declare(strict_types=1);
 
-namespace App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Queries;
+namespace App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Query;
 
+use App\Providers\BoundedContexts\FrontOfHouse\Application\Query\ListToServe;
+use App\Providers\BoundedContexts\SharedKernel\Application\Query;
+use App\Providers\BoundedContexts\SharedKernel\Application\QueryHandler;
 use Illuminate\Support\Facades\DB;
 
-final class ToServeQuery
+/**
+ * @implements QueryHandler<ListToServe>
+ */
+final class ListToServeHandler implements QueryHandler
 {
     /**
      * @return list<array{id: string, tableId: string, tableLabel: string, dishName: string, quantity: int, ticketId: string, lineId: string}>
      */
-    public function waiting(): array
+    public function handle(Query $query): array
     {
         return DB::table('foh_to_serve')
             ->whereNull('served_at')

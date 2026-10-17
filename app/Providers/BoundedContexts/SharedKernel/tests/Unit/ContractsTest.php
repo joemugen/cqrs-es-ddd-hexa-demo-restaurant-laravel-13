@@ -2,6 +2,8 @@
 
 use App\Providers\BoundedContexts\SharedKernel\Application\Command;
 use App\Providers\BoundedContexts\SharedKernel\Application\CommandHandler;
+use App\Providers\BoundedContexts\SharedKernel\Application\Query;
+use App\Providers\BoundedContexts\SharedKernel\Application\QueryHandler;
 
 /**
  * @return list<class-string>
@@ -26,3 +28,11 @@ it('declares every command as a Command or a CommandHandler', function (string $
 
     expect(is_subclass_of($class, $contract))->toBeTrue("{$class} does not implement {$contract}");
 })->with(classesIn('*/Application/Command/*.php'));
+
+it('declares every query as a Query', function (string $class): void {
+    expect(is_subclass_of($class, Query::class))->toBeTrue("{$class} does not implement Query");
+})->with(classesIn('*/Application/Query/*.php'));
+
+it('answers every query with a QueryHandler', function (string $class): void {
+    expect(is_subclass_of($class, QueryHandler::class))->toBeTrue("{$class} does not implement QueryHandler");
+})->with(classesIn('*/Infrastructure/Query/*Handler.php'));
