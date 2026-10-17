@@ -9,19 +9,13 @@ namespace App\Providers\BoundedContexts\SharedKernel\Domain;
  */
 interface EventSourcedAggregate extends AggregateRoot
 {
-    /**
-     * @param  list<array{type: string, payload: array<string, mixed>}>  $history
-     */
-    public static function fromHistory(string $id, array $history): self;
+    public static function fromHistory(string $id, DomainEvents $history): self;
 
-    public function streamId(): string;
+    public function streamId(): StreamId;
 
     public function expectedVersion(): int;
 
-    /**
-     * @return list<array{type: string, payload: array<string, mixed>, occurredAt: string}>
-     */
-    public function pendingEvents(): array;
+    public function pendingEvents(): DomainEvents;
 
     public function commit(int $version): void;
 }

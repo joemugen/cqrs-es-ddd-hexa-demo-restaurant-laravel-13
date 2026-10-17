@@ -28,7 +28,7 @@ final class FreeTableProcessor implements Processor
         $position = $this->checkpoints->get(self::CHECKPOINT);
 
         foreach ($this->events->readAllFrom($position) as $event) {
-            if ($event->type === 'billing.bill_paid') {
+            if ($event->type->is('billing.bill_paid')) {
                 $this->handler->handle(new FreeTable((string) $event->payload['coverRef']));
             }
 

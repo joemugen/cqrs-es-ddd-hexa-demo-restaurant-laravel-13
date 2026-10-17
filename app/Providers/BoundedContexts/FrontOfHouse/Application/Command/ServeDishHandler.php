@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Providers\BoundedContexts\FrontOfHouse\Application\Command;
 
 use App\Providers\BoundedContexts\EventStore\Application\IntegrationBus;
+use App\Providers\BoundedContexts\EventStore\Domain\IntegrationEvent;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\MenuRepository;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\PassRepository;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\UnitOfWork;
@@ -35,14 +36,14 @@ final readonly class ServeDishHandler implements CommandHandler
             $dish->serve();
             $item = $this->menus->findByName($dish->dishName());
             $this->passes->save($dish);
-            $this->bus->publish('front_of_house.dish_served', [
+            $this->bus->publish(IntegrationEvent::named('front_of_house.dish_served', [
                 'tableId' => $dish->tableId(),
                 'description' => $item->name(),
                 'quantity' => $dish->quantity(),
                 'unitPriceCents' => $item->priceCents(),
                 'kind' => $item->kind(),
                 'sourceKey' => $dish->ticketId().':'.$dish->lineId(),
-            ]);
+            ]));
         });
 
         return [

@@ -6,27 +6,35 @@ namespace App\Providers\BoundedContexts\EventStore\Infrastructure;
 
 use App\Providers\BoundedContexts\EventStore\Application\IntegrationBus;
 use App\Providers\BoundedContexts\EventStore\Domain\EventStore;
+use App\Providers\BoundedContexts\EventStore\Domain\IntegrationEvent;
+use App\Providers\BoundedContexts\SharedKernel\Domain\DomainEvent;
+use App\Providers\BoundedContexts\SharedKernel\Domain\DomainEvents;
+use App\Providers\BoundedContexts\SharedKernel\Domain\EventType;
+use App\Providers\BoundedContexts\SharedKernel\Domain\StreamId;
+use Closure;
 
 final class DatabaseIntegrationBus implements IntegrationBus
 {
-    /** @var array<string, list<callable(array<string, mixed>): void>> */
+    /** @var array<string, list<Closure(IntegrationEvent): void>> */
     private array $listeners = [];
 
     public function __construct(private EventStore $events) {}
 
-    public function publish(string $type, array $payload): void
+    public function publish(IntegrationEvent $event): void
     {
-        $this->events->append('integration-'.bin2hex(random_bytes(8)), 0, [
-            new GenericMessage($type, $payload, now()->utc()->format('Y-m-d H:i:s')),
-        ]);
+        $this->events->append(
+            new StreamId('integration-'.bin2hex(random_bytes(8))),
+            0,
+            DomainEvents::of(DomainEvent::now((string) $event->type, $event->payload)),
+        );
 
-        foreach ($this->listeners[$type] ?? [] as $listener) {
-            $listener($payload);
+        foreach ($this->listeners[(string) $event->type] ?? [] as $listener) {
+            $listener($event);
         }
     }
 
-    public function listen(string $type, callable $listener): void
+    public function listen(EventType $type, Closure $listener): void
     {
-        $this->listeners[$type][] = $listener;
+        $this->listeners[(string) $type][] = $listener;
     }
 }

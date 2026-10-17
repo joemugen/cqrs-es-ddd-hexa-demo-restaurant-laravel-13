@@ -28,7 +28,7 @@ final class RecordServedDishes implements Processor
         $position = $this->checkpoints->get(self::CHECKPOINT);
 
         foreach ($this->events->readAllFrom($position) as $event) {
-            if ($event->type === 'front_of_house.dish_served') {
+            if ($event->type->is('front_of_house.dish_served')) {
                 $payload = $event->payload;
                 $this->served->record((string) $payload['tableId'], new ServedDish(
                     sourceKey: (string) $payload['sourceKey'],

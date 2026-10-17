@@ -53,7 +53,7 @@ test('serving a dish acknowledges the command and leaves the pass', function () 
     $this->getJson('/api/front-of-house/to-serve')->assertExactJson([]);
 
     $served = collect(app(EventStore::class)->readAllFrom(0))
-        ->firstWhere('type', 'front_of_house.dish_served');
+        ->first(fn ($event) => $event->type->is('front_of_house.dish_served'));
 
     expect($served->payload)->toMatchArray([
         'tableId' => 'table-4',

@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace App\Providers\BoundedContexts\EventStore\Domain;
 
+use App\Providers\BoundedContexts\SharedKernel\Domain\EventType;
+use App\Providers\BoundedContexts\SharedKernel\Domain\StreamId;
+
 final readonly class StoredEvent
 {
     /**
@@ -11,9 +14,9 @@ final readonly class StoredEvent
      */
     public function __construct(
         public int $position,
-        public string $streamId,
+        public StreamId $streamId,
         public int $version,
-        public string $type,
+        public EventType $type,
         public array $payload,
         public string $occurredAt,
     ) {}

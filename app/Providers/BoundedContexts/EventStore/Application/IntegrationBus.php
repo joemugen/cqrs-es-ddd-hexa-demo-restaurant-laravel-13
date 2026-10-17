@@ -4,19 +4,19 @@ declare(strict_types=1);
 
 namespace App\Providers\BoundedContexts\EventStore\Application;
 
+use App\Providers\BoundedContexts\EventStore\Domain\IntegrationEvent;
+use App\Providers\BoundedContexts\SharedKernel\Domain\EventType;
+use Closure;
+
 interface IntegrationBus
 {
     /**
      * Record a fact for other bounded contexts and tell in-process listeners.
-     *
-     * Listeners see a payload array. They do not share a class with the publisher.
-     *
-     * @param  array<string, mixed>  $payload
      */
-    public function publish(string $type, array $payload): void;
+    public function publish(IntegrationEvent $event): void;
 
     /**
-     * @param  callable(array<string, mixed>): void  $listener
+     * @param  Closure(IntegrationEvent): void  $listener
      */
-    public function listen(string $type, callable $listener): void;
+    public function listen(EventType $type, Closure $listener): void;
 }

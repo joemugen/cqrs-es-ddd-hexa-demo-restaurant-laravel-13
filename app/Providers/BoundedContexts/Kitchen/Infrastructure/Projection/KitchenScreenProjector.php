@@ -7,6 +7,7 @@ namespace App\Providers\BoundedContexts\Kitchen\Infrastructure\Projection;
 use App\Providers\BoundedContexts\EventStore\Domain\CheckpointStore;
 use App\Providers\BoundedContexts\EventStore\Domain\EventStore;
 use App\Providers\BoundedContexts\SharedKernel\Application\RebuildableProjector;
+use App\Providers\BoundedContexts\SharedKernel\Domain\EventType;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -51,9 +52,9 @@ final class KitchenScreenProjector implements RebuildableProjector
      * @param  array<string, mixed>  $payload
      * @return bool whether the event changed the screen
      */
-    public function when(string $type, array $payload): bool
+    public function when(EventType $type, array $payload): bool
     {
-        if ($type === 'kitchen.ticket_opened') {
+        if ($type->is('kitchen.ticket_opened')) {
             DB::table('kitchen_screen_tickets')->insert([
                 'ticket_id' => $payload['ticketId'],
                 'party_ref' => $payload['partyRef'],
@@ -78,19 +79,19 @@ final class KitchenScreenProjector implements RebuildableProjector
             return true;
         }
 
-        if ($type === 'kitchen.dish_fired') {
+        if ($type->is('kitchen.dish_fired')) {
             $this->status((string) $payload['ticketId'], (string) $payload['lineId'], 'fired');
 
             return true;
         }
 
-        if ($type === 'kitchen.dish_ready') {
+        if ($type->is('kitchen.dish_ready')) {
             $this->status((string) $payload['ticketId'], (string) $payload['lineId'], 'ready');
 
             return true;
         }
 
-        if ($type === 'kitchen.ticket_completed') {
+        if ($type->is('kitchen.ticket_completed')) {
             DB::table('kitchen_screen_tickets')
                 ->where('ticket_id', $payload['ticketId'])
                 ->update(['done' => true]);

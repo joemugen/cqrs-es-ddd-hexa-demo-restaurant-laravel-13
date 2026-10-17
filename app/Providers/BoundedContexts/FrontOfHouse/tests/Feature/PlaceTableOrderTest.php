@@ -28,7 +28,7 @@ test('placing an order acknowledges it and does not return the menu', function (
     ]);
 
     $event = app(EventStore::class)->readAllFrom(0)[0];
-    expect($event->type)->toBe('front_of_house.table_order_placed')
+    expect($event->type->is('front_of_house.table_order_placed'))->toBeTrue()
         ->and($event->payload['tableLabel'])->toBe('Window 4')
         ->and($event->payload['lines'][0])->toBe([
             'lineId' => $response->json('tableOrderId').'-1',

@@ -30,7 +30,7 @@ final class OpenKitchenTicketProcessor implements Processor
         $position = $this->checkpoints->get(self::CHECKPOINT);
 
         foreach ($this->events->readAllFrom($position) as $event) {
-            if ($event->type === 'front_of_house.table_order_placed') {
+            if ($event->type->is('front_of_house.table_order_placed')) {
                 $this->handler->handle(new OpenKitchenTicket(
                     ticketId: (string) $event->payload['tableOrderId'],
                     partyRef: (string) $event->payload['tableId'],

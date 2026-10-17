@@ -2,6 +2,7 @@
 
 use App\Providers\BoundedContexts\Kitchen\Domain\KitchenException;
 use App\Providers\BoundedContexts\Kitchen\Domain\KitchenTicket;
+use App\Providers\BoundedContexts\SharedKernel\Domain\DomainEvent;
 
 function openTicket(): KitchenTicket
 {
@@ -22,7 +23,7 @@ test('a ticket is done only when every dish is ready', function () {
     $ticket->markReady('steak');
 
     expect($ticket->isComplete())->toBeTrue()
-        ->and(array_column($ticket->pendingEvents(), 'type'))->toBe([
+        ->and(array_map(fn (DomainEvent $event): string => (string) $event->type, iterator_to_array($ticket->pendingEvents())))->toBe([
             'kitchen.ticket_opened',
             'kitchen.dish_fired',
             'kitchen.dish_ready',
@@ -44,14 +45,9 @@ test('replaying the stream rebuilds the same decision', function () {
     $original->fireCourse('starter');
     $original->markReady('salad');
 
-    $history = array_map(fn (array $event): array => [
-        'type' => $event['type'],
-        'payload' => $event['payload'],
-    ], $original->pendingEvents());
-
-    $rebuilt = KitchenTicket::fromHistory('ticket-1', $history);
+    $rebuilt = KitchenTicket::fromHistory('ticket-1', $original->pendingEvents());
 
     expect($rebuilt->isComplete())->toBeFalse()
         ->and($rebuilt->expectedVersion())->toBe(3)
-        ->and($rebuilt->pendingEvents())->toBe([]);
+        ->and($rebuilt->pendingEvents())->toHaveCount(0);
 });

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Providers\BoundedContexts\FrontOfHouse\Application\Command;
 
 use App\Providers\BoundedContexts\EventStore\Application\IntegrationBus;
+use App\Providers\BoundedContexts\EventStore\Domain\IntegrationEvent;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\MenuRepository;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\TableOrderRepository;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\TableRepository;
@@ -39,12 +40,12 @@ final readonly class PlaceTableOrderHandler implements CommandHandler
             $order = TableOrder::place($command->tableOrderId, $table, $menu, $command->lines);
 
             $this->orders->save($order);
-            $this->bus->publish('front_of_house.table_order_placed', [
+            $this->bus->publish(IntegrationEvent::named('front_of_house.table_order_placed', [
                 'tableOrderId' => $order->id(),
                 'tableId' => $table->id(),
                 'tableLabel' => $table->label(),
                 'lines' => $order->forTheKitchen(),
-            ]);
+            ]));
         });
 
         return [

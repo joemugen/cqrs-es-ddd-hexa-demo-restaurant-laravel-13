@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace App\Providers\BoundedContexts\Kitchen\Domain;
 
+use App\Providers\BoundedContexts\SharedKernel\Domain\DomainEvent;
+use App\Providers\BoundedContexts\SharedKernel\Domain\DomainEvents;
 use App\Providers\BoundedContexts\SharedKernel\Domain\EventSourcedAggregate;
-use DateTimeImmutable;
-use DateTimeZone;
+use App\Providers\BoundedContexts\SharedKernel\Domain\StreamId;
 
 final class KitchenTicket implements EventSourcedAggregate
 {
-    /** @var list<array{type: string, payload: array<string, mixed>, occurredAt: string}> */
-    private array $pending = [];
+    private DomainEvents $pending;
 
     /**
      * @var array<string, array{dishName: string, station: string, cookingMinutes: int, quantity: int, course: string, allergens: list<string>, fired: bool, ready: bool}>
@@ -27,7 +27,9 @@ final class KitchenTicket implements EventSourcedAggregate
     private function __construct(
         private readonly string $id,
         private int $version = 0,
-    ) {}
+    ) {
+        $this->pending = new DomainEvents;
+    }
 
     /**
      * @param  list<array{lineId: string, dishName: string, station: string, cookingMinutes: int, quantity: int, course: string, allergens: list<string>}>  $lines
@@ -49,15 +51,12 @@ final class KitchenTicket implements EventSourcedAggregate
         return $ticket;
     }
 
-    /**
-     * @param  list<array{type: string, payload: array<string, mixed>}>  $history
-     */
-    public static function fromHistory(string $id, array $history): self
+    public static function fromHistory(string $id, DomainEvents $history): self
     {
         $ticket = new self($id);
 
         foreach ($history as $event) {
-            $ticket->apply($event['type'], $event['payload']);
+            $ticket->apply((string) $event->type, $event->payload);
             $ticket->version++;
         }
 
@@ -130,9 +129,9 @@ final class KitchenTicket implements EventSourcedAggregate
         return $this->id;
     }
 
-    public function streamId(): string
+    public function streamId(): StreamId
     {
-        return 'kitchen-ticket-'.$this->id;
+        return new StreamId('kitchen-ticket-'.$this->id);
     }
 
     public function expectedVersion(): int
@@ -140,17 +139,14 @@ final class KitchenTicket implements EventSourcedAggregate
         return $this->version;
     }
 
-    /**
-     * @return list<array{type: string, payload: array<string, mixed>, occurredAt: string}>
-     */
-    public function pendingEvents(): array
+    public function pendingEvents(): DomainEvents
     {
         return $this->pending;
     }
 
     public function commit(int $version): void
     {
-        $this->pending = [];
+        $this->pending = new DomainEvents;
         $this->version = $version;
     }
 
@@ -178,11 +174,7 @@ final class KitchenTicket implements EventSourcedAggregate
     private function record(string $type, array $payload): void
     {
         $this->apply($type, $payload);
-        $this->pending[] = [
-            'type' => $type,
-            'payload' => $payload,
-            'occurredAt' => (new DateTimeImmutable('now', new DateTimeZone('UTC')))->format('Y-m-d H:i:s'),
-        ];
+        $this->pending = $this->pending->with(DomainEvent::now($type, $payload));
     }
 
     /**

@@ -8,6 +8,9 @@ use App\Providers\BoundedContexts\EventStore\Application\AfterAppend;
 use App\Providers\BoundedContexts\EventStore\Domain\EventStore;
 use App\Providers\BoundedContexts\EventStore\Domain\OptimisticConcurrencyException;
 use App\Providers\BoundedContexts\EventStore\Domain\StoredEvent;
+use App\Providers\BoundedContexts\SharedKernel\Domain\DomainEvents;
+use App\Providers\BoundedContexts\SharedKernel\Domain\EventType;
+use App\Providers\BoundedContexts\SharedKernel\Domain\StreamId;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 
@@ -15,9 +18,9 @@ final class DatabaseEventStore implements EventStore
 {
     public function __construct(private AfterAppend $afterAppend) {}
 
-    public function append(string $streamId, int $expectedVersion, array $events): void
+    public function append(StreamId $streamId, int $expectedVersion, DomainEvents $events): void
     {
-        if ($events === []) {
+        if ($events->isEmpty()) {
             return;
         }
 
@@ -37,11 +40,11 @@ final class DatabaseEventStore implements EventStore
 
                 try {
                     DB::table($table)->insert([
-                        'stream_id' => $streamId,
+                        'stream_id' => (string) $streamId,
                         'version' => $version,
-                        'type' => $event->type(),
-                        'payload' => json_encode($event->payload(), JSON_THROW_ON_ERROR),
-                        'occurred_at' => $event->occurredAt(),
+                        'type' => (string) $event->type,
+                        'payload' => json_encode($event->payload, JSON_THROW_ON_ERROR),
+                        'occurred_at' => $event->occurredAt->format('Y-m-d H:i:s'),
                     ]);
                 } catch (UniqueConstraintViolationException) {
                     throw new OptimisticConcurrencyException(
@@ -60,10 +63,10 @@ final class DatabaseEventStore implements EventStore
         });
     }
 
-    public function readStream(string $streamId): array
+    public function readStream(StreamId $streamId): array
     {
         $rows = DB::table((string) config('event_store.events_table'))
-            ->where('stream_id', $streamId)
+            ->where('stream_id', (string) $streamId)
             ->orderBy('version')
             ->get();
 
@@ -80,9 +83,9 @@ final class DatabaseEventStore implements EventStore
         return $rows->map(fn (object $row): StoredEvent => $this->stored($row))->all();
     }
 
-    private function version(string $table, string $streamId): int
+    private function version(string $table, StreamId $streamId): int
     {
-        $version = DB::table($table)->where('stream_id', $streamId)->max('version');
+        $version = DB::table($table)->where('stream_id', (string) $streamId)->max('version');
 
         return $version === null ? 0 : (int) $version;
     }
@@ -96,9 +99,9 @@ final class DatabaseEventStore implements EventStore
 
         return new StoredEvent(
             position: (int) $row->position,
-            streamId: (string) $row->stream_id,
+            streamId: new StreamId((string) $row->stream_id),
             version: (int) $row->version,
-            type: (string) $row->type,
+            type: new EventType((string) $row->type),
             payload: is_array($payload) ? $payload : [],
             occurredAt: (string) $row->occurred_at,
         );

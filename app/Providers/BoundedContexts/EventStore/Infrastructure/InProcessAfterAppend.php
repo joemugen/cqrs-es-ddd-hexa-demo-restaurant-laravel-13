@@ -5,19 +5,20 @@ declare(strict_types=1);
 namespace App\Providers\BoundedContexts\EventStore\Infrastructure;
 
 use App\Providers\BoundedContexts\EventStore\Application\AfterAppend;
+use Closure;
 use Illuminate\Support\Facades\DB;
 use Throwable;
 
 final class InProcessAfterAppend implements AfterAppend
 {
-    /** @var list<callable(): void> */
+    /** @var list<Closure(): void> */
     private array $listeners = [];
 
     private bool $running = false;
 
     private bool $pending = false;
 
-    public function listen(callable $listener): void
+    public function listen(Closure $listener): void
     {
         $this->listeners[] = $listener;
     }
@@ -49,7 +50,7 @@ final class InProcessAfterAppend implements AfterAppend
      * Each consumer commits or rolls back alone. One failure leaves the others,
      * and the write that woke them, untouched.
      */
-    private function run(callable $listener): void
+    private function run(Closure $listener): void
     {
         try {
             DB::transaction($listener);

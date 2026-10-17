@@ -6,10 +6,15 @@ namespace App\Providers\BoundedContexts\Kitchen\Infrastructure;
 
 use App\Providers\BoundedContexts\EventStore\Domain\EventStore;
 use App\Providers\BoundedContexts\EventStore\Domain\OptimisticConcurrencyException;
-use App\Providers\BoundedContexts\EventStore\Infrastructure\GenericMessage;
+use App\Providers\BoundedContexts\EventStore\Domain\StoredEvent;
 use App\Providers\BoundedContexts\Kitchen\Application\KitchenTicketRepository;
 use App\Providers\BoundedContexts\Kitchen\Domain\KitchenException;
 use App\Providers\BoundedContexts\Kitchen\Domain\KitchenTicket;
+use App\Providers\BoundedContexts\SharedKernel\Domain\DomainEvent;
+use App\Providers\BoundedContexts\SharedKernel\Domain\DomainEvents;
+use App\Providers\BoundedContexts\SharedKernel\Domain\StreamId;
+use DateTimeImmutable;
+use DateTimeZone;
 
 final class EventStoreKitchenTicketRepository implements KitchenTicketRepository
 {
@@ -28,31 +33,28 @@ final class EventStoreKitchenTicketRepository implements KitchenTicketRepository
             throw new KitchenException("Unknown kitchen ticket {$id}.", 404);
         }
 
-        return KitchenTicket::fromHistory($id, array_map(fn ($event): array => [
-            'type' => $event->type,
-            'payload' => $event->payload,
-        ], $history));
+        return KitchenTicket::fromHistory($id, new DomainEvents(array_map(
+            fn (StoredEvent $event): DomainEvent => new DomainEvent(
+                $event->type,
+                $event->payload,
+                new DateTimeImmutable($event->occurredAt, new DateTimeZone('UTC')),
+            ),
+            $history,
+        )));
     }
 
     public function save(KitchenTicket $ticket): void
     {
         $pending = $ticket->pendingEvents();
 
-        if ($pending === []) {
+        if ($pending->isEmpty()) {
             return;
         }
 
         $expected = $ticket->expectedVersion();
 
         try {
-            $this->events->append(
-                $ticket->streamId(),
-                $expected,
-                array_map(
-                    fn (array $event): GenericMessage => new GenericMessage($event['type'], $event['payload'], $event['occurredAt']),
-                    $pending,
-                ),
-            );
+            $this->events->append($ticket->streamId(), $expected, $pending);
         } catch (OptimisticConcurrencyException $exception) {
             throw new KitchenException($exception->getMessage(), 409);
         }
@@ -60,8 +62,8 @@ final class EventStoreKitchenTicketRepository implements KitchenTicketRepository
         $ticket->commit($expected + count($pending));
     }
 
-    private function stream(string $id): string
+    private function stream(string $id): StreamId
     {
-        return 'kitchen-ticket-'.$id;
+        return new StreamId('kitchen-ticket-'.$id);
     }
 }

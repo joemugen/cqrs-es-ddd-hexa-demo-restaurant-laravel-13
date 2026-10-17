@@ -27,7 +27,7 @@ final class MarkMenuItemUnavailableProcessor implements Processor
         $position = $this->checkpoints->get(self::CHECKPOINT);
 
         foreach ($this->events->readAllFrom($position) as $event) {
-            if ($event->type === 'kitchen.dish_eighty_sixed') {
+            if ($event->type->is('kitchen.dish_eighty_sixed')) {
                 $item = $this->menus->findByName((string) $event->payload['dishName']);
                 $item->markUnavailable();
                 $this->menus->save($item);

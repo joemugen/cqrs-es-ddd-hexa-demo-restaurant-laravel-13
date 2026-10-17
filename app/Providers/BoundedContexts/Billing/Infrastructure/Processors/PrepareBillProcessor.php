@@ -29,7 +29,7 @@ final class PrepareBillProcessor implements Processor
         $position = $this->checkpoints->get(self::CHECKPOINT);
 
         foreach ($this->events->readAllFrom($position) as $event) {
-            if ($event->type === 'front_of_house.bill_requested') {
+            if ($event->type->is('front_of_house.bill_requested')) {
                 $this->handler->handle(new PrepareBill(
                     billId: (string) Str::ulid(),
                     coverRef: (string) $event->payload['tableId'],

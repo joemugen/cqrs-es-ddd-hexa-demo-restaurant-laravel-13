@@ -27,7 +27,7 @@ final class ToServeProjector implements Projector
         $position = $this->checkpoints->get(self::CHECKPOINT);
 
         foreach ($this->events->readAllFrom($position) as $event) {
-            if ($event->type === 'kitchen.dish_ready') {
+            if ($event->type->is('kitchen.dish_ready')) {
                 DB::table('foh_to_serve')->insertOrIgnore([
                     'ticket_id' => $event->payload['ticketId'],
                     'line_id' => $event->payload['lineId'],
