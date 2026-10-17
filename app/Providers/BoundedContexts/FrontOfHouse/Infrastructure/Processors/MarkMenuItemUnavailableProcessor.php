@@ -7,11 +7,12 @@ namespace App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Processors;
 use App\Providers\BoundedContexts\EventStore\Domain\CheckpointStore;
 use App\Providers\BoundedContexts\EventStore\Domain\EventStore;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\MenuRepository;
+use App\Providers\BoundedContexts\SharedKernel\Application\Processor;
 
 /**
  * Reacts once to a shortage. Replaying it is not how the menu learns a dish is 86.
  */
-final class MarkMenuItemUnavailableProcessor
+final class MarkMenuItemUnavailableProcessor implements Processor
 {
     public const CHECKPOINT = 'foh.menu-availability';
 

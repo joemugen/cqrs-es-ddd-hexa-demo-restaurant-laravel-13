@@ -9,11 +9,12 @@ use App\Providers\BoundedContexts\EventStore\Domain\EventStore;
 use App\Providers\BoundedContexts\Kitchen\Application\Command\OpenKitchenTicket;
 use App\Providers\BoundedContexts\Kitchen\Application\Command\OpenKitchenTicketHandler;
 use App\Providers\BoundedContexts\Kitchen\Application\DishCatalog;
+use App\Providers\BoundedContexts\SharedKernel\Application\Processor;
 
 /**
  * A processor reacts once. It is not a projection: replaying it would open tickets again.
  */
-final class OpenKitchenTicketProcessor
+final class OpenKitchenTicketProcessor implements Processor
 {
     public const CHECKPOINT = 'kitchen.open-ticket';
 

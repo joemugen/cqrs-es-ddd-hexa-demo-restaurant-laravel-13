@@ -6,12 +6,13 @@ namespace App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Projection;
 
 use App\Providers\BoundedContexts\EventStore\Domain\CheckpointStore;
 use App\Providers\BoundedContexts\EventStore\Domain\EventStore;
+use App\Providers\BoundedContexts\SharedKernel\Application\Projector;
 use Illuminate\Support\Facades\DB;
 
 /**
  * Level 2: a queued projector. The pass can lag behind the kitchen.
  */
-final class ToServeProjector
+final class ToServeProjector implements Projector
 {
     public const CHECKPOINT = 'foh.to-serve';
 

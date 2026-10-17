@@ -2,8 +2,11 @@
 
 use App\Providers\BoundedContexts\SharedKernel\Application\Command;
 use App\Providers\BoundedContexts\SharedKernel\Application\CommandHandler;
+use App\Providers\BoundedContexts\SharedKernel\Application\Processor;
+use App\Providers\BoundedContexts\SharedKernel\Application\Projector;
 use App\Providers\BoundedContexts\SharedKernel\Application\Query;
 use App\Providers\BoundedContexts\SharedKernel\Application\QueryHandler;
+use App\Providers\BoundedContexts\SharedKernel\Application\RebuildableProjector;
 use App\Providers\BoundedContexts\SharedKernel\Domain\AggregateRoot;
 use App\Providers\BoundedContexts\SharedKernel\Domain\EventSourcedAggregate;
 
@@ -53,4 +56,16 @@ it('declares every aggregate as an AggregateRoot', function (string $class): voi
 
 it('declares the kitchen ticket as an event-sourced aggregate', function (): void {
     expect(is_subclass_of('App\\Providers\\BoundedContexts\\Kitchen\\Domain\\KitchenTicket', EventSourcedAggregate::class))->toBeTrue();
+});
+
+it('declares every projector as a Projector', function (string $class): void {
+    expect(is_subclass_of($class, Projector::class))->toBeTrue("{$class} does not implement Projector");
+})->with(classesIn('*/Infrastructure/Projection/*Projector.php'));
+
+it('declares every processor as a Processor', function (string $class): void {
+    expect(is_subclass_of($class, Processor::class))->toBeTrue("{$class} does not implement Processor");
+})->with(classesIn('*/Infrastructure/Processors/*.php'));
+
+it('lets the kitchen screen be rebuilt from the first event', function (): void {
+    expect(is_subclass_of('App\\Providers\\BoundedContexts\\Kitchen\\Infrastructure\\Projection\\KitchenScreenProjector', RebuildableProjector::class))->toBeTrue();
 });

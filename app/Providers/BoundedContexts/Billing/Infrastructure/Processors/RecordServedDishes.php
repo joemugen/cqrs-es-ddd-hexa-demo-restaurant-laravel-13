@@ -8,11 +8,12 @@ use App\Providers\BoundedContexts\Billing\Application\ServedLedger;
 use App\Providers\BoundedContexts\Billing\Domain\ServedDish;
 use App\Providers\BoundedContexts\EventStore\Domain\CheckpointStore;
 use App\Providers\BoundedContexts\EventStore\Domain\EventStore;
+use App\Providers\BoundedContexts\SharedKernel\Application\Processor;
 
 /**
  * Copies a served dish onto the till. It is not replayed: a charge is taken once.
  */
-final class RecordServedDishes
+final class RecordServedDishes implements Processor
 {
     public const CHECKPOINT = 'billing.served';
 

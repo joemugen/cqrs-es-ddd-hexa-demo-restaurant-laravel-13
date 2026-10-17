@@ -10,7 +10,7 @@ namespace App\Providers\BoundedContexts\SharedKernel\Application;
 interface Projector
 {
     /**
-     * @return int the number of events folded
+     * @return int the number of events that changed the read model
      */
     public function catchUp(): int;
 }

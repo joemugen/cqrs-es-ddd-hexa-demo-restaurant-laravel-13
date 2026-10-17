@@ -6,12 +6,13 @@ namespace App\Providers\BoundedContexts\Kitchen\Infrastructure\Projection;
 
 use App\Providers\BoundedContexts\EventStore\Domain\CheckpointStore;
 use App\Providers\BoundedContexts\EventStore\Domain\EventStore;
+use App\Providers\BoundedContexts\SharedKernel\Application\RebuildableProjector;
 use Illuminate\Support\Facades\DB;
 
 /**
  * Folds the ticket stream into the kitchen screen. It decides nothing.
  */
-final class KitchenScreenProjector
+final class KitchenScreenProjector implements RebuildableProjector
 {
     public const CHECKPOINT = 'kitchen.screen';
 
@@ -20,16 +21,22 @@ final class KitchenScreenProjector
         private CheckpointStore $checkpoints,
     ) {}
 
-    public function catchUp(): void
+    public function catchUp(): int
     {
+        $applied = 0;
         $position = $this->checkpoints->get(self::CHECKPOINT);
 
         foreach ($this->events->readAllFrom($position) as $event) {
-            $this->when($event->type, $event->payload);
+            if ($this->when($event->type, $event->payload)) {
+                $applied++;
+            }
+
             $position = $event->position;
         }
 
         $this->checkpoints->put(self::CHECKPOINT, $position);
+
+        return $applied;
     }
 
     public function rebuild(): void
@@ -42,8 +49,9 @@ final class KitchenScreenProjector
 
     /**
      * @param  array<string, mixed>  $payload
+     * @return bool whether the event changed the screen
      */
-    public function when(string $type, array $payload): void
+    public function when(string $type, array $payload): bool
     {
         if ($type === 'kitchen.ticket_opened') {
             DB::table('kitchen_screen_tickets')->insert([
@@ -67,26 +75,30 @@ final class KitchenScreenProjector
                 ]);
             }
 
-            return;
+            return true;
         }
 
         if ($type === 'kitchen.dish_fired') {
             $this->status((string) $payload['ticketId'], (string) $payload['lineId'], 'fired');
 
-            return;
+            return true;
         }
 
         if ($type === 'kitchen.dish_ready') {
             $this->status((string) $payload['ticketId'], (string) $payload['lineId'], 'ready');
 
-            return;
+            return true;
         }
 
         if ($type === 'kitchen.ticket_completed') {
             DB::table('kitchen_screen_tickets')
                 ->where('ticket_id', $payload['ticketId'])
                 ->update(['done' => true]);
+
+            return true;
         }
+
+        return false;
     }
 
     private function status(string $ticketId, string $lineId, string $status): void

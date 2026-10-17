@@ -8,12 +8,13 @@ use App\Providers\BoundedContexts\Billing\Application\Command\PrepareBill;
 use App\Providers\BoundedContexts\Billing\Application\Command\PrepareBillHandler;
 use App\Providers\BoundedContexts\EventStore\Domain\CheckpointStore;
 use App\Providers\BoundedContexts\EventStore\Domain\EventStore;
+use App\Providers\BoundedContexts\SharedKernel\Application\Processor;
 use Illuminate\Support\Str;
 
 /**
  * Opens one bill from the dishes that have already left the pass.
  */
-final class PrepareBillProcessor
+final class PrepareBillProcessor implements Processor
 {
     public const CHECKPOINT = 'billing.prepare';
 
