@@ -27,7 +27,7 @@ Each context names the evening differently.
 | Out of stock | Menu item `available: false` | `Dish` declared 86 | — |
 | Money | Price on the menu | Not present | VAT-inclusive totals, payments, tip |
 
-They never call each other. A context publishes an integration event (a type string and a payload). Another context's processor reacts. The only shared module is `EventStore`, a technical log: append-only `events` (`stream_id`, `version`, `type`, `payload`, `occurred_at`, `position`) with an expected version, plus a `checkpoints` table.
+They never call each other, and they do not share a class for the same concept. A context publishes an integration event (a type string and a payload). After the writer's transaction commits, each processor and projector runs in its own transaction and advances its own checkpoint. A failure in the kitchen cannot roll back an order. The only shared module is `EventStore`, a technical log: append-only `events` (`stream_id`, `version`, `type`, `payload`, `occurred_at`, `position`) with an expected version, plus a `checkpoints` table.
 
 Prices on the bill are tax-inclusive. Food eaten in is 10% (`gross * 10 / 110`) and alcohol is 20% (`gross * 20 / 120`).
 
@@ -96,4 +96,20 @@ To catch the pass up without a worker:
 php artisan projections:run to-serve
 ```
 
-The kitchen screen projection runs in the request that appended the ticket event, and it can be rebuilt from the stream. The processors (open a ticket, mark the menu 86, record a served dish, prepare a bill, free a table) keep their own checkpoints and are not rebuilt.
+The kitchen screen catches up after the order's transaction commits, before the HTTP response returns, and it can be rebuilt from the stream. The processors (open a ticket, mark the menu 86, record a served dish, prepare a bill, free a table) keep their own checkpoints and are not rebuilt. Only the pass waits for a worker.
+
+## Where to read
+
+| Step | Lines |
+| --- | --- |
+| 1. Seat guests and the floor plan | `app/Providers/BoundedContexts/FrontOfHouse/Application/SeatGuestsHandler.php#L20-L34` |
+| 2. Place a table order | `app/Providers/BoundedContexts/FrontOfHouse/Application/PlaceTableOrderHandler.php#L23-L43` |
+| 3. Open a kitchen ticket | `app/Providers/BoundedContexts/Kitchen/Infrastructure/Processors/OpenKitchenTicketProcessor.php#L27-L45`, `app/Providers/BoundedContexts/Kitchen/Domain/KitchenTicket.php#L34-L49` |
+| 4. Fire, ready, kitchen screen | `app/Providers/BoundedContexts/Kitchen/Domain/KitchenTicket.php#L66-L120`, `app/Providers/BoundedContexts/Kitchen/Infrastructure/Projection/KitchenScreenProjector.php#L46-L90` |
+| 5. Queued pass, then serve | `app/Providers/BoundedContexts/FrontOfHouse/Infrastructure/Projection/ToServeProjector.php#L23-L47`, `app/Providers/BoundedContexts/FrontOfHouse/Infrastructure/Projection/ProjectToServeList.php#L10-L18`, `app/Providers/BoundedContexts/FrontOfHouse/Application/ServeDishHandler.php#L21-L42` |
+| 6. Second order | `tests/Feature/FullServiceTest.php#L52-L67` |
+| 7. 86 the menu | `app/Providers/BoundedContexts/Kitchen/Domain/Dish.php#L27-L34`, `app/Providers/BoundedContexts/Kitchen/Application/DeclareDishEightySixedHandler.php#L20-L35`, `app/Providers/BoundedContexts/FrontOfHouse/Infrastructure/Processors/MarkMenuItemUnavailableProcessor.php#L24-L39` |
+| 8. Bill, pay, free the table | `app/Providers/BoundedContexts/FrontOfHouse/Application/RequestBillHandler.php#L21-L39`, `app/Providers/BoundedContexts/Billing/Infrastructure/Processors/RecordServedDishes.php#L25-L45`, `app/Providers/BoundedContexts/Billing/Application/PrepareBillHandler.php#L20-L49`, `app/Providers/BoundedContexts/Billing/Domain/Bill.php#L42-L68`, `app/Providers/BoundedContexts/Billing/Application/PayBillHandler.php#L20-L39`, `app/Providers/BoundedContexts/FrontOfHouse/Application/FreeTableHandler.php#L20-L33` |
+| Level 1 | `SeatGuestsHandler.php#L20-L34` and `FreeTableHandler.php#L20-L33` |
+| Level 2 | `ToServeProjector.php#L23-L47` and `ProjectToServeList.php#L10-L18` |
+| Level 3 | `app/Providers/BoundedContexts/EventStore/Infrastructure/DatabaseEventStore.php#L18-L61`, `app/Providers/BoundedContexts/Kitchen/Infrastructure/EventStoreKitchenTicketRepository.php#L37-L61`, `app/Providers/BoundedContexts/EventStore/Infrastructure/InProcessAfterAppend.php#L52-L58` |
