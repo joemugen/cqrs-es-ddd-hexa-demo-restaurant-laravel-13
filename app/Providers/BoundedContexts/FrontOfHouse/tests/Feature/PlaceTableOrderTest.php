@@ -4,10 +4,12 @@ use App\Providers\BoundedContexts\EventStore\Domain\EventStore;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\MenuRepository;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\Menu;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\FrontOfHouseSeeder;
+use App\Providers\BoundedContexts\Kitchen\Infrastructure\KitchenSeeder;
 use Illuminate\Support\Facades\DB;
 
 beforeEach(function () {
     $this->seed(FrontOfHouseSeeder::class);
+    $this->seed(KitchenSeeder::class);
 });
 
 test('placing an order acknowledges it and does not return the menu', function () {

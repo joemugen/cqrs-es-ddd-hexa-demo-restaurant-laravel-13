@@ -36,18 +36,18 @@ test('a stream is appended and read back in version order', function () {
     $store = app(EventStore::class);
 
     $store->append('kitchen-ticket-1', 0, [
-        eventStoreMessage('kitchen.ticket_opened', ['ticketId' => '1']),
+        eventStoreMessage('tests.opened', ['ticketId' => '1']),
     ]);
     $store->append('kitchen-ticket-1', 1, [
-        eventStoreMessage('kitchen.dish_fired', ['lineId' => 'salad']),
-        eventStoreMessage('kitchen.dish_ready', ['lineId' => 'salad']),
+        eventStoreMessage('tests.fired', ['lineId' => 'salad']),
+        eventStoreMessage('tests.ready', ['lineId' => 'salad']),
     ]);
 
     $stream = $store->readStream('kitchen-ticket-1');
 
     expect($stream)->toHaveCount(3)
         ->and($stream[0]->version)->toBe(1)
-        ->and($stream[0]->type)->toBe('kitchen.ticket_opened')
+        ->and($stream[0]->type)->toBe('tests.opened')
         ->and($stream[0]->payload)->toBe(['ticketId' => '1'])
         ->and($stream[1]->version)->toBe(2)
         ->and($stream[2]->version)->toBe(3)
@@ -69,12 +69,12 @@ test('reading from a global position returns only later events', function () {
 
 test('append refuses a stale expected version', function () {
     $store = app(EventStore::class);
-    $store->append('kitchen-ticket-1', 0, [eventStoreMessage('kitchen.ticket_opened')]);
+    $store->append('kitchen-ticket-1', 0, [eventStoreMessage('tests.opened')]);
 
-    expect(fn () => $store->append('kitchen-ticket-1', 0, [eventStoreMessage('kitchen.dish_fired')]))
+    expect(fn () => $store->append('kitchen-ticket-1', 0, [eventStoreMessage('tests.fired')]))
         ->toThrow(OptimisticConcurrencyException::class);
 
-    $store->append('kitchen-ticket-1', 1, [eventStoreMessage('kitchen.dish_fired')]);
+    $store->append('kitchen-ticket-1', 1, [eventStoreMessage('tests.fired')]);
 
     expect($store->readStream('kitchen-ticket-1'))->toHaveCount(2);
 });
@@ -94,16 +94,16 @@ test('checkpoints remember how far a consumer has read', function () {
 test('an integration event is an append-only fact other contexts can read', function () {
     $bus = app(IntegrationBus::class);
     $seen = [];
-    $bus->listen('front_of_house.table_order_placed', function (array $payload) use (&$seen): void {
+    $bus->listen('tests.ping', function (array $payload) use (&$seen): void {
         $seen[] = $payload;
     });
 
-    $bus->publish('front_of_house.table_order_placed', ['tableOrderId' => 'order-1']);
+    $bus->publish('tests.ping', ['tableOrderId' => 'order-1']);
 
     $events = app(EventStore::class)->readAllFrom(0);
 
     expect($seen)->toBe([['tableOrderId' => 'order-1']])
         ->and($events)->toHaveCount(1)
-        ->and($events[0]->type)->toBe('front_of_house.table_order_placed')
+        ->and($events[0]->type)->toBe('tests.ping')
         ->and($events[0]->payload)->toBe(['tableOrderId' => 'order-1']);
 });
