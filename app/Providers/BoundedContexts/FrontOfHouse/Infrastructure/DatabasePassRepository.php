@@ -21,7 +21,7 @@ final class DatabasePassRepository implements PassRepository
         $row = DB::table('foh_to_serve')->where('id', (string) $id)->first();
 
         if ($row === null) {
-            throw new FrontOfHouseException("Nothing at the pass with id {$id}.", 404);
+            throw new FrontOfHouseException('Nothing at the pass with id :id.', 404, ['id' => $id]);
         }
 
         return new DishAtThePass(

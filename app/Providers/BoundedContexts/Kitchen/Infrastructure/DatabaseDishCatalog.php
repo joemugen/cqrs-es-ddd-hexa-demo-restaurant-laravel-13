@@ -23,11 +23,11 @@ final class DatabaseDishCatalog implements DishCatalog
         $dish = DB::table('kitchen_dishes')->where('name', (string) $line->name)->first();
 
         if ($dish === null) {
-            throw new KitchenException("The kitchen has no dish called {$line->name}.");
+            throw new KitchenException('The kitchen has no dish called :name.', replace: ['name' => $line->name]);
         }
 
         if (! $dish->in_stock) {
-            throw new KitchenException("{$dish->name} is 86.");
+            throw new KitchenException(':name is 86.', replace: ['name' => (string) $dish->name]);
         }
 
         return new TicketLine(

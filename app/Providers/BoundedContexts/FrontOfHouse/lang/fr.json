@@ -1,0 +1,14 @@
+{
+    "This table has no guests to bill.": "Cette table n'a aucun convive à facturer.",
+    "That dish has already left the pass.": "Ce plat a déjà quitté le passe.",
+    "No order for a table without seated guests.": "Pas de commande pour une table sans convives installés.",
+    "An order needs at least one item.": "Une commande doit contenir au moins un article.",
+    "Each line needs a quantity of at least one.": "Chaque ligne doit avoir une quantité d'au moins un.",
+    "Each line needs a course: starter, main, dessert, or drink.": "Chaque ligne doit avoir un service : entrée, plat, dessert ou boisson.",
+    ":name is unavailable.": ":name n'est plus disponible.",
+    "Unknown menu item :item.": "Article inconnu :item.",
+    "Unknown table :id.": "Table inconnue :id.",
+    "Seat at least one guest.": "Installez au moins un convive.",
+    "This table already has guests.": "Cette table a déjà des convives.",
+    "Nothing at the pass with id :id.": "Rien au passe avec l'identifiant :id."
+}

@@ -11,7 +11,6 @@ use App\Providers\BoundedContexts\FrontOfHouse\Application\PassRepository;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\TableOrderRepository;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\TableRepository;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\UnitOfWork;
-use App\Providers\BoundedContexts\FrontOfHouse\Domain\FrontOfHouseException;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Console\RunProjections;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\DatabaseFloorPlan;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\DatabaseMenuRepository;
@@ -22,8 +21,6 @@ use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\DatabaseUnitOfWork
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Processors\FreeTableProcessor;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Processors\MarkMenuItemUnavailableProcessor;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Projection\ProjectToServeList;
-use Illuminate\Contracts\Debug\ExceptionHandler;
-use Illuminate\Foundation\Exceptions\Handler;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 
@@ -45,15 +42,7 @@ final class FrontOfHouseServiceProvider extends ServiceProvider
     {
         $this->loadMigrationsFrom(__DIR__.'/database/migrations');
 
-        $handler = $this->app->make(ExceptionHandler::class);
-        if ($handler instanceof Handler) {
-            $handler->dontReport(FrontOfHouseException::class);
-            $handler->renderable(function (FrontOfHouseException $exception) {
-                return response()->json([
-                    'message' => $exception->getMessage(),
-                ], $exception->status());
-            });
-        }
+        $this->loadJsonTranslationsFrom(__DIR__.'/lang');
 
         $this->commands([RunProjections::class]);
 

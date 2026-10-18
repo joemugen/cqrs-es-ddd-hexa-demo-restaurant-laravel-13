@@ -34,7 +34,7 @@ final class DatabaseMenuRepository implements MenuRepository
         $row = DB::table('foh_menu_items')->where('name', (string) $name)->first();
 
         if ($row === null) {
-            throw new FrontOfHouseException("Unknown menu item {$name}.", 404);
+            throw new FrontOfHouseException('Unknown menu item :item.', 404, ['item' => $name]);
         }
 
         return $this->item($row);

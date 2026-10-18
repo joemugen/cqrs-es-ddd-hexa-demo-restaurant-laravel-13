@@ -1,0 +1,13 @@
+{
+    ":name is already 86.": ":name est déjà épuisé (86).",
+    "A ticket needs at least one dish.": "Un bon doit contenir au moins un plat.",
+    "No :course is waiting on this ticket.": "Aucun service « :course » n'attend sur ce bon.",
+    "That dish is not on this ticket.": "Ce plat n'est pas sur ce bon.",
+    "Fire the dish before it can be ready.": "Lancez le plat avant qu'il puisse être prêt.",
+    "That dish is already ready.": "Ce plat est déjà prêt.",
+    "A finished ticket cannot change.": "Un bon terminé ne peut plus changer.",
+    "The kitchen has no dish called :name.": "La cuisine n'a aucun plat nommé :name.",
+    ":name is 86.": ":name est épuisé (86).",
+    "Unknown dish :id.": "Plat inconnu :id.",
+    "Unknown kitchen ticket :id.": "Bon de cuisine inconnu :id."
+}

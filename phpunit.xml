@@ -14,6 +14,7 @@
         </testsuite>
         <testsuite name="Feature">
             <directory>tests/Feature</directory>
+            <directory suffix="Test.php">app/Providers/BoundedContexts/SharedKernel/tests/Feature</directory>
             <directory suffix="Test.php">app/Providers/BoundedContexts/EventStore/tests/Feature</directory>
             <directory suffix="Test.php">app/Providers/BoundedContexts/FrontOfHouse/tests/Feature</directory>
             <directory suffix="Test.php">app/Providers/BoundedContexts/Kitchen/tests/Feature</directory>

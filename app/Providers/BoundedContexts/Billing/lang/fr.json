@@ -1,0 +1,9 @@
+{
+    "Nothing has been served.": "Rien n'a encore été servi.",
+    "A paid bill cannot be changed.": "Une addition payée ne peut plus être modifiée.",
+    "A payment needs an amount.": "Un paiement nécessite un montant.",
+    "A tip cannot be negative.": "Un pourboire ne peut pas être négatif.",
+    "That payment is more than the balance.": "Ce paiement dépasse le solde.",
+    "Unknown bill :id.": "Addition inconnue :id.",
+    "No bill for this cover.": "Aucune addition pour ce couvert."
+}

@@ -21,7 +21,7 @@ final class DatabaseBillRepository implements BillRepository
         $row = DB::table('billing_bills')->where('id', (string) $id)->first();
 
         if ($row === null) {
-            throw new BillingException("Unknown bill {$id}.", 404);
+            throw new BillingException('Unknown bill :id.', 404, ['id' => $id]);
         }
 
         return $this->bill($row);

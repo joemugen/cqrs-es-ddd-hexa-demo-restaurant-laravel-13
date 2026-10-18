@@ -9,15 +9,12 @@ use App\Providers\BoundedContexts\Kitchen\Application\DishCatalog;
 use App\Providers\BoundedContexts\Kitchen\Application\DishRepository;
 use App\Providers\BoundedContexts\Kitchen\Application\KitchenTicketRepository;
 use App\Providers\BoundedContexts\Kitchen\Application\UnitOfWork;
-use App\Providers\BoundedContexts\Kitchen\Domain\KitchenException;
 use App\Providers\BoundedContexts\Kitchen\Infrastructure\DatabaseDishCatalog;
 use App\Providers\BoundedContexts\Kitchen\Infrastructure\DatabaseDishRepository;
 use App\Providers\BoundedContexts\Kitchen\Infrastructure\DatabaseUnitOfWork;
 use App\Providers\BoundedContexts\Kitchen\Infrastructure\EventStoreKitchenTicketRepository;
 use App\Providers\BoundedContexts\Kitchen\Infrastructure\Processors\OpenKitchenTicketProcessor;
 use App\Providers\BoundedContexts\Kitchen\Infrastructure\Projection\KitchenScreenProjector;
-use Illuminate\Contracts\Debug\ExceptionHandler;
-use Illuminate\Foundation\Exceptions\Handler;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 
@@ -37,15 +34,7 @@ final class KitchenServiceProvider extends ServiceProvider
     {
         $this->loadMigrationsFrom(__DIR__.'/database/migrations');
 
-        $handler = $this->app->make(ExceptionHandler::class);
-        if ($handler instanceof Handler) {
-            $handler->dontReport(KitchenException::class);
-            $handler->renderable(function (KitchenException $exception) {
-                return response()->json([
-                    'message' => $exception->getMessage(),
-                ], $exception->status());
-            });
-        }
+        $this->loadJsonTranslationsFrom(__DIR__.'/lang');
 
         $afterAppend = $this->app->make(AfterAppend::class);
         $afterAppend->listen(function (): void {
