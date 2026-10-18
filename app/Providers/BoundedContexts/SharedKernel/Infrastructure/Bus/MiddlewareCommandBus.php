@@ -9,6 +9,8 @@ use App\Providers\BoundedContexts\SharedKernel\Application\Bus\CommandMiddleware
 use App\Providers\BoundedContexts\SharedKernel\Application\Bus\HandlerMap;
 use App\Providers\BoundedContexts\SharedKernel\Application\Command;
 use App\Providers\BoundedContexts\SharedKernel\Application\CommandResponse;
+use App\Providers\BoundedContexts\SharedKernel\Infrastructure\Bus\Middleware\AuthorizationCommandMiddleware;
+use App\Providers\BoundedContexts\SharedKernel\Infrastructure\Bus\Middleware\LoggingCommandMiddleware;
 use App\Providers\BoundedContexts\SharedKernel\Infrastructure\Bus\Middleware\TransactionMiddleware;
 use Closure;
 use Illuminate\Contracts\Container\Container;
@@ -39,13 +41,28 @@ abstract class MiddlewareCommandBus implements CommandBus
     abstract protected function handlers(): array;
 
     /**
-     * The shared stack, outermost first. A context overrides it to add its own.
+     * The shared stack, outermost first: log, authorize, whatever the context puts outside the transaction, then the transaction.
      *
      * @return list<class-string<CommandMiddleware>>
      */
     protected function middleware(): array
     {
-        return [TransactionMiddleware::class];
+        return [
+            LoggingCommandMiddleware::class,
+            AuthorizationCommandMiddleware::class,
+            ...$this->outsideTransaction(),
+            TransactionMiddleware::class,
+        ];
+    }
+
+    /**
+     * Middleware that must wrap the transaction, such as a retry: each attempt then gets a fresh one.
+     *
+     * @return list<class-string<CommandMiddleware>>
+     */
+    protected function outsideTransaction(): array
+    {
+        return [];
     }
 
     /**

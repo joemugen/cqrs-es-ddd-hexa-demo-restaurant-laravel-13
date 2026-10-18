@@ -8,6 +8,7 @@ use App\Providers\BoundedContexts\Kitchen\Application\Command\DeclareDishEightyS
 use App\Providers\BoundedContexts\Kitchen\Application\Command\FireDishesHandler;
 use App\Providers\BoundedContexts\Kitchen\Application\Command\MarkDishReadyHandler;
 use App\Providers\BoundedContexts\Kitchen\Application\Command\OpenKitchenTicketHandler;
+use App\Providers\BoundedContexts\SharedKernel\Infrastructure\Bus\Middleware\RetryOnConflict;
 use App\Providers\BoundedContexts\SharedKernel\Infrastructure\Bus\MiddlewareCommandBus;
 
 final class KitchenCommandBus extends MiddlewareCommandBus
@@ -20,5 +21,10 @@ final class KitchenCommandBus extends MiddlewareCommandBus
             MarkDishReadyHandler::class,
             OpenKitchenTicketHandler::class,
         ];
+    }
+
+    protected function outsideTransaction(): array
+    {
+        return [RetryOnConflict::class];
     }
 }

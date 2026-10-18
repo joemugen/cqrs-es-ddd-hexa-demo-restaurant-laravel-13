@@ -2,11 +2,11 @@
 
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\FrontOfHouseSeeder;
 use App\Providers\BoundedContexts\Kitchen\Application\KitchenTicketRepository;
-use App\Providers\BoundedContexts\Kitchen\Domain\KitchenException;
 use App\Providers\BoundedContexts\Kitchen\Domain\KitchenTicket;
 use App\Providers\BoundedContexts\Kitchen\Domain\KitchenTicketId;
 use App\Providers\BoundedContexts\Kitchen\Infrastructure\KitchenSeeder;
 use App\Providers\BoundedContexts\Kitchen\Infrastructure\Projection\KitchenScreenProjector;
+use App\Providers\BoundedContexts\SharedKernel\Domain\ConcurrencyConflict;
 
 describe('the kitchen ticket', function () {
     beforeEach(function () {
@@ -111,7 +111,7 @@ describe('the kitchen ticket', function () {
         try {
             app(KitchenTicketRepository::class)->save($second);
             throw new RuntimeException('A stale version was accepted.');
-        } catch (KitchenException $exception) {
+        } catch (ConcurrencyConflict $exception) {
             expect($exception->status())->toBe(409);
         }
     });

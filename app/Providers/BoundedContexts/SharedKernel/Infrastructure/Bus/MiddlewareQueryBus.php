@@ -9,6 +9,8 @@ use App\Providers\BoundedContexts\SharedKernel\Application\Bus\QueryBus;
 use App\Providers\BoundedContexts\SharedKernel\Application\Bus\QueryMiddleware;
 use App\Providers\BoundedContexts\SharedKernel\Application\Query;
 use App\Providers\BoundedContexts\SharedKernel\Application\QueryResponse;
+use App\Providers\BoundedContexts\SharedKernel\Infrastructure\Bus\Middleware\AuthorizationQueryMiddleware;
+use App\Providers\BoundedContexts\SharedKernel\Infrastructure\Bus\Middleware\LoggingQueryMiddleware;
 use Closure;
 use Illuminate\Contracts\Container\Container;
 
@@ -38,13 +40,13 @@ abstract class MiddlewareQueryBus implements QueryBus
     abstract protected function handlers(): array;
 
     /**
-     * Outermost first.
+     * The shared stack, outermost first. A context overrides it to add its own.
      *
      * @return list<class-string<QueryMiddleware>>
      */
     protected function middleware(): array
     {
-        return [];
+        return [LoggingQueryMiddleware::class, AuthorizationQueryMiddleware::class];
     }
 
     /**

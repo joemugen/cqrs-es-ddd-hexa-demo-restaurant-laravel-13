@@ -11,6 +11,7 @@ use App\Providers\BoundedContexts\Kitchen\Application\KitchenTicketRepository;
 use App\Providers\BoundedContexts\Kitchen\Domain\KitchenException;
 use App\Providers\BoundedContexts\Kitchen\Domain\KitchenTicket;
 use App\Providers\BoundedContexts\Kitchen\Domain\KitchenTicketId;
+use App\Providers\BoundedContexts\SharedKernel\Domain\ConcurrencyConflict;
 use App\Providers\BoundedContexts\SharedKernel\Domain\DomainEvent;
 use App\Providers\BoundedContexts\SharedKernel\Domain\DomainEvents;
 use App\Providers\BoundedContexts\SharedKernel\Domain\StreamId;
@@ -57,7 +58,7 @@ final class EventStoreKitchenTicketRepository implements KitchenTicketRepository
         try {
             $this->events->append($ticket->streamId(), $expected, $pending);
         } catch (OptimisticConcurrencyException $exception) {
-            throw new KitchenException($exception->getMessage(), 409);
+            throw new ConcurrencyConflict($exception->getMessage());
         }
 
         $ticket->commit($expected + count($pending));
