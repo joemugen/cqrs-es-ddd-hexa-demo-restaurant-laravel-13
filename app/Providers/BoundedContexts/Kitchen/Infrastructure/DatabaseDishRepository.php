@@ -15,7 +15,7 @@ final class DatabaseDishRepository implements DishRepository
 {
     public function get(DishId $id): Dish
     {
-        $row = DB::table('kitchen_dishes')->where('id', (string) $id)->first();
+        $row = DB::table(Tables::DISHES)->where('id', (string) $id)->first();
 
         if ($row === null) {
             throw new KitchenException('Unknown dish :id.', 404, ['id' => $id]);
@@ -32,7 +32,7 @@ final class DatabaseDishRepository implements DishRepository
 
     public function save(Dish $dish): void
     {
-        DB::table('kitchen_dishes')->where('id', (string) $dish->id())->update([
+        DB::table(Tables::DISHES)->where('id', (string) $dish->id())->update([
             'in_stock' => $dish->isInStock(),
         ]);
     }

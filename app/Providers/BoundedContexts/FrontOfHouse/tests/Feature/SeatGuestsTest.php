@@ -5,6 +5,7 @@ use App\Providers\BoundedContexts\FrontOfHouse\Application\TableRepository;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\Table;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableId;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\FrontOfHouseSeeder;
+use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Tables;
 use Illuminate\Support\Facades\DB;
 
 describe('seating guests', function () {
@@ -51,8 +52,8 @@ describe('seating guests', function () {
             'guestCount' => 2,
         ])->assertStatus(500);
 
-        expect(DB::table('foh_tables')->where('id', 'table-4')->value('guest_count'))->toBe(0)
-            ->and(DB::table('foh_floor_plan')->where('table_id', 'table-4')->value('guest_count'))->toBe(0);
+        expect(DB::table(Tables::TABLES)->where('id', 'table-4')->value('guest_count'))->toBe(0)
+            ->and(DB::table(Tables::FLOOR_PLAN)->where('table_id', 'table-4')->value('guest_count'))->toBe(0);
     });
 
     test('the floor plan query does not load the table aggregate', function () {

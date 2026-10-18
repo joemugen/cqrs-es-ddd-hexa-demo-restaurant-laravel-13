@@ -11,6 +11,7 @@ use App\Providers\BoundedContexts\FrontOfHouse\Application\MenuRepository;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\TableOrderRepository;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\TableRepository;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\UnitOfWork;
+use App\Providers\BoundedContexts\FrontOfHouse\Domain\FrontOfHouseEvent;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\MenuItemId;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\RequestedLine;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableOrder;
@@ -43,7 +44,7 @@ final readonly class PlaceTableOrderHandler implements CommandHandler
             $order = TableOrder::place($command->tableOrderId, $table, $menu, $command->lines);
 
             $this->orders->save($order);
-            $this->bus->publish(IntegrationEvent::named('front_of_house.table_order_placed', [
+            $this->bus->publish(IntegrationEvent::named(FrontOfHouseEvent::TABLE_ORDER_PLACED, [
                 'tableOrderId' => (string) $order->id(),
                 'tableId' => (string) $table->id(),
                 'tableLabel' => (string) $table->label(),

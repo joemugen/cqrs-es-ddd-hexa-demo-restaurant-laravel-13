@@ -6,6 +6,8 @@ namespace App\Providers\BoundedContexts\Kitchen\Infrastructure\Projection;
 
 use App\Providers\BoundedContexts\EventStore\Domain\CheckpointStore;
 use App\Providers\BoundedContexts\EventStore\Domain\EventStore;
+use App\Providers\BoundedContexts\Kitchen\Domain\KitchenEvent;
+use App\Providers\BoundedContexts\Kitchen\Infrastructure\Tables;
 use App\Providers\BoundedContexts\SharedKernel\Application\RebuildableProjector;
 use App\Providers\BoundedContexts\SharedKernel\Domain\EventType;
 use Illuminate\Support\Facades\DB;
@@ -42,8 +44,8 @@ final class KitchenScreenProjector implements RebuildableProjector
 
     public function rebuild(): void
     {
-        DB::table('kitchen_screen_lines')->delete();
-        DB::table('kitchen_screen_tickets')->delete();
+        DB::table(Tables::SCREEN_LINES)->delete();
+        DB::table(Tables::SCREEN_TICKETS)->delete();
         $this->checkpoints->put(self::CHECKPOINT, 0);
         $this->catchUp();
     }
@@ -54,8 +56,8 @@ final class KitchenScreenProjector implements RebuildableProjector
      */
     public function when(EventType $type, array $payload): bool
     {
-        if ($type->is('kitchen.ticket_opened')) {
-            DB::table('kitchen_screen_tickets')->insert([
+        if ($type->is(KitchenEvent::TICKET_OPENED)) {
+            DB::table(Tables::SCREEN_TICKETS)->insert([
                 'ticket_id' => $payload['ticketId'],
                 'party_ref' => $payload['partyRef'],
                 'table_label' => $payload['tableLabel'],
@@ -63,7 +65,7 @@ final class KitchenScreenProjector implements RebuildableProjector
             ]);
 
             foreach ($payload['lines'] as $line) {
-                DB::table('kitchen_screen_lines')->insert([
+                DB::table(Tables::SCREEN_LINES)->insert([
                     'ticket_id' => $payload['ticketId'],
                     'line_id' => $line['lineId'],
                     'dish_name' => $line['dishName'],
@@ -72,27 +74,27 @@ final class KitchenScreenProjector implements RebuildableProjector
                     'quantity' => $line['quantity'],
                     'course' => $line['course'],
                     'allergens' => json_encode($line['allergens'], JSON_THROW_ON_ERROR),
-                    'status' => 'pending',
+                    'status' => LineStatus::PENDING,
                 ]);
             }
 
             return true;
         }
 
-        if ($type->is('kitchen.dish_fired')) {
-            $this->status((string) $payload['ticketId'], (string) $payload['lineId'], 'fired');
+        if ($type->is(KitchenEvent::DISH_FIRED)) {
+            $this->status((string) $payload['ticketId'], (string) $payload['lineId'], LineStatus::FIRED);
 
             return true;
         }
 
-        if ($type->is('kitchen.dish_ready')) {
-            $this->status((string) $payload['ticketId'], (string) $payload['lineId'], 'ready');
+        if ($type->is(KitchenEvent::DISH_READY)) {
+            $this->status((string) $payload['ticketId'], (string) $payload['lineId'], LineStatus::READY);
 
             return true;
         }
 
-        if ($type->is('kitchen.ticket_completed')) {
-            DB::table('kitchen_screen_tickets')
+        if ($type->is(KitchenEvent::TICKET_COMPLETED)) {
+            DB::table(Tables::SCREEN_TICKETS)
                 ->where('ticket_id', $payload['ticketId'])
                 ->update(['done' => true]);
 
@@ -104,7 +106,7 @@ final class KitchenScreenProjector implements RebuildableProjector
 
     private function status(string $ticketId, string $lineId, string $status): void
     {
-        DB::table('kitchen_screen_lines')
+        DB::table(Tables::SCREEN_LINES)
             ->where('ticket_id', $ticketId)
             ->where('line_id', $lineId)
             ->update(['status' => $status]);

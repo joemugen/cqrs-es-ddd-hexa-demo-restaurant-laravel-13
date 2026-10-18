@@ -9,6 +9,7 @@ use App\Providers\BoundedContexts\FrontOfHouse\Application\Query\Response\FloorP
 use App\Providers\BoundedContexts\FrontOfHouse\Application\Query\Response\FloorPlanView;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableId;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableLabel;
+use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Tables;
 use App\Providers\BoundedContexts\SharedKernel\Application\Query;
 use App\Providers\BoundedContexts\SharedKernel\Application\QueryHandler;
 use Illuminate\Support\Facades\DB;
@@ -23,7 +24,7 @@ final class ListFloorPlanHandler implements QueryHandler
      */
     public function handle(Query $query): FloorPlanView
     {
-        return new FloorPlanView(DB::table('foh_floor_plan')
+        return new FloorPlanView(DB::table(Tables::FLOOR_PLAN)
             ->orderBy('table_id')
             ->get()
             ->map(fn (object $row): FloorPlanRow => new FloorPlanRow(

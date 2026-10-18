@@ -13,6 +13,7 @@ use App\Providers\BoundedContexts\FrontOfHouse\Domain\LineId;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableId;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableLabel;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\TicketId;
+use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Tables;
 use App\Providers\BoundedContexts\SharedKernel\Application\Query;
 use App\Providers\BoundedContexts\SharedKernel\Application\QueryHandler;
 use Illuminate\Support\Facades\DB;
@@ -24,7 +25,7 @@ final class ListToServeHandler implements QueryHandler
 {
     public function handle(Query $query): ToServeView
     {
-        return new ToServeView(DB::table('foh_to_serve')
+        return new ToServeView(DB::table(Tables::TO_SERVE)
             ->whereNull('served_at')
             ->orderBy('id')
             ->get()

@@ -65,6 +65,6 @@ final class EventStoreKitchenTicketRepository implements KitchenTicketRepository
 
     private function stream(KitchenTicketId $id): StreamId
     {
-        return new StreamId('kitchen-ticket-'.$id);
+        return KitchenTicket::streamIdFor($id);
     }
 }

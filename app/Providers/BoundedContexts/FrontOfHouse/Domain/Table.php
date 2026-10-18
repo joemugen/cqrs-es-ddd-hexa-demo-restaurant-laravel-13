@@ -59,6 +59,6 @@ final class Table implements AggregateRoot
 
     public function status(): string
     {
-        return $this->hasGuests() ? 'occupied' : 'free';
+        return $this->hasGuests() ? TableStatus::OCCUPIED : TableStatus::FREE;
     }
 }

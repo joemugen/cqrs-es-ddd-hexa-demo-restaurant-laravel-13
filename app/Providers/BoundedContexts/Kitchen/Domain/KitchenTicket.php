@@ -12,6 +12,8 @@ use App\Providers\BoundedContexts\SharedKernel\Domain\StreamId;
 
 final class KitchenTicket implements EventSourcedAggregate
 {
+    private const STREAM_PREFIX = 'kitchen-ticket-';
+
     private DomainEvents $pending;
 
     /**
@@ -42,7 +44,7 @@ final class KitchenTicket implements EventSourcedAggregate
         }
 
         $ticket = new self($id);
-        $ticket->record('kitchen.ticket_opened', [
+        $ticket->record(KitchenEvent::TICKET_OPENED, [
             'ticketId' => (string) $id,
             'partyRef' => (string) $partyRef,
             'tableLabel' => (string) $tableLabel,
@@ -77,7 +79,7 @@ final class KitchenTicket implements EventSourcedAggregate
             }
 
             $fired = true;
-            $this->record('kitchen.dish_fired', [
+            $this->record(KitchenEvent::DISH_FIRED, [
                 'ticketId' => (string) $this->id,
                 'lineId' => $lineId,
                 'course' => $course,
@@ -107,7 +109,7 @@ final class KitchenTicket implements EventSourcedAggregate
         }
 
         $line = $this->lines[$key];
-        $this->record('kitchen.dish_ready', [
+        $this->record(KitchenEvent::DISH_READY, [
             'ticketId' => (string) $this->id,
             'lineId' => $key,
             'dishName' => $line['dishName'],
@@ -117,7 +119,7 @@ final class KitchenTicket implements EventSourcedAggregate
         ]);
 
         if ($this->everyDishReady()) {
-            $this->record('kitchen.ticket_completed', [
+            $this->record(KitchenEvent::TICKET_COMPLETED, [
                 'ticketId' => (string) $this->id,
             ]);
         }
@@ -135,7 +137,12 @@ final class KitchenTicket implements EventSourcedAggregate
 
     public function streamId(): StreamId
     {
-        return new StreamId('kitchen-ticket-'.$this->id);
+        return self::streamIdFor($this->id);
+    }
+
+    public static function streamIdFor(KitchenTicketId $id): StreamId
+    {
+        return new StreamId(self::STREAM_PREFIX.$id);
     }
 
     public function expectedVersion(): int
@@ -186,7 +193,7 @@ final class KitchenTicket implements EventSourcedAggregate
      */
     private function apply(string $type, array $payload): void
     {
-        if ($type === 'kitchen.ticket_opened') {
+        if ($type === KitchenEvent::TICKET_OPENED) {
             $this->partyRef = new PartyRef((string) $payload['partyRef']);
             $this->tableLabel = new TableLabel((string) $payload['tableLabel']);
 
@@ -206,19 +213,19 @@ final class KitchenTicket implements EventSourcedAggregate
             return;
         }
 
-        if ($type === 'kitchen.dish_fired') {
+        if ($type === KitchenEvent::DISH_FIRED) {
             $this->lines[(string) $payload['lineId']]['fired'] = true;
 
             return;
         }
 
-        if ($type === 'kitchen.dish_ready') {
+        if ($type === KitchenEvent::DISH_READY) {
             $this->lines[(string) $payload['lineId']]['ready'] = true;
 
             return;
         }
 
-        if ($type === 'kitchen.ticket_completed') {
+        if ($type === KitchenEvent::TICKET_COMPLETED) {
             $this->completed = true;
         }
     }

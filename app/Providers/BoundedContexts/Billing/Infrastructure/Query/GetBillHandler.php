@@ -11,6 +11,7 @@ use App\Providers\BoundedContexts\Billing\Application\Query\Response\PaymentView
 use App\Providers\BoundedContexts\Billing\Domain\BillId;
 use App\Providers\BoundedContexts\Billing\Domain\BillingException;
 use App\Providers\BoundedContexts\Billing\Domain\CoverRef;
+use App\Providers\BoundedContexts\Billing\Infrastructure\Tables;
 use App\Providers\BoundedContexts\SharedKernel\Application\Query;
 use App\Providers\BoundedContexts\SharedKernel\Application\QueryHandler;
 use Illuminate\Support\Facades\DB;
@@ -24,7 +25,7 @@ final class GetBillHandler implements QueryHandler
     {
         assert($query instanceof GetBill);
 
-        $bill = DB::table('billing_bills')
+        $bill = DB::table(Tables::BILLS)
             ->where('cover_ref', (string) $query->coverRef)
             ->orderByDesc('id')
             ->first();
@@ -53,7 +54,7 @@ final class GetBillHandler implements QueryHandler
      */
     private function lines(mixed $billId): array
     {
-        return DB::table('billing_bill_lines')
+        return DB::table(Tables::BILL_LINES)
             ->where('bill_id', $billId)
             ->orderBy('id')
             ->get()
@@ -72,7 +73,7 @@ final class GetBillHandler implements QueryHandler
      */
     private function payments(mixed $billId): array
     {
-        return DB::table('billing_payments')
+        return DB::table(Tables::PAYMENTS)
             ->where('bill_id', $billId)
             ->orderBy('id')
             ->get()

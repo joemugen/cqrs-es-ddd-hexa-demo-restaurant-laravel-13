@@ -20,7 +20,7 @@ final class DatabaseDishCatalog implements DishCatalog
 
     private function ticketLine(OrderedLine $line): TicketLine
     {
-        $dish = DB::table('kitchen_dishes')->where('name', (string) $line->name)->first();
+        $dish = DB::table(Tables::DISHES)->where('name', (string) $line->name)->first();
 
         if ($dish === null) {
             throw new KitchenException('The kitchen has no dish called :name.', replace: ['name' => $line->name]);

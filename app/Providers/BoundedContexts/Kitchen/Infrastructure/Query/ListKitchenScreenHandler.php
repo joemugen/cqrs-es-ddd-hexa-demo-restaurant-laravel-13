@@ -13,6 +13,7 @@ use App\Providers\BoundedContexts\Kitchen\Domain\KitchenTicketId;
 use App\Providers\BoundedContexts\Kitchen\Domain\LineId;
 use App\Providers\BoundedContexts\Kitchen\Domain\PartyRef;
 use App\Providers\BoundedContexts\Kitchen\Domain\TableLabel;
+use App\Providers\BoundedContexts\Kitchen\Infrastructure\Tables;
 use App\Providers\BoundedContexts\SharedKernel\Application\Query;
 use App\Providers\BoundedContexts\SharedKernel\Application\QueryHandler;
 use Illuminate\Support\Facades\DB;
@@ -24,9 +25,9 @@ final class ListKitchenScreenHandler implements QueryHandler
 {
     public function handle(Query $query): KitchenScreenView
     {
-        $lines = DB::table('kitchen_screen_lines')->orderBy('id')->get()->groupBy('ticket_id');
+        $lines = DB::table(Tables::SCREEN_LINES)->orderBy('id')->get()->groupBy('ticket_id');
 
-        return new KitchenScreenView(DB::table('kitchen_screen_tickets')
+        return new KitchenScreenView(DB::table(Tables::SCREEN_TICKETS)
             ->orderBy('ticket_id')
             ->get()
             ->map(fn (object $ticket): KitchenScreenTicket => new KitchenScreenTicket(

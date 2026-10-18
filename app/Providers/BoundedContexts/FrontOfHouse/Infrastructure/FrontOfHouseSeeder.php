@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Providers\BoundedContexts\FrontOfHouse\Infrastructure;
 
+use App\Providers\BoundedContexts\FrontOfHouse\Domain\DishKind;
+use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableStatus;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
@@ -17,29 +19,29 @@ final class FrontOfHouseSeeder extends Seeder
         ];
 
         foreach ($tables as $table) {
-            DB::table('foh_tables')->insert([
+            DB::table(Tables::TABLES)->insert([
                 'id' => $table['id'],
                 'label' => $table['label'],
                 'guest_count' => 0,
             ]);
 
-            DB::table('foh_floor_plan')->insert([
+            DB::table(Tables::FLOOR_PLAN)->insert([
                 'table_id' => $table['id'],
                 'label' => $table['label'],
                 'guest_count' => 0,
-                'status' => 'free',
+                'status' => TableStatus::FREE,
             ]);
         }
 
         $menu = [
-            ['id' => 'creme-brulee', 'name' => 'Creme brulee', 'description' => 'Vanilla custard, burnt sugar.', 'price_cents' => 1100, 'allergens' => ['dairy', 'eggs'], 'kind' => 'food'],
-            ['id' => 'green-salad', 'name' => 'Green salad', 'description' => 'Leaves, herbs, lemon.', 'price_cents' => 1100, 'allergens' => [], 'kind' => 'food'],
-            ['id' => 'house-red', 'name' => 'House red', 'description' => 'A glass of the house red.', 'price_cents' => 600, 'allergens' => ['sulfites'], 'kind' => 'alcohol'],
-            ['id' => 'steak-frites', 'name' => 'Steak frites', 'description' => 'Grilled beef, fries.', 'price_cents' => 2200, 'allergens' => ['gluten'], 'kind' => 'food'],
+            ['id' => 'creme-brulee', 'name' => 'Creme brulee', 'description' => 'Vanilla custard, burnt sugar.', 'price_cents' => 1100, 'allergens' => ['dairy', 'eggs'], 'kind' => DishKind::FOOD],
+            ['id' => 'green-salad', 'name' => 'Green salad', 'description' => 'Leaves, herbs, lemon.', 'price_cents' => 1100, 'allergens' => [], 'kind' => DishKind::FOOD],
+            ['id' => 'house-red', 'name' => 'House red', 'description' => 'A glass of the house red.', 'price_cents' => 600, 'allergens' => ['sulfites'], 'kind' => DishKind::ALCOHOL],
+            ['id' => 'steak-frites', 'name' => 'Steak frites', 'description' => 'Grilled beef, fries.', 'price_cents' => 2200, 'allergens' => ['gluten'], 'kind' => DishKind::FOOD],
         ];
 
         foreach ($menu as $item) {
-            DB::table('foh_menu_items')->insert([
+            DB::table(Tables::MENU_ITEMS)->insert([
                 'id' => $item['id'],
                 'name' => $item['name'],
                 'description' => $item['description'],

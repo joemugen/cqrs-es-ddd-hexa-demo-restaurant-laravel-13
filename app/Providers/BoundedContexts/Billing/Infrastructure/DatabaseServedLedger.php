@@ -15,7 +15,7 @@ final class DatabaseServedLedger implements ServedLedger
 {
     public function record(CoverRef $coverRef, ServedDish $dish): void
     {
-        DB::table('billing_served_items')->insertOrIgnore([
+        DB::table(Tables::SERVED_ITEMS)->insertOrIgnore([
             'source_key' => (string) $dish->sourceKey,
             'cover_ref' => (string) $coverRef,
             'description' => $dish->description,
@@ -27,7 +27,7 @@ final class DatabaseServedLedger implements ServedLedger
 
     public function unbilled(CoverRef $coverRef): array
     {
-        return DB::table('billing_served_items')
+        return DB::table(Tables::SERVED_ITEMS)
             ->where('cover_ref', (string) $coverRef)
             ->whereNull('bill_id')
             ->orderBy('source_key')
@@ -48,7 +48,7 @@ final class DatabaseServedLedger implements ServedLedger
             return;
         }
 
-        DB::table('billing_served_items')
+        DB::table(Tables::SERVED_ITEMS)
             ->whereIn('source_key', array_map(fn (SourceKey $key): string => (string) $key, $sourceKeys))
             ->update(['bill_id' => (string) $billId]);
     }

@@ -15,6 +15,7 @@ use App\Providers\BoundedContexts\Kitchen\Domain\LineId;
 use App\Providers\BoundedContexts\Kitchen\Domain\OrderedLine;
 use App\Providers\BoundedContexts\Kitchen\Domain\PartyRef;
 use App\Providers\BoundedContexts\Kitchen\Domain\TableLabel;
+use App\Providers\BoundedContexts\Kitchen\Infrastructure\ConsumedEvents;
 use App\Providers\BoundedContexts\SharedKernel\Application\Processor;
 
 /**
@@ -36,7 +37,7 @@ final class OpenKitchenTicketProcessor implements Processor
         $position = $this->checkpoints->get(self::CHECKPOINT);
 
         foreach ($this->events->readAllFrom($position) as $event) {
-            if ($event->type->is('front_of_house.table_order_placed')) {
+            if ($event->type->is(ConsumedEvents::FRONT_OF_HOUSE_TABLE_ORDER_PLACED)) {
                 $this->handler->handle(new OpenKitchenTicket(
                     ticketId: new KitchenTicketId((string) $event->payload['tableOrderId']),
                     partyRef: new PartyRef((string) $event->payload['tableId']),

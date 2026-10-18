@@ -18,7 +18,7 @@ final class DatabasePassRepository implements PassRepository
 {
     public function find(DishAtThePassId $id): DishAtThePass
     {
-        $row = DB::table('foh_to_serve')->where('id', (string) $id)->first();
+        $row = DB::table(Tables::TO_SERVE)->where('id', (string) $id)->first();
 
         if ($row === null) {
             throw new FrontOfHouseException('Nothing at the pass with id :id.', 404, ['id' => $id]);
@@ -37,7 +37,7 @@ final class DatabasePassRepository implements PassRepository
 
     public function save(DishAtThePass $dish): void
     {
-        DB::table('foh_to_serve')->where('id', (string) $dish->id())->update([
+        DB::table(Tables::TO_SERVE)->where('id', (string) $dish->id())->update([
             'served_at' => $dish->isServed() ? now() : null,
         ]);
     }

@@ -99,12 +99,12 @@ final class Bill implements AggregateRoot
 
     public function foodGrossCents(): int
     {
-        return $this->grossOf('food');
+        return $this->grossOf(DishKind::FOOD);
     }
 
     public function alcoholGrossCents(): int
     {
-        return $this->grossOf('alcohol');
+        return $this->grossOf(DishKind::ALCOHOL);
     }
 
     public function vatCents(): int

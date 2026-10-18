@@ -6,6 +6,7 @@ use App\Providers\BoundedContexts\FrontOfHouse\Domain\DishName;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\Menu;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\MenuItem;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\FrontOfHouseSeeder;
+use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Tables;
 use Illuminate\Support\Facades\DB;
 
 describe('placing a table order', function () {
@@ -40,7 +41,7 @@ describe('placing a table order', function () {
                 'allergens' => [],
             ])
             ->and($event->payload['lines'][0])->not->toHaveKey('unitPriceCents')
-            ->and(DB::table('foh_table_order_lines')->where('name', 'House red')->value('unit_price_cents'))->toBe(600);
+            ->and(DB::table(Tables::TABLE_ORDER_LINES)->where('name', 'House red')->value('unit_price_cents'))->toBe(600);
 
         $this->getJson('/api/kitchen/screen')->assertExactJson([]);
     });
@@ -67,7 +68,7 @@ describe('placing a table order', function () {
 
     test('an unavailable item is refused', function () {
         $this->postJson('/api/front-of-house/tables/table-4/guests', ['guestCount' => 2])->assertOk();
-        DB::table('foh_menu_items')->where('id', 'steak-frites')->update(['available' => false]);
+        DB::table(Tables::MENU_ITEMS)->where('id', 'steak-frites')->update(['available' => false]);
 
         $this->postJson('/api/front-of-house/tables/table-4/orders', [
             'lines' => [

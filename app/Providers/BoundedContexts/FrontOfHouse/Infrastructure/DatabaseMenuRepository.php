@@ -16,7 +16,7 @@ final class DatabaseMenuRepository implements MenuRepository
 {
     public function containing(array $ids): Menu
     {
-        $rows = DB::table('foh_menu_items')
+        $rows = DB::table(Tables::MENU_ITEMS)
             ->whereIn('id', array_map(fn (MenuItemId $id): string => (string) $id, $ids))
             ->get();
         $items = [];
@@ -31,7 +31,7 @@ final class DatabaseMenuRepository implements MenuRepository
 
     public function findByName(DishName $name): MenuItem
     {
-        $row = DB::table('foh_menu_items')->where('name', (string) $name)->first();
+        $row = DB::table(Tables::MENU_ITEMS)->where('name', (string) $name)->first();
 
         if ($row === null) {
             throw new FrontOfHouseException('Unknown menu item :item.', 404, ['item' => $name]);
@@ -42,7 +42,7 @@ final class DatabaseMenuRepository implements MenuRepository
 
     public function save(MenuItem $item): void
     {
-        DB::table('foh_menu_items')->where('id', (string) $item->id())->update([
+        DB::table(Tables::MENU_ITEMS)->where('id', (string) $item->id())->update([
             'available' => $item->isAvailable(),
         ]);
     }

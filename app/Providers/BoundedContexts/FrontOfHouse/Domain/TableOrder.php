@@ -37,7 +37,7 @@ final readonly class TableOrder implements AggregateRoot
                 throw new FrontOfHouseException('Each line needs a quantity of at least one.');
             }
 
-            if (! in_array($line->course, ['starter', 'main', 'dessert', 'drink'], true)) {
+            if (! in_array($line->course, Course::ALL, true)) {
                 throw new FrontOfHouseException('Each line needs a course: starter, main, dessert, or drink.');
             }
 

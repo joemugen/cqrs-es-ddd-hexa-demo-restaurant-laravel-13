@@ -8,6 +8,7 @@ use App\Providers\BoundedContexts\EventStore\Domain\CheckpointStore;
 use App\Providers\BoundedContexts\EventStore\Domain\EventStore;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\MenuRepository;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\DishName;
+use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\ConsumedEvents;
 use App\Providers\BoundedContexts\SharedKernel\Application\Processor;
 
 /**
@@ -28,7 +29,7 @@ final class MarkMenuItemUnavailableProcessor implements Processor
         $position = $this->checkpoints->get(self::CHECKPOINT);
 
         foreach ($this->events->readAllFrom($position) as $event) {
-            if ($event->type->is('kitchen.dish_eighty_sixed')) {
+            if ($event->type->is(ConsumedEvents::KITCHEN_DISH_EIGHTY_SIXED)) {
                 $item = $this->menus->findByName(new DishName((string) $event->payload['dishName']));
                 $item->markUnavailable();
                 $this->menus->save($item);

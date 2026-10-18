@@ -7,6 +7,7 @@ namespace App\Providers\BoundedContexts\Billing\Application\Command;
 use App\Providers\BoundedContexts\Billing\Application\BillRepository;
 use App\Providers\BoundedContexts\Billing\Application\Command\Response\PaymentAccepted;
 use App\Providers\BoundedContexts\Billing\Application\UnitOfWork;
+use App\Providers\BoundedContexts\Billing\Domain\BillingEvent;
 use App\Providers\BoundedContexts\EventStore\Application\IntegrationBus;
 use App\Providers\BoundedContexts\EventStore\Domain\IntegrationEvent;
 use App\Providers\BoundedContexts\SharedKernel\Application\Command;
@@ -33,7 +34,7 @@ final readonly class PayBillHandler implements CommandHandler
             $this->bills->save($bill);
 
             if ($bill->isPaid()) {
-                $this->bus->publish(IntegrationEvent::named('billing.bill_paid', [
+                $this->bus->publish(IntegrationEvent::named(BillingEvent::BILL_PAID, [
                     'coverRef' => (string) $bill->coverRef(),
                     'billId' => (string) $bill->id(),
                 ]));

@@ -15,7 +15,7 @@ final class DatabaseTableRepository implements TableRepository
 {
     public function get(TableId $id): Table
     {
-        $row = DB::table('foh_tables')->where('id', (string) $id)->first();
+        $row = DB::table(Tables::TABLES)->where('id', (string) $id)->first();
 
         if ($row === null) {
             throw new FrontOfHouseException('Unknown table :id.', 404, ['id' => $id]);
@@ -26,7 +26,7 @@ final class DatabaseTableRepository implements TableRepository
 
     public function save(Table $table): void
     {
-        DB::table('foh_tables')->where('id', (string) $table->id())->update([
+        DB::table(Tables::TABLES)->where('id', (string) $table->id())->update([
             'guest_count' => $table->guestCount(),
         ]);
     }

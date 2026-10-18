@@ -6,6 +6,8 @@ namespace App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Projection;
 
 use App\Providers\BoundedContexts\EventStore\Domain\CheckpointStore;
 use App\Providers\BoundedContexts\EventStore\Domain\EventStore;
+use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\ConsumedEvents;
+use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Tables;
 use App\Providers\BoundedContexts\SharedKernel\Application\Projector;
 use Illuminate\Support\Facades\DB;
 
@@ -27,8 +29,8 @@ final class ToServeProjector implements Projector
         $position = $this->checkpoints->get(self::CHECKPOINT);
 
         foreach ($this->events->readAllFrom($position) as $event) {
-            if ($event->type->is('kitchen.dish_ready')) {
-                DB::table('foh_to_serve')->insertOrIgnore([
+            if ($event->type->is(ConsumedEvents::KITCHEN_DISH_READY)) {
+                DB::table(Tables::TO_SERVE)->insertOrIgnore([
                     'ticket_id' => $event->payload['ticketId'],
                     'line_id' => $event->payload['lineId'],
                     'table_id' => $event->payload['partyRef'],

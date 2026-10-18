@@ -9,6 +9,7 @@ use App\Providers\BoundedContexts\EventStore\Domain\EventStore;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\Command\FreeTable;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\Command\FreeTableHandler;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableId;
+use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\ConsumedEvents;
 use App\Providers\BoundedContexts\SharedKernel\Application\Processor;
 
 /**
@@ -29,7 +30,7 @@ final class FreeTableProcessor implements Processor
         $position = $this->checkpoints->get(self::CHECKPOINT);
 
         foreach ($this->events->readAllFrom($position) as $event) {
-            if ($event->type->is('billing.bill_paid')) {
+            if ($event->type->is(ConsumedEvents::BILLING_BILL_PAID)) {
                 $this->handler->handle(new FreeTable(new TableId((string) $event->payload['coverRef'])));
             }
 

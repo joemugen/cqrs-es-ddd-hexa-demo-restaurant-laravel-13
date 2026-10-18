@@ -19,7 +19,7 @@ final class KitchenSeeder extends Seeder
         ];
 
         foreach ($dishes as $dish) {
-            DB::table('kitchen_dishes')->insert([
+            DB::table(Tables::DISHES)->insert([
                 'id' => $dish['id'],
                 'name' => $dish['name'],
                 'station' => $dish['station'],

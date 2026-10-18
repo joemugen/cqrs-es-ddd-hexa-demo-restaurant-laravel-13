@@ -10,6 +10,7 @@ use App\Providers\BoundedContexts\FrontOfHouse\Application\Command\Response\Dish
 use App\Providers\BoundedContexts\FrontOfHouse\Application\MenuRepository;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\PassRepository;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\UnitOfWork;
+use App\Providers\BoundedContexts\FrontOfHouse\Domain\FrontOfHouseEvent;
 use App\Providers\BoundedContexts\SharedKernel\Application\Command;
 use App\Providers\BoundedContexts\SharedKernel\Application\CommandHandler;
 
@@ -34,7 +35,7 @@ final readonly class ServeDishHandler implements CommandHandler
             $dish->serve();
             $item = $this->menus->findByName($dish->dishName());
             $this->passes->save($dish);
-            $this->bus->publish(IntegrationEvent::named('front_of_house.dish_served', [
+            $this->bus->publish(IntegrationEvent::named(FrontOfHouseEvent::DISH_SERVED, [
                 'tableId' => (string) $dish->tableId(),
                 'description' => (string) $item->name(),
                 'quantity' => $dish->quantity(),

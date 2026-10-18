@@ -8,6 +8,7 @@ use App\Providers\BoundedContexts\Billing\Application\Command\PrepareBill;
 use App\Providers\BoundedContexts\Billing\Application\Command\PrepareBillHandler;
 use App\Providers\BoundedContexts\Billing\Domain\BillId;
 use App\Providers\BoundedContexts\Billing\Domain\CoverRef;
+use App\Providers\BoundedContexts\Billing\Infrastructure\ConsumedEvents;
 use App\Providers\BoundedContexts\EventStore\Domain\CheckpointStore;
 use App\Providers\BoundedContexts\EventStore\Domain\EventStore;
 use App\Providers\BoundedContexts\SharedKernel\Application\Processor;
@@ -31,7 +32,7 @@ final class PrepareBillProcessor implements Processor
         $position = $this->checkpoints->get(self::CHECKPOINT);
 
         foreach ($this->events->readAllFrom($position) as $event) {
-            if ($event->type->is('front_of_house.bill_requested')) {
+            if ($event->type->is(ConsumedEvents::FRONT_OF_HOUSE_BILL_REQUESTED)) {
                 $this->handler->handle(new PrepareBill(
                     billId: new BillId((string) Str::ulid()),
                     coverRef: new CoverRef((string) $event->payload['tableId']),

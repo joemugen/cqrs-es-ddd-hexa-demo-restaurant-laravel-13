@@ -1,6 +1,7 @@
 <?php
 
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\FrontOfHouseSeeder;
+use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Tables;
 use App\Providers\BoundedContexts\Kitchen\Infrastructure\KitchenSeeder;
 use Illuminate\Support\Facades\DB;
 
@@ -110,5 +111,5 @@ test('a service runs from the welcome to the departure', function () {
         ->assertUnprocessable()
         ->assertJson(['message' => 'A paid bill cannot be changed.']);
 
-    expect(DB::table('foh_to_serve')->whereNull('served_at')->count())->toBe(0);
+    expect(DB::table(Tables::TO_SERVE)->whereNull('served_at')->count())->toBe(0);
 });

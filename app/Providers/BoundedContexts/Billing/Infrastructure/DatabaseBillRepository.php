@@ -8,6 +8,7 @@ use App\Providers\BoundedContexts\Billing\Application\BillRepository;
 use App\Providers\BoundedContexts\Billing\Domain\Bill;
 use App\Providers\BoundedContexts\Billing\Domain\BillId;
 use App\Providers\BoundedContexts\Billing\Domain\BillingException;
+use App\Providers\BoundedContexts\Billing\Domain\BillStatus;
 use App\Providers\BoundedContexts\Billing\Domain\CoverRef;
 use App\Providers\BoundedContexts\Billing\Domain\Payment;
 use App\Providers\BoundedContexts\Billing\Domain\ServedDish;
@@ -18,7 +19,7 @@ final class DatabaseBillRepository implements BillRepository
 {
     public function get(BillId $id): Bill
     {
-        $row = DB::table('billing_bills')->where('id', (string) $id)->first();
+        $row = DB::table(Tables::BILLS)->where('id', (string) $id)->first();
 
         if ($row === null) {
             throw new BillingException('Unknown bill :id.', 404, ['id' => $id]);
@@ -29,9 +30,9 @@ final class DatabaseBillRepository implements BillRepository
 
     public function save(Bill $bill): void
     {
-        DB::table('billing_bills')->updateOrInsert(['id' => (string) $bill->id()], [
+        DB::table(Tables::BILLS)->updateOrInsert(['id' => (string) $bill->id()], [
             'cover_ref' => (string) $bill->coverRef(),
-            'status' => $bill->isPaid() ? 'paid' : 'open',
+            'status' => $bill->isPaid() ? BillStatus::PAID : BillStatus::OPEN,
             'food_gross_cents' => $bill->foodGrossCents(),
             'alcohol_gross_cents' => $bill->alcoholGrossCents(),
             'vat_cents' => $bill->vatCents(),
@@ -40,10 +41,10 @@ final class DatabaseBillRepository implements BillRepository
             'tip_cents' => $bill->tipCents(),
         ]);
 
-        DB::table('billing_bill_lines')->where('bill_id', (string) $bill->id())->delete();
+        DB::table(Tables::BILL_LINES)->where('bill_id', (string) $bill->id())->delete();
 
         foreach ($bill->lines() as $line) {
-            DB::table('billing_bill_lines')->insert([
+            DB::table(Tables::BILL_LINES)->insert([
                 'bill_id' => (string) $bill->id(),
                 'source_key' => (string) $line->sourceKey,
                 'description' => $line->description,
@@ -54,10 +55,10 @@ final class DatabaseBillRepository implements BillRepository
             ]);
         }
 
-        DB::table('billing_payments')->where('bill_id', (string) $bill->id())->delete();
+        DB::table(Tables::PAYMENTS)->where('bill_id', (string) $bill->id())->delete();
 
         foreach ($bill->payments() as $payment) {
-            DB::table('billing_payments')->insert([
+            DB::table(Tables::PAYMENTS)->insert([
                 'bill_id' => (string) $bill->id(),
                 'amount_cents' => $payment->amountCents,
                 'tip_cents' => $payment->tipCents,
@@ -67,9 +68,9 @@ final class DatabaseBillRepository implements BillRepository
 
     public function openFor(CoverRef $coverRef): ?Bill
     {
-        $row = DB::table('billing_bills')
+        $row = DB::table(Tables::BILLS)
             ->where('cover_ref', (string) $coverRef)
-            ->where('status', 'open')
+            ->where('status', BillStatus::OPEN)
             ->first();
 
         return $row === null ? null : $this->bill($row);
@@ -77,7 +78,7 @@ final class DatabaseBillRepository implements BillRepository
 
     private function bill(object $row): Bill
     {
-        $lines = DB::table('billing_bill_lines')
+        $lines = DB::table(Tables::BILL_LINES)
             ->where('bill_id', $row->id)
             ->orderBy('id')
             ->get()
@@ -90,7 +91,7 @@ final class DatabaseBillRepository implements BillRepository
             ))
             ->all();
 
-        $payments = DB::table('billing_payments')
+        $payments = DB::table(Tables::PAYMENTS)
             ->where('bill_id', $row->id)
             ->orderBy('id')
             ->get()
@@ -105,7 +106,7 @@ final class DatabaseBillRepository implements BillRepository
             new CoverRef((string) $row->cover_ref),
             $lines,
             $payments,
-            $row->status === 'paid',
+            $row->status === BillStatus::PAID,
         );
     }
 }

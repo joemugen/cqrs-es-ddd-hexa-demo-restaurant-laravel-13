@@ -11,7 +11,7 @@ final class Vat
 {
     public static function cents(int $grossCents, string $kind): int
     {
-        $rate = $kind === 'alcohol' ? 20 : 10;
+        $rate = $kind === DishKind::ALCOHOL ? 20 : 10;
 
         return intdiv($grossCents * $rate, 100 + $rate);
     }

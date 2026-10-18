@@ -9,6 +9,7 @@ use App\Providers\BoundedContexts\EventStore\Domain\IntegrationEvent;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\Command\Response\BillRequested;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\TableRepository;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\UnitOfWork;
+use App\Providers\BoundedContexts\FrontOfHouse\Domain\FrontOfHouseEvent;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\FrontOfHouseException;
 use App\Providers\BoundedContexts\SharedKernel\Application\Command;
 use App\Providers\BoundedContexts\SharedKernel\Application\CommandHandler;
@@ -35,7 +36,7 @@ final readonly class RequestBillHandler implements CommandHandler
                 throw new FrontOfHouseException('This table has no guests to bill.');
             }
 
-            $this->bus->publish(IntegrationEvent::named('front_of_house.bill_requested', [
+            $this->bus->publish(IntegrationEvent::named(FrontOfHouseEvent::BILL_REQUESTED, [
                 'tableId' => (string) $table->id(),
             ]));
         });

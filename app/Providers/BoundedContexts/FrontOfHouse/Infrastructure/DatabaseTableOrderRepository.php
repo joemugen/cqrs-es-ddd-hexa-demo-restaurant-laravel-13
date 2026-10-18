@@ -12,13 +12,13 @@ final class DatabaseTableOrderRepository implements TableOrderRepository
 {
     public function save(TableOrder $order): void
     {
-        DB::table('foh_table_orders')->insert([
+        DB::table(Tables::TABLE_ORDERS)->insert([
             'id' => (string) $order->id(),
             'table_id' => (string) $order->tableId(),
         ]);
 
         foreach ($order->lines() as $line) {
-            DB::table('foh_table_order_lines')->insert([
+            DB::table(Tables::TABLE_ORDER_LINES)->insert([
                 'id' => (string) $line->lineId,
                 'table_order_id' => (string) $order->id(),
                 'menu_item_id' => (string) $line->menuItemId,

@@ -9,6 +9,7 @@ use App\Providers\BoundedContexts\FrontOfHouse\Application\Query\Response\MenuEn
 use App\Providers\BoundedContexts\FrontOfHouse\Application\Query\Response\MenuView;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\DishName;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\MenuItemId;
+use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Tables;
 use App\Providers\BoundedContexts\SharedKernel\Application\Query;
 use App\Providers\BoundedContexts\SharedKernel\Application\QueryHandler;
 use Illuminate\Support\Facades\DB;
@@ -23,7 +24,7 @@ final class ListMenuHandler implements QueryHandler
      */
     public function handle(Query $query): MenuView
     {
-        return new MenuView(DB::table('foh_menu_items')
+        return new MenuView(DB::table(Tables::MENU_ITEMS)
             ->orderBy('name')
             ->get()
             ->map(function (object $row): MenuEntry {

@@ -9,6 +9,7 @@ use App\Providers\BoundedContexts\EventStore\Domain\IntegrationEvent;
 use App\Providers\BoundedContexts\Kitchen\Application\Command\Response\DishEightySixed;
 use App\Providers\BoundedContexts\Kitchen\Application\DishRepository;
 use App\Providers\BoundedContexts\Kitchen\Application\UnitOfWork;
+use App\Providers\BoundedContexts\Kitchen\Domain\KitchenEvent;
 use App\Providers\BoundedContexts\SharedKernel\Application\Command;
 use App\Providers\BoundedContexts\SharedKernel\Application\CommandHandler;
 
@@ -31,7 +32,7 @@ final readonly class DeclareDishEightySixedHandler implements CommandHandler
             $dish = $this->dishes->get($command->dishId);
             $dish->eightySix();
             $this->dishes->save($dish);
-            $this->bus->publish(IntegrationEvent::named('kitchen.dish_eighty_sixed', [
+            $this->bus->publish(IntegrationEvent::named(KitchenEvent::DISH_EIGHTY_SIXED, [
                 'dishName' => (string) $dish->name(),
             ]));
         });
