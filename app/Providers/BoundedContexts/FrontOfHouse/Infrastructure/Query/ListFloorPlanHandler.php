@@ -10,19 +10,20 @@ use App\Providers\BoundedContexts\FrontOfHouse\Application\Query\Response\FloorP
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableId;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableLabel;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Tables;
-use App\Providers\BoundedContexts\SharedKernel\Application\Query;
+use App\Providers\BoundedContexts\SharedKernel\Application\Bus\Attribute\AsQueryHandler;
 use App\Providers\BoundedContexts\SharedKernel\Application\QueryHandler;
 use Illuminate\Support\Facades\DB;
 
 /**
  * @implements QueryHandler<ListFloorPlan, FloorPlanView>
  */
+#[AsQueryHandler(ListFloorPlan::class)]
 final class ListFloorPlanHandler implements QueryHandler
 {
     /**
      * The screen reads the floor-plan table. It never loads a Table.
      */
-    public function handle(Query $query): FloorPlanView
+    public function __invoke(ListFloorPlan $query): FloorPlanView
     {
         return new FloorPlanView(DB::table(Tables::FLOOR_PLAN)
             ->orderBy('table_id')

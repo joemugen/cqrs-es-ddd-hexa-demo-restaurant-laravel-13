@@ -7,7 +7,6 @@ namespace App\Providers\BoundedContexts\Kitchen\Infrastructure\Processors;
 use App\Providers\BoundedContexts\EventStore\Domain\CheckpointStore;
 use App\Providers\BoundedContexts\EventStore\Domain\EventStore;
 use App\Providers\BoundedContexts\Kitchen\Application\Command\OpenKitchenTicket;
-use App\Providers\BoundedContexts\Kitchen\Application\Command\OpenKitchenTicketHandler;
 use App\Providers\BoundedContexts\Kitchen\Application\DishCatalog;
 use App\Providers\BoundedContexts\Kitchen\Domain\DishName;
 use App\Providers\BoundedContexts\Kitchen\Domain\KitchenTicketId;
@@ -15,6 +14,7 @@ use App\Providers\BoundedContexts\Kitchen\Domain\LineId;
 use App\Providers\BoundedContexts\Kitchen\Domain\OrderedLine;
 use App\Providers\BoundedContexts\Kitchen\Domain\PartyRef;
 use App\Providers\BoundedContexts\Kitchen\Domain\TableLabel;
+use App\Providers\BoundedContexts\Kitchen\Infrastructure\Bus\KitchenCommandBus;
 use App\Providers\BoundedContexts\Kitchen\Infrastructure\ConsumedEvents;
 use App\Providers\BoundedContexts\SharedKernel\Application\Processor;
 
@@ -29,7 +29,7 @@ final class OpenKitchenTicketProcessor implements Processor
         private EventStore $events,
         private CheckpointStore $checkpoints,
         private DishCatalog $dishes,
-        private OpenKitchenTicketHandler $handler,
+        private KitchenCommandBus $bus,
     ) {}
 
     public function run(): void
@@ -38,7 +38,7 @@ final class OpenKitchenTicketProcessor implements Processor
 
         foreach ($this->events->readAllFrom($position) as $event) {
             if ($event->type->is(ConsumedEvents::FRONT_OF_HOUSE_TABLE_ORDER_PLACED)) {
-                $this->handler->handle(new OpenKitchenTicket(
+                $this->bus->dispatch(new OpenKitchenTicket(
                     ticketId: new KitchenTicketId((string) $event->payload['tableOrderId']),
                     partyRef: new PartyRef((string) $event->payload['tableId']),
                     tableLabel: new TableLabel((string) $event->payload['tableLabel']),

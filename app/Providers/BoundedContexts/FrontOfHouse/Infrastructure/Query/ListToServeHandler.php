@@ -14,16 +14,17 @@ use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableId;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableLabel;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\TicketId;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Tables;
-use App\Providers\BoundedContexts\SharedKernel\Application\Query;
+use App\Providers\BoundedContexts\SharedKernel\Application\Bus\Attribute\AsQueryHandler;
 use App\Providers\BoundedContexts\SharedKernel\Application\QueryHandler;
 use Illuminate\Support\Facades\DB;
 
 /**
  * @implements QueryHandler<ListToServe, ToServeView>
  */
+#[AsQueryHandler(ListToServe::class)]
 final class ListToServeHandler implements QueryHandler
 {
-    public function handle(Query $query): ToServeView
+    public function __invoke(ListToServe $query): ToServeView
     {
         return new ToServeView(DB::table(Tables::TO_SERVE)
             ->whereNull('served_at')

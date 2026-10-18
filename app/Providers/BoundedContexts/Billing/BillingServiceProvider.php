@@ -6,10 +6,10 @@ namespace App\Providers\BoundedContexts\Billing;
 
 use App\Providers\BoundedContexts\Billing\Application\BillRepository;
 use App\Providers\BoundedContexts\Billing\Application\ServedLedger;
-use App\Providers\BoundedContexts\Billing\Application\UnitOfWork;
+use App\Providers\BoundedContexts\Billing\Infrastructure\Bus\BillingCommandBus;
+use App\Providers\BoundedContexts\Billing\Infrastructure\Bus\BillingQueryBus;
 use App\Providers\BoundedContexts\Billing\Infrastructure\DatabaseBillRepository;
 use App\Providers\BoundedContexts\Billing\Infrastructure\DatabaseServedLedger;
-use App\Providers\BoundedContexts\Billing\Infrastructure\DatabaseUnitOfWork;
 use App\Providers\BoundedContexts\Billing\Infrastructure\Processors\PrepareBillProcessor;
 use App\Providers\BoundedContexts\Billing\Infrastructure\Processors\RecordServedDishes;
 use App\Providers\BoundedContexts\EventStore\Application\AfterAppend;
@@ -24,7 +24,9 @@ final class BillingServiceProvider extends ServiceProvider
 
         $this->app->bind(BillRepository::class, DatabaseBillRepository::class);
         $this->app->bind(ServedLedger::class, DatabaseServedLedger::class);
-        $this->app->bind(UnitOfWork::class, DatabaseUnitOfWork::class);
+
+        $this->app->singleton(BillingCommandBus::class);
+        $this->app->singleton(BillingQueryBus::class);
     }
 
     public function boot(): void

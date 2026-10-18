@@ -10,14 +10,14 @@ use App\Providers\BoundedContexts\FrontOfHouse\Application\MenuRepository;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\PassRepository;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\TableOrderRepository;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\TableRepository;
-use App\Providers\BoundedContexts\FrontOfHouse\Application\UnitOfWork;
+use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Bus\FrontOfHouseCommandBus;
+use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Bus\FrontOfHouseQueryBus;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Console\RunProjections;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\DatabaseFloorPlan;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\DatabaseMenuRepository;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\DatabasePassRepository;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\DatabaseTableOrderRepository;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\DatabaseTableRepository;
-use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\DatabaseUnitOfWork;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Processors\FreeTableProcessor;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Processors\MarkMenuItemUnavailableProcessor;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Projection\ProjectToServeList;
@@ -35,7 +35,9 @@ final class FrontOfHouseServiceProvider extends ServiceProvider
         $this->app->bind(TableOrderRepository::class, DatabaseTableOrderRepository::class);
         $this->app->bind(FloorPlan::class, DatabaseFloorPlan::class);
         $this->app->bind(PassRepository::class, DatabasePassRepository::class);
-        $this->app->bind(UnitOfWork::class, DatabaseUnitOfWork::class);
+
+        $this->app->singleton(FrontOfHouseCommandBus::class);
+        $this->app->singleton(FrontOfHouseQueryBus::class);
     }
 
     public function boot(): void

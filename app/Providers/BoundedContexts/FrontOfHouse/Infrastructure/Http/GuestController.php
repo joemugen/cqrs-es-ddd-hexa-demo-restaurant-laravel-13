@@ -5,20 +5,20 @@ declare(strict_types=1);
 namespace App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Http;
 
 use App\Providers\BoundedContexts\FrontOfHouse\Application\Command\SeatGuests;
-use App\Providers\BoundedContexts\FrontOfHouse\Application\Command\SeatGuestsHandler;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableId;
+use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Bus\FrontOfHouseCommandBus;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 final class GuestController
 {
-    public function store(Request $request, string $tableId, SeatGuestsHandler $handler): JsonResponse
+    public function store(Request $request, string $tableId, FrontOfHouseCommandBus $bus): JsonResponse
     {
         $validated = $request->validate([
             'guestCount' => ['required', 'integer'],
         ]);
 
-        return response()->json($handler->handle(new SeatGuests(
+        return response()->json($bus->dispatch(new SeatGuests(
             tableId: new TableId($tableId),
             guestCount: (int) $validated['guestCount'],
         )));

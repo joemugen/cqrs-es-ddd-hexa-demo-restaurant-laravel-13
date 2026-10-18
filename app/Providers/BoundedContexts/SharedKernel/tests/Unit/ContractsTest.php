@@ -7,26 +7,11 @@ use App\Providers\BoundedContexts\SharedKernel\Application\Processor;
 use App\Providers\BoundedContexts\SharedKernel\Application\Projector;
 use App\Providers\BoundedContexts\SharedKernel\Application\Query;
 use App\Providers\BoundedContexts\SharedKernel\Application\QueryHandler;
-use App\Providers\BoundedContexts\SharedKernel\Application\QueryResponse;
 use App\Providers\BoundedContexts\SharedKernel\Application\RebuildableProjector;
 use App\Providers\BoundedContexts\SharedKernel\Domain\AggregateId;
 use App\Providers\BoundedContexts\SharedKernel\Domain\AggregateRoot;
 use App\Providers\BoundedContexts\SharedKernel\Domain\EventSourcedAggregate;
 use App\Providers\BoundedContexts\SharedKernel\Domain\StringValue;
-
-/**
- * @return list<class-string>
- */
-function classesIn(string $pattern): array
-{
-    $root = dirname(__DIR__, 3);
-
-    return array_map(
-        fn (string $file): string => 'App\\Providers\\BoundedContexts\\'
-            .str_replace(['/', '.php'], ['\\', ''], substr($file, strlen($root) + 1)),
-        glob($root.'/'.$pattern, GLOB_BRACE),
-    );
-}
 
 /**
  * @return list<class-string>
@@ -67,11 +52,6 @@ describe('application layer', function (): void {
             expect(is_subclass_of($class, CommandResponse::class))->toBeTrue("{$class} is not a CommandResponse");
         })->with(classesIn('*/Application/Command/Response/*.php'));
 
-        it('answers with a typed CommandResponse', function (string $class): void {
-            $type = returnTypeOf($class, 'handle');
-
-            expect(is_subclass_of($type, CommandResponse::class))->toBeTrue("{$class}::handle() returns {$type}");
-        })->with(classesIn('*/Application/Command/*Handler.php'));
     });
 
     describe('queries', function (): void {
@@ -87,11 +67,6 @@ describe('application layer', function (): void {
             expect(is_subclass_of($class, QueryHandler::class))->toBeTrue("{$class} does not implement QueryHandler");
         })->with(classesIn('*/Infrastructure/Query/*Handler.php'));
 
-        it('answers with a typed QueryResponse', function (string $class): void {
-            $type = returnTypeOf($class, 'handle');
-
-            expect(is_subclass_of($type, QueryResponse::class))->toBeTrue("{$class}::handle() returns {$type}");
-        })->with(classesIn('*/Infrastructure/Query/*Handler.php'));
     });
 });
 

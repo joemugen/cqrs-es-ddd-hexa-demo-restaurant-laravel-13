@@ -10,19 +10,20 @@ use App\Providers\BoundedContexts\FrontOfHouse\Application\Query\Response\MenuVi
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\DishName;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\MenuItemId;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Tables;
-use App\Providers\BoundedContexts\SharedKernel\Application\Query;
+use App\Providers\BoundedContexts\SharedKernel\Application\Bus\Attribute\AsQueryHandler;
 use App\Providers\BoundedContexts\SharedKernel\Application\QueryHandler;
 use Illuminate\Support\Facades\DB;
 
 /**
  * @implements QueryHandler<ListMenu, MenuView>
  */
+#[AsQueryHandler(ListMenu::class)]
 final class ListMenuHandler implements QueryHandler
 {
     /**
      * The menu the guest reads. It is not the kitchen ticket.
      */
-    public function handle(Query $query): MenuView
+    public function __invoke(ListMenu $query): MenuView
     {
         return new MenuView(DB::table(Tables::MENU_ITEMS)
             ->orderBy('name')

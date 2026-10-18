@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace App\Providers\BoundedContexts\Billing\Infrastructure\Processors;
 
 use App\Providers\BoundedContexts\Billing\Application\Command\PrepareBill;
-use App\Providers\BoundedContexts\Billing\Application\Command\PrepareBillHandler;
 use App\Providers\BoundedContexts\Billing\Domain\BillId;
 use App\Providers\BoundedContexts\Billing\Domain\CoverRef;
+use App\Providers\BoundedContexts\Billing\Infrastructure\Bus\BillingCommandBus;
 use App\Providers\BoundedContexts\Billing\Infrastructure\ConsumedEvents;
 use App\Providers\BoundedContexts\EventStore\Domain\CheckpointStore;
 use App\Providers\BoundedContexts\EventStore\Domain\EventStore;
@@ -24,7 +24,7 @@ final class PrepareBillProcessor implements Processor
     public function __construct(
         private EventStore $events,
         private CheckpointStore $checkpoints,
-        private PrepareBillHandler $handler,
+        private BillingCommandBus $bus,
     ) {}
 
     public function run(): void
@@ -33,7 +33,7 @@ final class PrepareBillProcessor implements Processor
 
         foreach ($this->events->readAllFrom($position) as $event) {
             if ($event->type->is(ConsumedEvents::FRONT_OF_HOUSE_BILL_REQUESTED)) {
-                $this->handler->handle(new PrepareBill(
+                $this->bus->dispatch(new PrepareBill(
                     billId: new BillId((string) Str::ulid()),
                     coverRef: new CoverRef((string) $event->payload['tableId']),
                 ));

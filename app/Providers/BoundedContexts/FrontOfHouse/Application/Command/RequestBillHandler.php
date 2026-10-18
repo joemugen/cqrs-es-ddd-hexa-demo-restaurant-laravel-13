@@ -8,38 +8,33 @@ use App\Providers\BoundedContexts\EventStore\Application\IntegrationBus;
 use App\Providers\BoundedContexts\EventStore\Domain\IntegrationEvent;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\Command\Response\BillRequested;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\TableRepository;
-use App\Providers\BoundedContexts\FrontOfHouse\Application\UnitOfWork;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\FrontOfHouseEvent;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\FrontOfHouseException;
-use App\Providers\BoundedContexts\SharedKernel\Application\Command;
+use App\Providers\BoundedContexts\SharedKernel\Application\Bus\Attribute\AsCommandHandler;
 use App\Providers\BoundedContexts\SharedKernel\Application\CommandHandler;
 
 /**
  * @implements CommandHandler<RequestBill, BillRequested>
  */
+#[AsCommandHandler(RequestBill::class)]
 final readonly class RequestBillHandler implements CommandHandler
 {
     public function __construct(
         private TableRepository $tables,
         private IntegrationBus $bus,
-        private UnitOfWork $unitOfWork,
     ) {}
 
-    public function handle(Command $command): BillRequested
+    public function __invoke(RequestBill $command): BillRequested
     {
-        assert($command instanceof RequestBill);
+        $table = $this->tables->get($command->tableId);
 
-        $this->unitOfWork->execute(function () use ($command): void {
-            $table = $this->tables->get($command->tableId);
+        if (! $table->hasGuests()) {
+            throw new FrontOfHouseException('This table has no guests to bill.');
+        }
 
-            if (! $table->hasGuests()) {
-                throw new FrontOfHouseException('This table has no guests to bill.');
-            }
-
-            $this->bus->publish(IntegrationEvent::named(FrontOfHouseEvent::BILL_REQUESTED, [
-                'tableId' => (string) $table->id(),
-            ]));
-        });
+        $this->bus->publish(IntegrationEvent::named(FrontOfHouseEvent::BILL_REQUESTED, [
+            'tableId' => (string) $table->id(),
+        ]));
 
         return new BillRequested($command->tableId);
     }

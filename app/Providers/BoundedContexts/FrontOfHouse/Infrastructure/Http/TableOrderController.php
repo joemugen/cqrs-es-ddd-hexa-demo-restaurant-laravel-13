@@ -5,18 +5,18 @@ declare(strict_types=1);
 namespace App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Http;
 
 use App\Providers\BoundedContexts\FrontOfHouse\Application\Command\PlaceTableOrder;
-use App\Providers\BoundedContexts\FrontOfHouse\Application\Command\PlaceTableOrderHandler;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\MenuItemId;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\RequestedLine;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableId;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableOrderId;
+use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Bus\FrontOfHouseCommandBus;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
 final class TableOrderController
 {
-    public function store(Request $request, string $tableId, PlaceTableOrderHandler $handler): JsonResponse
+    public function store(Request $request, string $tableId, FrontOfHouseCommandBus $bus): JsonResponse
     {
         $validated = $request->validate([
             'lines' => ['present', 'array'],
@@ -31,7 +31,7 @@ final class TableOrderController
             $line['course'],
         ), $validated['lines']);
 
-        return response()->json($handler->handle(new PlaceTableOrder(
+        return response()->json($bus->dispatch(new PlaceTableOrder(
             tableOrderId: new TableOrderId((string) Str::ulid()),
             tableId: new TableId($tableId),
             lines: $lines,

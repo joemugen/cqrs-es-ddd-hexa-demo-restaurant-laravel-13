@@ -9,6 +9,7 @@ use App\Providers\BoundedContexts\SharedKernel\Application\Bus\CommandMiddleware
 use App\Providers\BoundedContexts\SharedKernel\Application\Bus\HandlerMap;
 use App\Providers\BoundedContexts\SharedKernel\Application\Command;
 use App\Providers\BoundedContexts\SharedKernel\Application\CommandResponse;
+use App\Providers\BoundedContexts\SharedKernel\Infrastructure\Bus\Middleware\TransactionMiddleware;
 use Closure;
 use Illuminate\Contracts\Container\Container;
 
@@ -38,13 +39,13 @@ abstract class MiddlewareCommandBus implements CommandBus
     abstract protected function handlers(): array;
 
     /**
-     * Outermost first.
+     * The shared stack, outermost first. A context overrides it to add its own.
      *
      * @return list<class-string<CommandMiddleware>>
      */
     protected function middleware(): array
     {
-        return [];
+        return [TransactionMiddleware::class];
     }
 
     /**

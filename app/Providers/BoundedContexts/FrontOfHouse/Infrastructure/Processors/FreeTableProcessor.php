@@ -7,8 +7,8 @@ namespace App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Processors;
 use App\Providers\BoundedContexts\EventStore\Domain\CheckpointStore;
 use App\Providers\BoundedContexts\EventStore\Domain\EventStore;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\Command\FreeTable;
-use App\Providers\BoundedContexts\FrontOfHouse\Application\Command\FreeTableHandler;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableId;
+use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Bus\FrontOfHouseCommandBus;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\ConsumedEvents;
 use App\Providers\BoundedContexts\SharedKernel\Application\Processor;
 
@@ -22,7 +22,7 @@ final class FreeTableProcessor implements Processor
     public function __construct(
         private EventStore $events,
         private CheckpointStore $checkpoints,
-        private FreeTableHandler $handler,
+        private FrontOfHouseCommandBus $bus,
     ) {}
 
     public function run(): void
@@ -31,7 +31,7 @@ final class FreeTableProcessor implements Processor
 
         foreach ($this->events->readAllFrom($position) as $event) {
             if ($event->type->is(ConsumedEvents::BILLING_BILL_PAID)) {
-                $this->handler->handle(new FreeTable(new TableId((string) $event->payload['coverRef'])));
+                $this->bus->dispatch(new FreeTable(new TableId((string) $event->payload['coverRef'])));
             }
 
             $position = $event->position;

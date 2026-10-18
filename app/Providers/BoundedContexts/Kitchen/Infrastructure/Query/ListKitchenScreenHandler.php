@@ -14,16 +14,17 @@ use App\Providers\BoundedContexts\Kitchen\Domain\LineId;
 use App\Providers\BoundedContexts\Kitchen\Domain\PartyRef;
 use App\Providers\BoundedContexts\Kitchen\Domain\TableLabel;
 use App\Providers\BoundedContexts\Kitchen\Infrastructure\Tables;
-use App\Providers\BoundedContexts\SharedKernel\Application\Query;
+use App\Providers\BoundedContexts\SharedKernel\Application\Bus\Attribute\AsQueryHandler;
 use App\Providers\BoundedContexts\SharedKernel\Application\QueryHandler;
 use Illuminate\Support\Facades\DB;
 
 /**
  * @implements QueryHandler<ListKitchenScreen, KitchenScreenView>
  */
+#[AsQueryHandler(ListKitchenScreen::class)]
 final class ListKitchenScreenHandler implements QueryHandler
 {
-    public function handle(Query $query): KitchenScreenView
+    public function __invoke(ListKitchenScreen $query): KitchenScreenView
     {
         $lines = DB::table(Tables::SCREEN_LINES)->orderBy('id')->get()->groupBy('ticket_id');
 
