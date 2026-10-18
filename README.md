@@ -67,7 +67,7 @@ A Pest test in `SharedKernel/tests/Unit/ContractsTest.php` walks every context a
 
 ## Buses
 
-Controllers and processors do not call a handler. They send a message on their context bus: `FrontOfHouseCommandBus::dispatch(new SeatGuests(...))`, `FrontOfHouseQueryBus::ask(new ListFloorPlan)`. Each bus extends `MiddlewareCommandBus` or `MiddlewareQueryBus` from the SharedKernel and lists its handlers.
+Controllers (one single-action class per use case, such as `SeatGuestsController` or `ShowBillController`) and processors do not call a handler. They send a message on their context bus: `FrontOfHouseCommandBus::dispatch(new SeatGuests(...))`, `FrontOfHouseQueryBus::ask(new ListFloorPlan)`. Each bus extends `MiddlewareCommandBus` or `MiddlewareQueryBus` from the SharedKernel and lists its handlers.
 
 A handler declares what it handles and takes that type, so no `assert` is needed:
 
@@ -78,7 +78,9 @@ final readonly class SeatGuestsHandler implements CommandHandler
     public function __invoke(SeatGuests $command): TableSeated
 ```
 
-`HandlerMap` checks the attribute against the signature (parameter, response type, duplicates) when a bus is built, and a feature test builds every bus and checks it lists every handler of its context.
+A bus does not list its handlers. `ContextDiscovery` scans `Application/Command` and `Infrastructure/Query` of the context the bus lives in. `HandlerMap` checks each attribute against the signature (parameter, response type, duplicates) when a bus is built, and a feature test checks that every handler of a context is found.
+
+`php artisan contexts:cache` writes the discovery to `bootstrap/cache/contexts.php` and `contexts:clear` removes it. Both run with `php artisan optimize` and `optimize:clear`. Without the file, the directories are scanned on demand.
 
 Middleware wraps the handler, outermost first:
 
@@ -89,6 +91,24 @@ Middleware wraps the handler, outermost first:
 | Kitchen commands | adds `RetryOnConflict` outside the transaction, so a ticket changed by someone else is read and decided again, three attempts, then a 409 |
 
 `#[Authorize('ability')]` on a command or a query is checked against the Gate before the handler runs. A message without it is not guarded. A context adds middleware by overriding `outsideTransaction()` (commands) or `middleware()`.
+
+## Consuming events
+
+Processors and projectors implement `EventConsumer::consume()`: read the log from a checkpoint, react, return how many events were handled. What wakes them depends on `EVENT_CONSUMPTION`.
+
+| Mode | Who calls `consume()` |
+| --- | --- |
+| `sync` (default) | The request that appended the fact, right after its transaction commits. Each consumer has its own transaction, and a failure is reported without rolling the writer back. The "to serve" projector is marked `#[RunsOnQueue]`: it dispatches its job and waits for `queue:work`. |
+| `worker` | Nothing in the request. One long-running command per context reads the log and waits for more. |
+
+```bash
+php artisan kitchen:consume                    # standby, one pass per second when idle
+php artisan front-of-house:consume --sleep=2
+php artisan billing:consume --stop-when-empty  # drain and exit
+php artisan kitchen:consume --max-time=3600    # exit after an hour, let the supervisor restart it
+```
+
+The worker runs every consumer of its context on each pass, each in its own transaction. A failing consumer is reported and retried on the next pass, and the others keep going. On SIGTERM or SIGINT it finishes its pass and exits. Run one worker per context: two would consume the same events. The consumers are discovered in `Infrastructure/Processors` and `Infrastructure/Projection`, so a new one needs no registration.
 
 ## Install
 
@@ -134,12 +154,12 @@ The kitchen screen catches up after the order's transaction commits, before the 
 | --- | --- |
 | 1. Seat guests and the floor plan | `app/Providers/BoundedContexts/FrontOfHouse/Application/Command/SeatGuestsHandler.php#L27-L35` |
 | 2. Place a table order | `app/Providers/BoundedContexts/FrontOfHouse/Application/Command/PlaceTableOrderHandler.php#L33-L51` |
-| 3. Open a kitchen ticket | `app/Providers/BoundedContexts/Kitchen/Infrastructure/Processors/OpenKitchenTicketProcessor.php#L35-L53`, `app/Providers/BoundedContexts/Kitchen/Domain/KitchenTicket.php#L40-L55` |
+| 3. Open a kitchen ticket | `app/Providers/BoundedContexts/Kitchen/Infrastructure/Processors/OpenKitchenTicketProcessor.php#L35-L57`, `app/Providers/BoundedContexts/Kitchen/Domain/KitchenTicket.php#L40-L55` |
 | 4. Fire, ready, kitchen screen | `app/Providers/BoundedContexts/Kitchen/Domain/KitchenTicket.php#L71-L126`, `app/Providers/BoundedContexts/Kitchen/Infrastructure/Projection/KitchenScreenProjector.php#L57-L105` |
-| 5. Queued pass, then serve | `app/Providers/BoundedContexts/FrontOfHouse/Infrastructure/Projection/ToServeProjector.php#L26-L50`, `app/Providers/BoundedContexts/FrontOfHouse/Infrastructure/Projection/ProjectToServeList.php#L10-L18`, `app/Providers/BoundedContexts/FrontOfHouse/Application/Command/ServeDishHandler.php#L28-L44` |
+| 5. Queued pass, then serve | `app/Providers/BoundedContexts/FrontOfHouse/Infrastructure/Projection/ToServeProjector.php#L28-L52`, `app/Providers/BoundedContexts/FrontOfHouse/Infrastructure/Projection/ProjectToServeList.php#L10-L18`, `app/Providers/BoundedContexts/FrontOfHouse/Application/Command/ServeDishHandler.php#L28-L44` |
 | 6. Second order | `tests/Feature/FullServiceTest.php#L53-L68` |
-| 7. 86 the menu | `app/Providers/BoundedContexts/Kitchen/Domain/Dish.php#L29-L36`, `app/Providers/BoundedContexts/Kitchen/Application/Command/DeclareDishEightySixedHandler.php#L26-L36`, `app/Providers/BoundedContexts/FrontOfHouse/Infrastructure/Processors/MarkMenuItemUnavailableProcessor.php#L27-L42` |
-| 8. Bill, pay, free the table | `app/Providers/BoundedContexts/FrontOfHouse/Application/Command/RequestBillHandler.php#L27-L40`, `app/Providers/BoundedContexts/Billing/Infrastructure/Processors/RecordServedDishes.php#L29-L49`, `app/Providers/BoundedContexts/Billing/Application/Command/PrepareBillHandler.php#L27-L49`, `app/Providers/BoundedContexts/Billing/Domain/Bill.php#L44-L67`, `app/Providers/BoundedContexts/Billing/Application/Command/PayBillHandler.php#L26-L40`, `app/Providers/BoundedContexts/FrontOfHouse/Application/Command/FreeTableHandler.php#L27-L35` |
+| 7. 86 the menu | `app/Providers/BoundedContexts/Kitchen/Domain/Dish.php#L29-L36`, `app/Providers/BoundedContexts/Kitchen/Application/Command/DeclareDishEightySixedHandler.php#L26-L36`, `app/Providers/BoundedContexts/FrontOfHouse/Infrastructure/Processors/MarkMenuItemUnavailableProcessor.php#L27-L46` |
+| 8. Bill, pay, free the table | `app/Providers/BoundedContexts/FrontOfHouse/Application/Command/RequestBillHandler.php#L27-L40`, `app/Providers/BoundedContexts/Billing/Infrastructure/Processors/RecordServedDishes.php#L29-L53`, `app/Providers/BoundedContexts/Billing/Application/Command/PrepareBillHandler.php#L27-L49`, `app/Providers/BoundedContexts/Billing/Domain/Bill.php#L44-L67`, `app/Providers/BoundedContexts/Billing/Application/Command/PayBillHandler.php#L26-L40`, `app/Providers/BoundedContexts/FrontOfHouse/Application/Command/FreeTableHandler.php#L27-L35` |
 | Level 1 | `SeatGuestsHandler.php#L27-L35` and `FreeTableHandler.php#L27-L35` |
-| Level 2 | `ToServeProjector.php#L26-L50` and `ProjectToServeList.php#L10-L18` |
+| Level 2 | `ToServeProjector.php#L28-L52` and `ProjectToServeList.php#L10-L18` |
 | Level 3 | `app/Providers/BoundedContexts/EventStore/Infrastructure/DatabaseEventStore.php#L21-L64`, `app/Providers/BoundedContexts/Kitchen/Infrastructure/EventStoreKitchenTicketRepository.php#L48-L65`, `app/Providers/BoundedContexts/EventStore/Infrastructure/InProcessAfterAppend.php#L53-L60` |
