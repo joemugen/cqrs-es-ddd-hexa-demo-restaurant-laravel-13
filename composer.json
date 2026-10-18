@@ -43,6 +43,18 @@
             "@php artisan config:clear --ansi @no_additional_args",
             "@php artisan test"
         ],
+        "dev": [
+            "Composer\\Config::disableProcessTimeout",
+            "bash scripts/dev.sh worker"
+        ],
+        "dev:sync": [
+            "Composer\\Config::disableProcessTimeout",
+            "bash scripts/dev.sh sync"
+        ],
+        "workers": [
+            "Composer\\Config::disableProcessTimeout",
+            "bash scripts/dev.sh workers"
+        ],
         "post-autoload-dump": [
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
             "@php artisan package:discover --ansi"
@@ -77,5 +89,10 @@
         }
     },
     "minimum-stability": "stable",
-    "prefer-stable": true
+    "prefer-stable": true,
+    "scripts-descriptions": {
+        "dev": "Start the API and one event worker per bounded context, with prefixed logs",
+        "dev:sync": "Start the API and the queue worker, consuming events in the request",
+        "workers": "Start only the event workers, one per bounded context"
+    }
 }
