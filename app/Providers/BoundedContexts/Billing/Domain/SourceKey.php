@@ -16,7 +16,7 @@ final readonly class SourceKey extends StringValue
     protected static function validate(string $value): void
     {
         self::requireFilled($value, 'A source key cannot be blank.');
-        self::requireAtMost($value, self::MAX_LENGTH, 'A source key cannot exceed :max characters.');
+        self::requireAtMost($value, self::MAX_LENGTH, 'A source key');
         self::requireMatching(
             $value,
             '/^[A-Za-z0-9_-]+:[A-Za-z0-9_-]+$/D',

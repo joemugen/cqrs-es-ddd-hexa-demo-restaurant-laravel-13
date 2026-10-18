@@ -14,7 +14,7 @@ abstract readonly class Identifier extends StringValue
     protected static function validate(string $value): void
     {
         self::requireFilled($value, 'An identifier cannot be blank.');
-        self::requireAtMost($value, self::MAX_LENGTH, 'An identifier cannot exceed :max characters.');
+        self::requireAtMost($value, self::MAX_LENGTH, 'An identifier');
         self::requireMatching(
             $value,
             '/^[A-Za-z0-9_-]+$/D',

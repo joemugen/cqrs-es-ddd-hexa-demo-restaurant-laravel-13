@@ -13,7 +13,7 @@ final readonly class DishName extends StringValue
     protected static function validate(string $value): void
     {
         self::requireFilled($value, 'A dish name cannot be blank.');
-        self::requireAtMost($value, self::MAX_LENGTH, 'A dish name cannot exceed :max characters.');
+        self::requireAtMost($value, self::MAX_LENGTH, 'A dish name');
         self::requireMatching($value, '/^[^\x00-\x1F\x7F]+$/D', 'A dish name cannot contain control characters.');
     }
 }

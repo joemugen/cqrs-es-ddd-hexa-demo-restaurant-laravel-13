@@ -13,7 +13,7 @@ final readonly class TableLabel extends StringValue
     protected static function validate(string $value): void
     {
         self::requireFilled($value, 'A table label cannot be blank.');
-        self::requireAtMost($value, self::MAX_LENGTH, 'A table label cannot exceed :max characters.');
+        self::requireAtMost($value, self::MAX_LENGTH, 'A table label');
         self::requireMatching($value, '/^[^\x00-\x1F\x7F]+$/D', 'A table label cannot contain control characters.');
     }
 }

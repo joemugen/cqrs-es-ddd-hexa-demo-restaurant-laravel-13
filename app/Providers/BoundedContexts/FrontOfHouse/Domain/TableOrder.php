@@ -44,7 +44,7 @@ final readonly class TableOrder implements AggregateRoot
             $item = $menu->get($line->menuItemId);
 
             if (! $item->isAvailable()) {
-                throw new FrontOfHouseException(':name is unavailable.', replace: ['name' => $item->name()]);
+                throw new FrontOfHouseException("{$item->name()} is unavailable.");
             }
 
             $lines[] = new OrderLine(

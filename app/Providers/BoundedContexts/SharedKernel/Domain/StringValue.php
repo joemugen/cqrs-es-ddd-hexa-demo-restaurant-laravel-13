@@ -39,13 +39,11 @@ abstract readonly class StringValue implements JsonSerializable, Stringable
     protected static function validate(string $value): void {}
 
     /**
-     * @param  array<string, string|int>  $replace
-     *
      * @throws InvalidValue
      */
-    protected static function refuse(string $message, array $replace = []): never
+    protected static function refuse(string $message): never
     {
-        throw new InvalidValue($message, replace: $replace);
+        throw new InvalidValue($message);
     }
 
     /**
@@ -61,10 +59,10 @@ abstract readonly class StringValue implements JsonSerializable, Stringable
     /**
      * @throws InvalidValue
      */
-    protected static function requireAtMost(string $value, int $max, string $message): void
+    protected static function requireAtMost(string $value, int $max, string $subject): void
     {
         if (mb_strlen($value) > $max) {
-            self::refuse($message, ['max' => $max]);
+            self::refuse("{$subject} cannot exceed {$max} characters.");
         }
     }
 

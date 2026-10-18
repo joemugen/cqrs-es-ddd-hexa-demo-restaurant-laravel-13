@@ -18,7 +18,7 @@ final class DatabaseDishRepository implements DishRepository
         $row = DB::table(Tables::DISHES)->where('id', (string) $id)->first();
 
         if ($row === null) {
-            throw new KitchenException('Unknown dish :id.', 404, ['id' => $id]);
+            throw new KitchenException("Unknown dish {$id}.", 404);
         }
 
         return Dish::restore(

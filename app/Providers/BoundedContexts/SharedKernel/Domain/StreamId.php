@@ -11,6 +11,6 @@ final readonly class StreamId extends StringValue
     protected static function validate(string $value): void
     {
         self::requireFilled($value, 'A stream id cannot be blank.');
-        self::requireAtMost($value, self::MAX_LENGTH, 'A stream id cannot exceed :max characters.');
+        self::requireAtMost($value, self::MAX_LENGTH, 'A stream id');
     }
 }

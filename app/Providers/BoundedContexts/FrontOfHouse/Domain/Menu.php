@@ -13,6 +13,6 @@ final readonly class Menu
 
     public function get(MenuItemId $id): MenuItem
     {
-        return $this->items[(string) $id] ?? throw new FrontOfHouseException('Unknown menu item :item.', 404, ['item' => $id]);
+        return $this->items[(string) $id] ?? throw new FrontOfHouseException("Unknown menu item {$id}.", 404);
     }
 }

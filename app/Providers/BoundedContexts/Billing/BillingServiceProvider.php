@@ -31,8 +31,6 @@ final class BillingServiceProvider extends ServiceProvider
     {
         $this->loadMigrationsFrom(__DIR__.'/database/migrations');
 
-        $this->loadJsonTranslationsFrom(__DIR__.'/lang');
-
         $afterAppend = $this->app->make(AfterAppend::class);
         $afterAppend->listen(function (): void {
             $this->app->make(RecordServedDishes::class)->run();

@@ -13,14 +13,12 @@ final class SharedKernelServiceProvider extends ServiceProvider
 {
     public function boot(): void
     {
-        $this->loadJsonTranslationsFrom(__DIR__.'/lang');
-
         $handler = $this->app->make(ExceptionHandler::class);
         if ($handler instanceof Handler) {
             $handler->dontReport(DomainException::class);
             $handler->renderable(function (DomainException $exception) {
                 return response()->json([
-                    'message' => __($exception->translationKey(), $exception->replacements()),
+                    'message' => $exception->getMessage(),
                 ], $exception->status());
             });
         }

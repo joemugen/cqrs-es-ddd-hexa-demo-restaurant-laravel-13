@@ -42,8 +42,6 @@ final class FrontOfHouseServiceProvider extends ServiceProvider
     {
         $this->loadMigrationsFrom(__DIR__.'/database/migrations');
 
-        $this->loadJsonTranslationsFrom(__DIR__.'/lang');
-
         $this->commands([RunProjections::class]);
 
         $afterAppend = $this->app->make(AfterAppend::class);

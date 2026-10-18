@@ -29,7 +29,7 @@ final class Dish implements AggregateRoot
     public function eightySix(): void
     {
         if (! $this->inStock) {
-            throw new KitchenException(':name is already 86.', replace: ['name' => $this->name]);
+            throw new KitchenException("{$this->name} is already 86.");
         }
 
         $this->inStock = false;

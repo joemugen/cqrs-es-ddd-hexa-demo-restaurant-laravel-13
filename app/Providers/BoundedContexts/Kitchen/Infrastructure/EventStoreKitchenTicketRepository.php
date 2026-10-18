@@ -31,7 +31,7 @@ final class EventStoreKitchenTicketRepository implements KitchenTicketRepository
         $history = $this->events->readStream($this->stream($id));
 
         if ($history === []) {
-            throw new KitchenException('Unknown kitchen ticket :id.', 404, ['id' => $id]);
+            throw new KitchenException("Unknown kitchen ticket {$id}.", 404);
         }
 
         return KitchenTicket::fromHistory($id, new DomainEvents(array_map(

@@ -16,7 +16,7 @@ final readonly class EventType extends StringValue
     protected static function validate(string $value): void
     {
         self::requireFilled($value, 'An event type cannot be blank.');
-        self::requireAtMost($value, self::MAX_LENGTH, 'An event type cannot exceed :max characters.');
+        self::requireAtMost($value, self::MAX_LENGTH, 'An event type');
         self::requireMatching(
             $value,
             '/^[a-z0-9_.]+$/D',

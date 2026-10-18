@@ -18,7 +18,7 @@ final class DatabaseTableRepository implements TableRepository
         $row = DB::table(Tables::TABLES)->where('id', (string) $id)->first();
 
         if ($row === null) {
-            throw new FrontOfHouseException('Unknown table :id.', 404, ['id' => $id]);
+            throw new FrontOfHouseException("Unknown table {$id}.", 404);
         }
 
         return Table::restore(new TableId((string) $row->id), new TableLabel((string) $row->label), (int) $row->guest_count);

@@ -87,7 +87,7 @@ final class KitchenTicket implements EventSourcedAggregate
         }
 
         if (! $fired) {
-            throw new KitchenException('No :course is waiting on this ticket.', replace: ['course' => $course]);
+            throw new KitchenException("No {$course} is waiting on this ticket.");
         }
     }
 
