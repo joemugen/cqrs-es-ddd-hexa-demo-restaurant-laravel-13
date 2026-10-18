@@ -25,12 +25,14 @@ final class FreeTableProcessor implements Processor
         private FrontOfHouseCommandBus $bus,
     ) {}
 
-    public function run(): void
+    public function consume(): int
     {
+        $handled = 0;
         $position = $this->checkpoints->get(self::CHECKPOINT);
 
         foreach ($this->events->readAllFrom($position) as $event) {
             if ($event->type->is(ConsumedEvents::BILLING_BILL_PAID)) {
+                $handled++;
                 $this->bus->dispatch(new FreeTable(new TableId((string) $event->payload['coverRef'])));
             }
 
@@ -38,5 +40,7 @@ final class FreeTableProcessor implements Processor
         }
 
         $this->checkpoints->put(self::CHECKPOINT, $position);
+
+        return $handled;
     }
 }

@@ -8,12 +8,14 @@ use App\Providers\BoundedContexts\EventStore\Domain\CheckpointStore;
 use App\Providers\BoundedContexts\EventStore\Domain\EventStore;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\ConsumedEvents;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Tables;
+use App\Providers\BoundedContexts\SharedKernel\Application\Consumption\RunsOnQueue;
 use App\Providers\BoundedContexts\SharedKernel\Application\Projector;
 use Illuminate\Support\Facades\DB;
 
 /**
  * Level 2: a queued projector. The pass can lag behind the kitchen.
  */
+#[RunsOnQueue(ProjectToServeList::class)]
 final class ToServeProjector implements Projector
 {
     public const CHECKPOINT = 'foh.to-serve';
@@ -23,7 +25,7 @@ final class ToServeProjector implements Projector
         private CheckpointStore $checkpoints,
     ) {}
 
-    public function catchUp(): int
+    public function consume(): int
     {
         $applied = 0;
         $position = $this->checkpoints->get(self::CHECKPOINT);

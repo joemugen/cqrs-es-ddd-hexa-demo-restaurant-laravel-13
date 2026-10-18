@@ -37,14 +37,14 @@ abstract class MiddlewareCommandBus implements CommandBus
     }
 
     /**
-     * The handlers of the context this bus lives in, found by HandlerDiscovery.
+     * The handlers of the context this bus lives in, found by ContextDiscovery.
      * A bus overrides it only to list handlers by hand.
      *
      * @return list<class-string>
      */
     protected function handlers(): array
     {
-        return $this->container->make(HandlerDiscovery::class)->commandHandlers($this->contextRoot());
+        return $this->container->make(ContextDiscovery::class)->commandHandlers($this->contextRoot());
     }
 
     /**

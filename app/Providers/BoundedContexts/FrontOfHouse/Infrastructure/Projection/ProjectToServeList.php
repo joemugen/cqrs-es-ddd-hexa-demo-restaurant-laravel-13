@@ -13,6 +13,6 @@ final class ProjectToServeList implements ShouldQueue
 
     public function handle(ToServeProjector $projector): void
     {
-        $projector->catchUp();
+        $projector->consume();
     }
 }

@@ -27,12 +27,14 @@ final class PrepareBillProcessor implements Processor
         private BillingCommandBus $bus,
     ) {}
 
-    public function run(): void
+    public function consume(): int
     {
+        $handled = 0;
         $position = $this->checkpoints->get(self::CHECKPOINT);
 
         foreach ($this->events->readAllFrom($position) as $event) {
             if ($event->type->is(ConsumedEvents::FRONT_OF_HOUSE_BILL_REQUESTED)) {
+                $handled++;
                 $this->bus->dispatch(new PrepareBill(
                     billId: new BillId((string) Str::ulid()),
                     coverRef: new CoverRef((string) $event->payload['tableId']),
@@ -43,5 +45,7 @@ final class PrepareBillProcessor implements Processor
         }
 
         $this->checkpoints->put(self::CHECKPOINT, $position);
+
+        return $handled;
     }
 }

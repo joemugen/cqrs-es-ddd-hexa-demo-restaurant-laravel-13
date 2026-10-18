@@ -7,19 +7,20 @@ namespace App\Providers\BoundedContexts\SharedKernel\Infrastructure\Bus;
 use App\Providers\BoundedContexts\SharedKernel\Application\Bus\Attribute\AsCommandHandler;
 use App\Providers\BoundedContexts\SharedKernel\Application\Bus\Attribute\AsQueryHandler;
 use App\Providers\BoundedContexts\SharedKernel\Application\CommandHandler;
+use App\Providers\BoundedContexts\SharedKernel\Application\EventConsumer;
 use App\Providers\BoundedContexts\SharedKernel\Application\QueryHandler;
 use ReflectionClass;
 
 /**
- * Finds the handlers of a context so no bus lists them by hand.
+ * Finds what a context wires by convention: its handlers, so no bus lists them by hand, and its event consumers.
  *
  * Command handlers live in Application/Command and query handlers in Infrastructure/Query. A class there is a handler
  * when it implements the contract or carries the attribute, so a handler that forgets one is reported by the HandlerMap
- * instead of being silently ignored. `php artisan bus:cache` writes the result to a file that `optimize` refreshes.
+ * instead of being silently ignored. `php artisan contexts:cache` writes the result to a file that `optimize` refreshes.
  */
-final class HandlerDiscovery
+final class ContextDiscovery
 {
-    /** @var array<string, array{commands: list<class-string>, queries: list<class-string>}>|null */
+    /** @var array<string, array{commands: list<class-string>, queries: list<class-string>, consumers: list<class-string>}>|null */
     private ?array $cached = null;
 
     public function __construct(private readonly string $cachePath) {}
@@ -41,6 +42,16 @@ final class HandlerDiscovery
     }
 
     /**
+     * The processors and projectors of a context, in a stable order.
+     *
+     * @return list<class-string<EventConsumer>>
+     */
+    public function eventConsumers(string $contextRoot): array
+    {
+        return $this->cachedContext($contextRoot)['consumers'] ?? $this->scanConsumers($contextRoot);
+    }
+
+    /**
      * Scans every context under $contextsRoot and writes the result to the cache file.
      */
     public function cache(string $contextsRoot): string
@@ -51,6 +62,7 @@ final class HandlerDiscovery
             $contexts[$this->key($contextRoot)] = [
                 'commands' => $this->scan($contextRoot.'/Application/Command', CommandHandler::class, AsCommandHandler::class),
                 'queries' => $this->scan($contextRoot.'/Infrastructure/Query', QueryHandler::class, AsQueryHandler::class),
+                'consumers' => $this->scanConsumers($contextRoot),
             ];
         }
 
@@ -76,7 +88,7 @@ final class HandlerDiscovery
     }
 
     /**
-     * @return array{commands: list<class-string>, queries: list<class-string>}|null
+     * @return array{commands: list<class-string>, queries: list<class-string>, consumers: list<class-string>}|null
      */
     private function cachedContext(string $contextRoot): ?array
     {
@@ -89,10 +101,10 @@ final class HandlerDiscovery
 
     /**
      * @param  class-string  $contract
-     * @param  class-string  $attribute
+     * @param  class-string|null  $attribute
      * @return list<class-string>
      */
-    private function scan(string $directory, string $contract, string $attribute): array
+    private function scan(string $directory, string $contract, ?string $attribute = null): array
     {
         $classes = [];
 
@@ -101,7 +113,7 @@ final class HandlerDiscovery
 
             if (
                 class_exists($class)
-                && (is_subclass_of($class, $contract) || (new ReflectionClass($class))->getAttributes($attribute) !== [])
+                && (is_subclass_of($class, $contract) || ($attribute !== null && (new ReflectionClass($class))->getAttributes($attribute) !== []))
             ) {
                 $classes[] = $class;
             }
@@ -110,6 +122,17 @@ final class HandlerDiscovery
         sort($classes);
 
         return $classes;
+    }
+
+    /**
+     * @return list<class-string<EventConsumer>>
+     */
+    private function scanConsumers(string $contextRoot): array
+    {
+        return [
+            ...$this->scan($contextRoot.'/Infrastructure/Processors', EventConsumer::class),
+            ...$this->scan($contextRoot.'/Infrastructure/Projection', EventConsumer::class),
+        ];
     }
 
     /**

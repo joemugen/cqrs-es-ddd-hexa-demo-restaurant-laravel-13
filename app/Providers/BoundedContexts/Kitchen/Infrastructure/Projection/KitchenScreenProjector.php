@@ -24,7 +24,7 @@ final class KitchenScreenProjector implements RebuildableProjector
         private CheckpointStore $checkpoints,
     ) {}
 
-    public function catchUp(): int
+    public function consume(): int
     {
         $applied = 0;
         $position = $this->checkpoints->get(self::CHECKPOINT);
@@ -47,7 +47,7 @@ final class KitchenScreenProjector implements RebuildableProjector
         DB::table(Tables::SCREEN_LINES)->delete();
         DB::table(Tables::SCREEN_TICKETS)->delete();
         $this->checkpoints->put(self::CHECKPOINT, 0);
-        $this->catchUp();
+        $this->consume();
     }
 
     /**

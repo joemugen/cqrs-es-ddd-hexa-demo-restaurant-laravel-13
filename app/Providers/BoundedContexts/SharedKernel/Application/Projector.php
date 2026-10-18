@@ -6,11 +6,6 @@ namespace App\Providers\BoundedContexts\SharedKernel\Application;
 
 /**
  * Folds the event log into a read model from its checkpoint. It decides nothing.
+ * consume() returns how many events changed the read model.
  */
-interface Projector
-{
-    /**
-     * @return int the number of events that changed the read model
-     */
-    public function catchUp(): int;
-}
+interface Projector extends EventConsumer {}

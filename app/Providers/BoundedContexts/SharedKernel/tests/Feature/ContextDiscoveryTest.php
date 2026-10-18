@@ -2,7 +2,7 @@
 
 use App\Providers\BoundedContexts\Billing\Application\Command\PayBillHandler;
 use App\Providers\BoundedContexts\Billing\Infrastructure\Bus\BillingCommandBus;
-use App\Providers\BoundedContexts\SharedKernel\Infrastructure\Bus\HandlerDiscovery;
+use App\Providers\BoundedContexts\SharedKernel\Infrastructure\Bus\ContextDiscovery;
 use Illuminate\Support\ServiceProvider;
 
 function contextsRoot(): string
@@ -10,22 +10,22 @@ function contextsRoot(): string
     return app_path('Providers/BoundedContexts');
 }
 
-function discoveryWithCacheAt(string $path): HandlerDiscovery
+function discoveryWithCacheAt(string $path): ContextDiscovery
 {
-    app()->instance(HandlerDiscovery::class, $discovery = new HandlerDiscovery($path));
+    app()->instance(ContextDiscovery::class, $discovery = new ContextDiscovery($path));
 
     return $discovery;
 }
 
 beforeEach(function (): void {
-    $this->cachePath = sys_get_temp_dir().'/bus-handlers-'.bin2hex(random_bytes(4)).'.php';
+    $this->cachePath = sys_get_temp_dir().'/contexts-'.bin2hex(random_bytes(4)).'.php';
 });
 
 afterEach(function (): void {
     @unlink($this->cachePath);
 });
 
-describe('handler discovery', function (): void {
+describe('context discovery', function (): void {
     describe('without a cache', function (): void {
         it('finds the command handlers of a context', function (string $context): void {
             $found = discoveryWithCacheAt($this->cachePath)->commandHandlers(contextsRoot().'/'.$context);
@@ -53,7 +53,7 @@ describe('handler discovery', function (): void {
 
             $path = $discovery->cache(contextsRoot());
 
-            $cached = new HandlerDiscovery($this->cachePath);
+            $cached = new ContextDiscovery($this->cachePath);
 
             expect($path)->toBe($this->cachePath)
                 ->and(file_exists($this->cachePath))->toBeTrue()
@@ -66,7 +66,7 @@ describe('handler discovery', function (): void {
                 'app/Providers/BoundedContexts/Billing' => ['commands' => [PayBillHandler::class], 'queries' => []],
             ], true).';');
 
-            expect((new HandlerDiscovery($this->cachePath))->commandHandlers(contextsRoot().'/Billing'))
+            expect((new ContextDiscovery($this->cachePath))->commandHandlers(contextsRoot().'/Billing'))
                 ->toBe([PayBillHandler::class]);
         });
 
@@ -79,19 +79,19 @@ describe('handler discovery', function (): void {
             expect(array_values((new BillingCommandBus(app()))->handlerMap()->handlers()))->toBe([PayBillHandler::class]);
         });
 
-        it('is created by bus:cache and removed by bus:clear', function (): void {
+        it('is created by contexts:cache and removed by contexts:clear', function (): void {
             discoveryWithCacheAt($this->cachePath);
 
-            $this->artisan('bus:cache')->assertSuccessful();
+            $this->artisan('contexts:cache')->assertSuccessful();
             expect(file_exists($this->cachePath))->toBeTrue();
 
-            $this->artisan('bus:clear')->assertSuccessful();
+            $this->artisan('contexts:clear')->assertSuccessful();
             expect(file_exists($this->cachePath))->toBeFalse();
         });
 
         it('is registered with php artisan optimize and optimize:clear', function (): void {
-            expect(ServiceProvider::$optimizeCommands)->toContain('bus:cache')
-                ->and(ServiceProvider::$optimizeClearCommands)->toContain('bus:clear');
+            expect(ServiceProvider::$optimizeCommands)->toContain('contexts:cache')
+                ->and(ServiceProvider::$optimizeClearCommands)->toContain('contexts:clear');
         });
     });
 });

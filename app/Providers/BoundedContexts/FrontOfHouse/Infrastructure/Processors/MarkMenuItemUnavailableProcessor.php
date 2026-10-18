@@ -24,12 +24,14 @@ final class MarkMenuItemUnavailableProcessor implements Processor
         private MenuRepository $menus,
     ) {}
 
-    public function run(): void
+    public function consume(): int
     {
+        $handled = 0;
         $position = $this->checkpoints->get(self::CHECKPOINT);
 
         foreach ($this->events->readAllFrom($position) as $event) {
             if ($event->type->is(ConsumedEvents::KITCHEN_DISH_EIGHTY_SIXED)) {
+                $handled++;
                 $item = $this->menus->findByName(new DishName((string) $event->payload['dishName']));
                 $item->markUnavailable();
                 $this->menus->save($item);
@@ -39,5 +41,7 @@ final class MarkMenuItemUnavailableProcessor implements Processor
         }
 
         $this->checkpoints->put(self::CHECKPOINT, $position);
+
+        return $handled;
     }
 }

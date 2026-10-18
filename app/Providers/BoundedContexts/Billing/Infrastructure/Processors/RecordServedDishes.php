@@ -26,12 +26,14 @@ final class RecordServedDishes implements Processor
         private ServedLedger $served,
     ) {}
 
-    public function run(): void
+    public function consume(): int
     {
+        $handled = 0;
         $position = $this->checkpoints->get(self::CHECKPOINT);
 
         foreach ($this->events->readAllFrom($position) as $event) {
             if ($event->type->is(ConsumedEvents::FRONT_OF_HOUSE_DISH_SERVED)) {
+                $handled++;
                 $payload = $event->payload;
                 $this->served->record(new CoverRef((string) $payload['tableId']), new ServedDish(
                     sourceKey: new SourceKey((string) $payload['sourceKey']),
@@ -46,5 +48,7 @@ final class RecordServedDishes implements Processor
         }
 
         $this->checkpoints->put(self::CHECKPOINT, $position);
+
+        return $handled;
     }
 }

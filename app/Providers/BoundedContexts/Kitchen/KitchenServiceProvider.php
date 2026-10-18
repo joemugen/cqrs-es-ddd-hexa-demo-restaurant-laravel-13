@@ -4,17 +4,16 @@ declare(strict_types=1);
 
 namespace App\Providers\BoundedContexts\Kitchen;
 
-use App\Providers\BoundedContexts\EventStore\Application\AfterAppend;
+use App\Providers\BoundedContexts\EventStore\Infrastructure\EventConsumption;
 use App\Providers\BoundedContexts\Kitchen\Application\DishCatalog;
 use App\Providers\BoundedContexts\Kitchen\Application\DishRepository;
 use App\Providers\BoundedContexts\Kitchen\Application\KitchenTicketRepository;
 use App\Providers\BoundedContexts\Kitchen\Infrastructure\Bus\KitchenCommandBus;
 use App\Providers\BoundedContexts\Kitchen\Infrastructure\Bus\KitchenQueryBus;
+use App\Providers\BoundedContexts\Kitchen\Infrastructure\Console\ConsumeKitchenEvents;
 use App\Providers\BoundedContexts\Kitchen\Infrastructure\DatabaseDishCatalog;
 use App\Providers\BoundedContexts\Kitchen\Infrastructure\DatabaseDishRepository;
 use App\Providers\BoundedContexts\Kitchen\Infrastructure\EventStoreKitchenTicketRepository;
-use App\Providers\BoundedContexts\Kitchen\Infrastructure\Processors\OpenKitchenTicketProcessor;
-use App\Providers\BoundedContexts\Kitchen\Infrastructure\Projection\KitchenScreenProjector;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 
@@ -36,13 +35,9 @@ final class KitchenServiceProvider extends ServiceProvider
     {
         $this->loadMigrationsFrom(__DIR__.'/database/migrations');
 
-        $afterAppend = $this->app->make(AfterAppend::class);
-        $afterAppend->listen(function (): void {
-            $this->app->make(KitchenScreenProjector::class)->catchUp();
-        });
-        $afterAppend->listen(function (): void {
-            $this->app->make(OpenKitchenTicketProcessor::class)->run();
-        });
+        $this->commands([ConsumeKitchenEvents::class]);
+
+        $this->app->make(EventConsumption::class)->subscribe(__DIR__);
 
         Route::middleware('api')
             ->prefix((string) config('kitchen.route_prefix'))

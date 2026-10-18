@@ -8,11 +8,10 @@ use App\Providers\BoundedContexts\Billing\Application\BillRepository;
 use App\Providers\BoundedContexts\Billing\Application\ServedLedger;
 use App\Providers\BoundedContexts\Billing\Infrastructure\Bus\BillingCommandBus;
 use App\Providers\BoundedContexts\Billing\Infrastructure\Bus\BillingQueryBus;
+use App\Providers\BoundedContexts\Billing\Infrastructure\Console\ConsumeBillingEvents;
 use App\Providers\BoundedContexts\Billing\Infrastructure\DatabaseBillRepository;
 use App\Providers\BoundedContexts\Billing\Infrastructure\DatabaseServedLedger;
-use App\Providers\BoundedContexts\Billing\Infrastructure\Processors\PrepareBillProcessor;
-use App\Providers\BoundedContexts\Billing\Infrastructure\Processors\RecordServedDishes;
-use App\Providers\BoundedContexts\EventStore\Application\AfterAppend;
+use App\Providers\BoundedContexts\EventStore\Infrastructure\EventConsumption;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 
@@ -33,13 +32,9 @@ final class BillingServiceProvider extends ServiceProvider
     {
         $this->loadMigrationsFrom(__DIR__.'/database/migrations');
 
-        $afterAppend = $this->app->make(AfterAppend::class);
-        $afterAppend->listen(function (): void {
-            $this->app->make(RecordServedDishes::class)->run();
-        });
-        $afterAppend->listen(function (): void {
-            $this->app->make(PrepareBillProcessor::class)->run();
-        });
+        $this->commands([ConsumeBillingEvents::class]);
+
+        $this->app->make(EventConsumption::class)->subscribe(__DIR__);
 
         Route::middleware('api')
             ->prefix((string) config('billing.route_prefix'))

@@ -21,7 +21,7 @@ final class RunProjections extends Command
             return self::FAILURE;
         }
 
-        $applied = $projector->catchUp();
+        $applied = $projector->consume();
         $this->info("To-serve projection applied {$applied} ready dish(es).");
 
         return self::SUCCESS;
