@@ -8,7 +8,7 @@ use App\Providers\BoundedContexts\Kitchen\Application\Query\ListKitchenScreen;
 use App\Providers\BoundedContexts\Kitchen\Infrastructure\Bus\KitchenQueryBus;
 use Illuminate\Http\JsonResponse;
 
-final class KitchenScreenController
+final class ListKitchenScreenController
 {
     public function __invoke(KitchenQueryBus $bus): JsonResponse
     {

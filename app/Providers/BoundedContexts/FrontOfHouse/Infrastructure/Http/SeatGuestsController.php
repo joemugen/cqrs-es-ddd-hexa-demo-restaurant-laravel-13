@@ -10,9 +10,9 @@ use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Bus\FrontOfHouseCo
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
-final class GuestController
+final class SeatGuestsController
 {
-    public function store(Request $request, string $tableId, FrontOfHouseCommandBus $bus): JsonResponse
+    public function __invoke(Request $request, string $tableId, FrontOfHouseCommandBus $bus): JsonResponse
     {
         $validated = $request->validate([
             'guestCount' => ['required', 'integer'],

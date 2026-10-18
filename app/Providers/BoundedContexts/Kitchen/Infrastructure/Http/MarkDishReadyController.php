@@ -12,7 +12,7 @@ use Illuminate\Http\JsonResponse;
 
 final class MarkDishReadyController
 {
-    public function store(string $ticketId, string $lineId, KitchenCommandBus $bus): JsonResponse
+    public function __invoke(string $ticketId, string $lineId, KitchenCommandBus $bus): JsonResponse
     {
         return response()->json($bus->dispatch(new MarkDishReady(new KitchenTicketId($ticketId), new LineId($lineId))));
     }

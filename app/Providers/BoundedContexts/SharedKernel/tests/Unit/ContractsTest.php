@@ -96,6 +96,24 @@ describe('domain layer', function (): void {
 });
 
 describe('infrastructure layer', function (): void {
+    describe('controllers', function (): void {
+        it('does one thing: __invoke is its only public method', function (string $class): void {
+            $methods = array_map(
+                fn (ReflectionMethod $method): string => $method->getName(),
+                array_filter(
+                    (new ReflectionClass($class))->getMethods(ReflectionMethod::IS_PUBLIC),
+                    fn (ReflectionMethod $method): bool => $method->getDeclaringClass()->getName() === $class,
+                ),
+            );
+
+            expect(array_values($methods))->toBe(['__invoke']);
+        })->with(classesIn('*/Infrastructure/Http/*.php'));
+
+        it('is named after its use case and ends with Controller', function (string $class): void {
+            expect($class)->toEndWith('Controller');
+        })->with(classesIn('*/Infrastructure/Http/*.php'));
+    });
+
     it('declares every projector as a Projector', function (string $class): void {
         expect(is_subclass_of($class, Projector::class))->toBeTrue("{$class} does not implement Projector");
     })->with(classesIn('*/Infrastructure/Projection/*Projector.php'));

@@ -12,7 +12,7 @@ use Illuminate\Http\Request;
 
 final class FireDishesController
 {
-    public function store(Request $request, string $ticketId, KitchenCommandBus $bus): JsonResponse
+    public function __invoke(Request $request, string $ticketId, KitchenCommandBus $bus): JsonResponse
     {
         $validated = $request->validate([
             'course' => ['required', 'string'],

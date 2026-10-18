@@ -14,9 +14,9 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
-final class TableOrderController
+final class PlaceTableOrderController
 {
-    public function store(Request $request, string $tableId, FrontOfHouseCommandBus $bus): JsonResponse
+    public function __invoke(Request $request, string $tableId, FrontOfHouseCommandBus $bus): JsonResponse
     {
         $validated = $request->validate([
             'lines' => ['present', 'array'],

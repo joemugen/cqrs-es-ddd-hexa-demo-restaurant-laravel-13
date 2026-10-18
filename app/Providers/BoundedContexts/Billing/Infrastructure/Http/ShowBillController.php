@@ -9,9 +9,9 @@ use App\Providers\BoundedContexts\Billing\Domain\CoverRef;
 use App\Providers\BoundedContexts\Billing\Infrastructure\Bus\BillingQueryBus;
 use Illuminate\Http\JsonResponse;
 
-final class BillController
+final class ShowBillController
 {
-    public function show(string $coverRef, BillingQueryBus $bus): JsonResponse
+    public function __invoke(string $coverRef, BillingQueryBus $bus): JsonResponse
     {
         return response()->json($bus->ask(new GetBill(new CoverRef($coverRef))));
     }

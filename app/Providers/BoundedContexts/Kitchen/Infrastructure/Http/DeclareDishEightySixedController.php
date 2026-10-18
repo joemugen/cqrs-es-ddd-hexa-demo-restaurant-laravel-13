@@ -9,9 +9,9 @@ use App\Providers\BoundedContexts\Kitchen\Domain\DishId;
 use App\Providers\BoundedContexts\Kitchen\Infrastructure\Bus\KitchenCommandBus;
 use Illuminate\Http\JsonResponse;
 
-final class EightySixController
+final class DeclareDishEightySixedController
 {
-    public function store(string $dishId, KitchenCommandBus $bus): JsonResponse
+    public function __invoke(string $dishId, KitchenCommandBus $bus): JsonResponse
     {
         return response()->json($bus->dispatch(new DeclareDishEightySixed(new DishId($dishId))));
     }

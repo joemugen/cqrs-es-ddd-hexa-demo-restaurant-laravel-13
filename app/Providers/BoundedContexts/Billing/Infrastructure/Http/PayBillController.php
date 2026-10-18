@@ -10,9 +10,9 @@ use App\Providers\BoundedContexts\Billing\Infrastructure\Bus\BillingCommandBus;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
-final class PaymentController
+final class PayBillController
 {
-    public function store(Request $request, string $billId, BillingCommandBus $bus): JsonResponse
+    public function __invoke(Request $request, string $billId, BillingCommandBus $bus): JsonResponse
     {
         $validated = $request->validate([
             'amountCents' => ['required', 'integer'],

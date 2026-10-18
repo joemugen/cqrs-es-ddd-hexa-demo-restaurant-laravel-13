@@ -9,9 +9,9 @@ use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableId;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Bus\FrontOfHouseCommandBus;
 use Illuminate\Http\JsonResponse;
 
-final class BillRequestController
+final class RequestBillController
 {
-    public function store(string $tableId, FrontOfHouseCommandBus $bus): JsonResponse
+    public function __invoke(string $tableId, FrontOfHouseCommandBus $bus): JsonResponse
     {
         return response()->json($bus->dispatch(new RequestBill(new TableId($tableId))));
     }

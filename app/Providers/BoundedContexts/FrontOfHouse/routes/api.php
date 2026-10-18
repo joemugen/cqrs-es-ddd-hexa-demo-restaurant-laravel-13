@@ -1,30 +1,31 @@
 <?php
 
-use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Http\BillRequestController;
-use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Http\FloorPlanController;
-use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Http\GuestController;
-use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Http\MenuController;
-use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Http\TableOrderController;
-use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Http\ToServeController;
+use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Http\ListFloorPlanController;
+use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Http\ListMenuController;
+use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Http\ListToServeController;
+use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Http\PlaceTableOrderController;
+use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Http\RequestBillController;
+use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Http\SeatGuestsController;
+use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Http\ServeDishController;
 use Illuminate\Support\Facades\Route;
 
-Route::post('/tables/{tableId}/guests', [GuestController::class, 'store'])
+Route::post('/tables/{tableId}/guests', SeatGuestsController::class)
     ->name('front-of-house.guests.store');
 
-Route::get('/floor-plan', FloorPlanController::class)
+Route::get('/floor-plan', ListFloorPlanController::class)
     ->name('front-of-house.floor-plan');
 
-Route::get('/menu', MenuController::class)
+Route::get('/menu', ListMenuController::class)
     ->name('front-of-house.menu');
 
-Route::post('/tables/{tableId}/orders', [TableOrderController::class, 'store'])
+Route::post('/tables/{tableId}/orders', PlaceTableOrderController::class)
     ->name('front-of-house.orders.store');
 
-Route::get('/to-serve', [ToServeController::class, 'index'])
+Route::get('/to-serve', ListToServeController::class)
     ->name('front-of-house.to-serve');
 
-Route::post('/to-serve/{toServeId}/serve', [ToServeController::class, 'serve'])
+Route::post('/to-serve/{toServeId}/serve', ServeDishController::class)
     ->name('front-of-house.to-serve.serve');
 
-Route::post('/tables/{tableId}/bill', [BillRequestController::class, 'store'])
+Route::post('/tables/{tableId}/bill', RequestBillController::class)
     ->name('front-of-house.bills.store');
