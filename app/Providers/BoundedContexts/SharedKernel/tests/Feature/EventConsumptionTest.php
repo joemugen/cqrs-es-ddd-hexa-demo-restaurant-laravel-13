@@ -24,7 +24,7 @@ describe('event consumption', function (): void {
 
     describe('in worker mode', function (): void {
         beforeEach(function (): void {
-            config(['event_store.consumption' => 'worker']);
+            config(['consumption.mode' => 'worker']);
             $this->seed(FrontOfHouseSeeder::class);
             $this->seed(KitchenSeeder::class);
             $this->postJson('/api/front-of-house/tables/table-4/guests', ['guestCount' => 2])->assertOk();
@@ -64,7 +64,7 @@ describe('event consumption', function (): void {
 
     describe('in sync mode', function (): void {
         it('is the default, so the kitchen hears the order at once', function (): void {
-            expect(config('event_store.consumption'))->toBe('sync');
+            expect(config('consumption.mode'))->toBe('sync');
 
             $this->seed(FrontOfHouseSeeder::class);
             $this->seed(KitchenSeeder::class);

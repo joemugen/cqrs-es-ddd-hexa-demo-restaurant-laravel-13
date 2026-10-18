@@ -38,9 +38,10 @@ final class ConsumerWorker
      * @param  list<EventConsumer>  $consumers
      * @param  float  $sleep  seconds to wait after a pass that handled nothing
      * @param  int  $maxTime  seconds after which the worker stops, 0 for never
+     * @param  Closure(): void|null  $afterPass  called after every pass, to renew a lock
      * @return int the number of events handled
      */
-    public function work(array $consumers, float $sleep = 1.0, bool $stopWhenEmpty = false, int $maxTime = 0): int
+    public function work(array $consumers, float $sleep = 1.0, bool $stopWhenEmpty = false, int $maxTime = 0, ?Closure $afterPass = null): int
     {
         $this->stop = false;
         $handledInTotal = 0;
@@ -54,6 +55,10 @@ final class ConsumerWorker
             }
 
             $handledInTotal += $handled;
+
+            if ($afterPass !== null) {
+                $afterPass();
+            }
 
             if ($handled === 0 && $stopWhenEmpty) {
                 break;

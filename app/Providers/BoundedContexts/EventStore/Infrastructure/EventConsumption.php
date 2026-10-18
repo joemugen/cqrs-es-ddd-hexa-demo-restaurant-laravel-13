@@ -7,6 +7,7 @@ namespace App\Providers\BoundedContexts\EventStore\Infrastructure;
 use App\Providers\BoundedContexts\EventStore\Application\AfterAppend;
 use App\Providers\BoundedContexts\SharedKernel\Application\Consumption\RunsOnQueue;
 use App\Providers\BoundedContexts\SharedKernel\Infrastructure\Bus\ContextDiscovery;
+use App\Providers\BoundedContexts\SharedKernel\Infrastructure\Eventing\EventConsumers;
 use Illuminate\Contracts\Container\Container;
 use ReflectionClass;
 
@@ -28,7 +29,7 @@ final readonly class EventConsumption
     {
         foreach ($this->discovery->eventConsumers($contextRoot) as $consumer) {
             $this->afterAppend->listen(function () use ($consumer): void {
-                if (config('event_store.consumption') !== 'sync') {
+                if (config('consumption.mode') !== 'sync') {
                     return;
                 }
 
@@ -50,6 +51,6 @@ final readonly class EventConsumption
             return;
         }
 
-        $this->container->make($consumer)->consume();
+        $this->container->make(EventConsumers::class)->make($consumer)->consume();
     }
 }
