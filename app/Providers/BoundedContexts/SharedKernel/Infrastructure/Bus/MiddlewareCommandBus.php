@@ -14,6 +14,7 @@ use App\Providers\BoundedContexts\SharedKernel\Infrastructure\Bus\Middleware\Log
 use App\Providers\BoundedContexts\SharedKernel\Infrastructure\Bus\Middleware\TransactionMiddleware;
 use Closure;
 use Illuminate\Contracts\Container\Container;
+use ReflectionClass;
 
 /**
  * The command bus every context builds on. A context extends it, lists its handlers and,
@@ -36,9 +37,23 @@ abstract class MiddlewareCommandBus implements CommandBus
     }
 
     /**
+     * The handlers of the context this bus lives in, found by HandlerDiscovery.
+     * A bus overrides it only to list handlers by hand.
+     *
      * @return list<class-string>
      */
-    abstract protected function handlers(): array;
+    protected function handlers(): array
+    {
+        return $this->container->make(HandlerDiscovery::class)->commandHandlers($this->contextRoot());
+    }
+
+    /**
+     * The bus sits in <context>/Infrastructure/Bus.
+     */
+    private function contextRoot(): string
+    {
+        return dirname((string) (new ReflectionClass($this))->getFileName(), 3);
+    }
 
     /**
      * The shared stack, outermost first: log, authorize, whatever the context puts outside the transaction, then the transaction.

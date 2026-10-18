@@ -4,15 +4,6 @@ declare(strict_types=1);
 
 namespace App\Providers\BoundedContexts\Kitchen\Infrastructure\Bus;
 
-use App\Providers\BoundedContexts\Kitchen\Infrastructure\Query\ListKitchenScreenHandler;
 use App\Providers\BoundedContexts\SharedKernel\Infrastructure\Bus\MiddlewareQueryBus;
 
-final class KitchenQueryBus extends MiddlewareQueryBus
-{
-    protected function handlers(): array
-    {
-        return [
-            ListKitchenScreenHandler::class,
-        ];
-    }
-}
+final class KitchenQueryBus extends MiddlewareQueryBus {}
