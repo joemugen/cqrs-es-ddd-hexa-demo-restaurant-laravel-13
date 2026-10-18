@@ -1,1 +1,10 @@
-{}
+{
+    "An identifier cannot be blank.": "Un identifiant ne peut pas être vide.",
+    "An identifier cannot exceed :max characters.": "Un identifiant ne peut pas dépasser :max caractères.",
+    "An identifier may only contain letters, digits, dashes and underscores.": "Un identifiant ne peut contenir que des lettres, des chiffres, des tirets et des tirets bas.",
+    "An event type cannot be blank.": "Un type d'événement ne peut pas être vide.",
+    "An event type cannot exceed :max characters.": "Un type d'événement ne peut pas dépasser :max caractères.",
+    "An event type may only contain lowercase letters, digits, dots and underscores.": "Un type d'événement ne peut contenir que des minuscules, des chiffres, des points et des tirets bas.",
+    "A stream id cannot be blank.": "Un identifiant de flux ne peut pas être vide.",
+    "A stream id cannot exceed :max characters.": "Un identifiant de flux ne peut pas dépasser :max caractères."
+}

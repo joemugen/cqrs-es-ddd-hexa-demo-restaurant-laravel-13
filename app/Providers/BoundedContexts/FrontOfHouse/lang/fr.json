@@ -10,5 +10,11 @@
     "Unknown table :id.": "Table inconnue :id.",
     "Seat at least one guest.": "Installez au moins un convive.",
     "This table already has guests.": "Cette table a déjà des convives.",
-    "Nothing at the pass with id :id.": "Rien au passe avec l'identifiant :id."
+    "Nothing at the pass with id :id.": "Rien au passe avec l'identifiant :id.",
+    "A dish name cannot be blank.": "Un nom de plat ne peut pas être vide.",
+    "A dish name cannot exceed :max characters.": "Un nom de plat ne peut pas dépasser :max caractères.",
+    "A dish name cannot contain control characters.": "Un nom de plat ne peut pas contenir de caractères de contrôle.",
+    "A table label cannot be blank.": "Un libellé de table ne peut pas être vide.",
+    "A table label cannot exceed :max characters.": "Un libellé de table ne peut pas dépasser :max caractères.",
+    "A table label cannot contain control characters.": "Un libellé de table ne peut pas contenir de caractères de contrôle."
 }

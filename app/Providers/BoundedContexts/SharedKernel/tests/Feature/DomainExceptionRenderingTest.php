@@ -28,4 +28,18 @@ describe('rendering a domain exception', function (): void {
             ->assertUnprocessable()
             ->assertExactJson(['message' => 'Installez au moins un convive.']);
     });
+
+    it('refuses a malformed identifier with a 422 instead of looking it up', function (): void {
+        $this->postJson('/api/front-of-house/tables/bad%20id/guests', ['guestCount' => 2])
+            ->assertUnprocessable()
+            ->assertExactJson(['message' => 'An identifier may only contain letters, digits, dashes and underscores.']);
+    });
+
+    it('translates a value rule that carries a placeholder', function (): void {
+        app()->setLocale('fr');
+
+        $this->postJson('/api/front-of-house/tables/'.str_repeat('a', 65).'/guests', ['guestCount' => 2])
+            ->assertUnprocessable()
+            ->assertExactJson(['message' => 'Un identifiant ne peut pas dépasser 64 caractères.']);
+    });
 });

@@ -6,8 +6,21 @@ namespace App\Providers\BoundedContexts\SharedKernel\Domain;
 
 final readonly class EventType extends StringValue
 {
+    private const MAX_LENGTH = 100;
+
     public function is(string $type): bool
     {
         return $this->value === $type;
+    }
+
+    protected static function validate(string $value): void
+    {
+        self::requireFilled($value, 'An event type cannot be blank.');
+        self::requireAtMost($value, self::MAX_LENGTH, 'An event type cannot exceed :max characters.');
+        self::requireMatching(
+            $value,
+            '/^[a-z0-9_.]+$/D',
+            'An event type may only contain lowercase letters, digits, dots and underscores.',
+        );
     }
 }

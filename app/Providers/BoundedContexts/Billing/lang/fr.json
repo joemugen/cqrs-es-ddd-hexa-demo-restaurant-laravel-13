@@ -5,5 +5,8 @@
     "A tip cannot be negative.": "Un pourboire ne peut pas être négatif.",
     "That payment is more than the balance.": "Ce paiement dépasse le solde.",
     "Unknown bill :id.": "Addition inconnue :id.",
-    "No bill for this cover.": "Aucune addition pour ce couvert."
+    "No bill for this cover.": "Aucune addition pour ce couvert.",
+    "A source key cannot be blank.": "Une clé de source ne peut pas être vide.",
+    "A source key cannot exceed :max characters.": "Une clé de source ne peut pas dépasser :max caractères.",
+    "A source key is a ticket and a line joined by a colon.": "Une clé de source est un bon et une ligne reliés par deux-points."
 }

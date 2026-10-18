@@ -10,7 +10,7 @@ use App\Providers\BoundedContexts\Billing\Domain\Vat;
 
 function servedDish(string $description, int $unitPriceCents, int $quantity, string $kind): ServedDish
 {
-    return new ServedDish(new SourceKey($description), $description, $quantity, $unitPriceCents, $kind);
+    return new ServedDish(new SourceKey('ticket-1:'.strtolower(str_replace(' ', '-', $description))), $description, $quantity, $unitPriceCents, $kind);
 }
 
 describe('Bill', function () {

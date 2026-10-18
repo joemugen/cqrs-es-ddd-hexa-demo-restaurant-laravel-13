@@ -9,5 +9,11 @@
     "The kitchen has no dish called :name.": "La cuisine n'a aucun plat nommé :name.",
     ":name is 86.": ":name est épuisé (86).",
     "Unknown dish :id.": "Plat inconnu :id.",
-    "Unknown kitchen ticket :id.": "Bon de cuisine inconnu :id."
+    "Unknown kitchen ticket :id.": "Bon de cuisine inconnu :id.",
+    "A dish name cannot be blank.": "Un nom de plat ne peut pas être vide.",
+    "A dish name cannot exceed :max characters.": "Un nom de plat ne peut pas dépasser :max caractères.",
+    "A dish name cannot contain control characters.": "Un nom de plat ne peut pas contenir de caractères de contrôle.",
+    "A table label cannot be blank.": "Un libellé de table ne peut pas être vide.",
+    "A table label cannot exceed :max characters.": "Un libellé de table ne peut pas dépasser :max caractères.",
+    "A table label cannot contain control characters.": "Un libellé de table ne peut pas contenir de caractères de contrôle."
 }
