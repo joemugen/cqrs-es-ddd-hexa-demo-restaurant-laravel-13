@@ -10,11 +10,11 @@ The metaphor stays the same. The menu is not the kitchen ticket. A guest reads a
 
 The base post separates three ways to keep a write model and a read model apart. This restaurant uses all three.
 
-1. **Same transaction.** Seating guests updates the table and the floor-plan screen together. There is no bus. `SeatGuestsHandler` loads the table, lets it decide, saves it, and syncs the floor plan inside one unit of work.
+1. **Same transaction.** Seating guests updates the table and the floor-plan screen together. `SeatGuestsHandler` loads the table, lets it decide, saves it, and syncs the floor plan. The command bus wraps the handler in one transaction, so the two writes commit together.
 2. **Asynchronous projector.** When a dish is ready, a queued job folds that fact into the "to serve" list and advances a checkpoint. Until a worker runs, the pass is behind the kitchen. The screen can lag. `php artisan projections:run to-serve` catches the same list up in process.
 3. **Event stream.** A kitchen ticket is the stream. `KitchenTicketRepository` appends with the version it loaded. A conflicting version is refused. The kitchen screen folds the stream and can be rebuilt. It does not decide. The processor that opens a ticket is not a projection: it runs once and is not replayed.
 
-A command is a message: intent and data, no rules. The aggregate decides. The handler loads, delegates, saves, and returns only an acknowledgement such as `{"tableOrderId": "…", "accepted": true}`. A query reads a read model and does not hydrate the aggregate.
+A command is a message: intent and data, no rules. The aggregate decides. The handler loads, delegates, saves, and returns only a typed acknowledgement such as `TableOrderPlaced`, which serializes to `{"tableOrderId": "…", "accepted": true}`. A query reads a read model and does not hydrate the aggregate.
 
 ## Bounded contexts
 
@@ -27,7 +27,7 @@ Each context names the evening differently.
 | Out of stock | Menu item `available: false` | `Dish` declared 86 | — |
 | Money | Price on the menu | Not present | VAT-inclusive totals, payments, tip |
 
-They never call each other, and they do not share a class for the same concept. A context publishes an integration event (a type string and a payload). After the writer's transaction commits, each processor and projector runs in its own transaction and advances its own checkpoint. A failure in the kitchen cannot roll back an order. The only shared module is `EventStore`, a technical log: append-only `events` (`stream_id`, `version`, `type`, `payload`, `occurred_at`, `position`) with an expected version, plus a `checkpoints` table.
+They never call each other, and they do not share a class for the same concept. A context publishes an integration event (a type string and a payload). After the writer's transaction commits, each processor and projector runs in its own transaction and advances its own checkpoint. A failure in the kitchen cannot roll back an order. The shared modules are `SharedKernel` (contracts, buses, value types) and `EventStore`, a technical log: append-only `events` (`stream_id`, `version`, `type`, `payload`, `occurred_at`, `position`) with an expected version, plus a `checkpoints` table.
 
 Prices on the bill are tax-inclusive. Food eaten in is 10% (`gross * 10 / 110`) and alcohol is 20% (`gross * 20 / 120`).
 
@@ -58,12 +58,37 @@ Each module is a bounded context with its own service provider, registered in `b
 Inside a context:
 
 - `Domain` — aggregates (`AggregateRoot`, or `EventSourcedAggregate`), value objects, domain exceptions. No Laravel.
-- `Application` — ports at the root. `Command` holds the commands (`Command`), their handlers (`CommandHandler`) and, in `Command/Response`, what they answer (`CommandResponse`). `Query` holds the queries (`Query`) and, in `Query/Response`, the views they return (`QueryResponse`).
+- `Application` — ports at the root. `Command` holds the commands (`Command`), their handlers (`CommandHandler`, declared with `#[AsCommandHandler]`) and, in `Command/Response`, what they answer (`CommandResponse`). `Query` holds the queries (`Query`) and, in `Query/Response`, the views they return (`QueryResponse`).
 - `Infrastructure` — SQL adapters, HTTP controllers, query handlers in `Query` (`QueryHandler`), processors (`Processor`), projectors (`Projector`, `RebuildableProjector`), queue jobs.
 
 The contracts live in `SharedKernel`. Identifiers and names are types, not strings: a `TableId` is not a `BillId`, and each aggregate `id()` returns an `AggregateId`. They cast to string and serialize to JSON. Raw strings stay at the edges: SQL columns, event payloads and HTTP input.
 
 A Pest test in `SharedKernel/tests/Unit/ContractsTest.php` walks every context and fails when a class misses its contract.
+
+## Buses
+
+Controllers and processors do not call a handler. They send a message on their context bus: `FrontOfHouseCommandBus::dispatch(new SeatGuests(...))`, `FrontOfHouseQueryBus::ask(new ListFloorPlan)`. Each bus extends `MiddlewareCommandBus` or `MiddlewareQueryBus` from the SharedKernel and lists its handlers.
+
+A handler declares what it handles and takes that type, so no `assert` is needed:
+
+```php
+#[AsCommandHandler(SeatGuests::class)]
+final readonly class SeatGuestsHandler implements CommandHandler
+{
+    public function __invoke(SeatGuests $command): TableSeated
+```
+
+`HandlerMap` checks the attribute against the signature (parameter, response type, duplicates) when a bus is built, and a feature test builds every bus and checks it lists every handler of its context.
+
+Middleware wraps the handler, outermost first:
+
+| Stack | Middleware |
+| --- | --- |
+| Commands | `LoggingCommandMiddleware`, `AuthorizationCommandMiddleware`, what the context puts outside the transaction, `TransactionMiddleware` |
+| Queries | `LoggingQueryMiddleware`, `AuthorizationQueryMiddleware` |
+| Kitchen commands | adds `RetryOnConflict` outside the transaction, so a ticket changed by someone else is read and decided again, three attempts, then a 409 |
+
+`#[Authorize('ability')]` on a command or a query is checked against the Gate before the handler runs. A message without it is not guarded. A context adds middleware by overriding `outsideTransaction()` (commands) or `middleware()`.
 
 ## Install
 
@@ -107,14 +132,14 @@ The kitchen screen catches up after the order's transaction commits, before the 
 
 | Step | Lines |
 | --- | --- |
-| 1. Seat guests and the floor plan | `app/Providers/BoundedContexts/FrontOfHouse/Application/Command/SeatGuestsHandler.php#L28-L40` |
-| 2. Place a table order | `app/Providers/BoundedContexts/FrontOfHouse/Application/Command/PlaceTableOrderHandler.php#L34-L56` |
+| 1. Seat guests and the floor plan | `app/Providers/BoundedContexts/FrontOfHouse/Application/Command/SeatGuestsHandler.php#L27-L35` |
+| 2. Place a table order | `app/Providers/BoundedContexts/FrontOfHouse/Application/Command/PlaceTableOrderHandler.php#L33-L51` |
 | 3. Open a kitchen ticket | `app/Providers/BoundedContexts/Kitchen/Infrastructure/Processors/OpenKitchenTicketProcessor.php#L35-L53`, `app/Providers/BoundedContexts/Kitchen/Domain/KitchenTicket.php#L40-L55` |
 | 4. Fire, ready, kitchen screen | `app/Providers/BoundedContexts/Kitchen/Domain/KitchenTicket.php#L71-L126`, `app/Providers/BoundedContexts/Kitchen/Infrastructure/Projection/KitchenScreenProjector.php#L57-L105` |
-| 5. Queued pass, then serve | `app/Providers/BoundedContexts/FrontOfHouse/Infrastructure/Projection/ToServeProjector.php#L26-L50`, `app/Providers/BoundedContexts/FrontOfHouse/Infrastructure/Projection/ProjectToServeList.php#L10-L18`, `app/Providers/BoundedContexts/FrontOfHouse/Application/Command/ServeDishHandler.php#L29-L49` |
+| 5. Queued pass, then serve | `app/Providers/BoundedContexts/FrontOfHouse/Infrastructure/Projection/ToServeProjector.php#L26-L50`, `app/Providers/BoundedContexts/FrontOfHouse/Infrastructure/Projection/ProjectToServeList.php#L10-L18`, `app/Providers/BoundedContexts/FrontOfHouse/Application/Command/ServeDishHandler.php#L28-L44` |
 | 6. Second order | `tests/Feature/FullServiceTest.php#L53-L68` |
-| 7. 86 the menu | `app/Providers/BoundedContexts/Kitchen/Domain/Dish.php#L29-L36`, `app/Providers/BoundedContexts/Kitchen/Application/Command/DeclareDishEightySixedHandler.php#L27-L41`, `app/Providers/BoundedContexts/FrontOfHouse/Infrastructure/Processors/MarkMenuItemUnavailableProcessor.php#L27-L42` |
-| 8. Bill, pay, free the table | `app/Providers/BoundedContexts/FrontOfHouse/Application/Command/RequestBillHandler.php#L28-L45`, `app/Providers/BoundedContexts/Billing/Infrastructure/Processors/RecordServedDishes.php#L29-L49`, `app/Providers/BoundedContexts/Billing/Application/Command/PrepareBillHandler.php#L28-L54`, `app/Providers/BoundedContexts/Billing/Domain/Bill.php#L44-L67`, `app/Providers/BoundedContexts/Billing/Application/Command/PayBillHandler.php#L27-L45`, `app/Providers/BoundedContexts/FrontOfHouse/Application/Command/FreeTableHandler.php#L28-L40` |
-| Level 1 | `SeatGuestsHandler.php#L28-L40` and `FreeTableHandler.php#L28-L40` |
+| 7. 86 the menu | `app/Providers/BoundedContexts/Kitchen/Domain/Dish.php#L29-L36`, `app/Providers/BoundedContexts/Kitchen/Application/Command/DeclareDishEightySixedHandler.php#L26-L36`, `app/Providers/BoundedContexts/FrontOfHouse/Infrastructure/Processors/MarkMenuItemUnavailableProcessor.php#L27-L42` |
+| 8. Bill, pay, free the table | `app/Providers/BoundedContexts/FrontOfHouse/Application/Command/RequestBillHandler.php#L27-L40`, `app/Providers/BoundedContexts/Billing/Infrastructure/Processors/RecordServedDishes.php#L29-L49`, `app/Providers/BoundedContexts/Billing/Application/Command/PrepareBillHandler.php#L27-L49`, `app/Providers/BoundedContexts/Billing/Domain/Bill.php#L44-L67`, `app/Providers/BoundedContexts/Billing/Application/Command/PayBillHandler.php#L26-L40`, `app/Providers/BoundedContexts/FrontOfHouse/Application/Command/FreeTableHandler.php#L27-L35` |
+| Level 1 | `SeatGuestsHandler.php#L27-L35` and `FreeTableHandler.php#L27-L35` |
 | Level 2 | `ToServeProjector.php#L26-L50` and `ProjectToServeList.php#L10-L18` |
-| Level 3 | `app/Providers/BoundedContexts/EventStore/Infrastructure/DatabaseEventStore.php#L21-L64`, `app/Providers/BoundedContexts/Kitchen/Infrastructure/EventStoreKitchenTicketRepository.php#L47-L64`, `app/Providers/BoundedContexts/EventStore/Infrastructure/InProcessAfterAppend.php#L53-L60` |
+| Level 3 | `app/Providers/BoundedContexts/EventStore/Infrastructure/DatabaseEventStore.php#L21-L64`, `app/Providers/BoundedContexts/Kitchen/Infrastructure/EventStoreKitchenTicketRepository.php#L48-L65`, `app/Providers/BoundedContexts/EventStore/Infrastructure/InProcessAfterAppend.php#L53-L60` |
