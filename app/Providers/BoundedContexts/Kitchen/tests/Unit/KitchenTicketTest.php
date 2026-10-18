@@ -18,42 +18,44 @@ function openTicket(): KitchenTicket
     ]);
 }
 
-test('a ticket is done only when every dish is ready', function () {
-    $ticket = openTicket();
-    $ticket->fireCourse('starter');
-    $ticket->markReady(new LineId('salad'));
+describe('KitchenTicket', function () {
+    test('a ticket is done only when every dish is ready', function () {
+        $ticket = openTicket();
+        $ticket->fireCourse('starter');
+        $ticket->markReady(new LineId('salad'));
 
-    expect($ticket->isComplete())->toBeFalse();
+        expect($ticket->isComplete())->toBeFalse();
 
-    $ticket->fireCourse('main');
-    $ticket->markReady(new LineId('steak'));
+        $ticket->fireCourse('main');
+        $ticket->markReady(new LineId('steak'));
 
-    expect($ticket->isComplete())->toBeTrue()
-        ->and(array_map(fn (DomainEvent $event): string => (string) $event->type, iterator_to_array($ticket->pendingEvents())))->toBe([
-            'kitchen.ticket_opened',
-            'kitchen.dish_fired',
-            'kitchen.dish_ready',
-            'kitchen.dish_fired',
-            'kitchen.dish_ready',
-            'kitchen.ticket_completed',
-        ]);
-});
+        expect($ticket->isComplete())->toBeTrue()
+            ->and(array_map(fn (DomainEvent $event): string => (string) $event->type, iterator_to_array($ticket->pendingEvents())))->toBe([
+                'kitchen.ticket_opened',
+                'kitchen.dish_fired',
+                'kitchen.dish_ready',
+                'kitchen.dish_fired',
+                'kitchen.dish_ready',
+                'kitchen.ticket_completed',
+            ]);
+    });
 
-test('a dish cannot be ready before it is fired', function () {
-    $ticket = openTicket();
+    test('a dish cannot be ready before it is fired', function () {
+        $ticket = openTicket();
 
-    expect(fn () => $ticket->markReady(new LineId('salad')))
-        ->toThrow(KitchenException::class, 'Fire the dish before it can be ready.');
-});
+        expect(fn () => $ticket->markReady(new LineId('salad')))
+            ->toThrow(KitchenException::class, 'Fire the dish before it can be ready.');
+    });
 
-test('replaying the stream rebuilds the same decision', function () {
-    $original = openTicket();
-    $original->fireCourse('starter');
-    $original->markReady(new LineId('salad'));
+    test('replaying the stream rebuilds the same decision', function () {
+        $original = openTicket();
+        $original->fireCourse('starter');
+        $original->markReady(new LineId('salad'));
 
-    $rebuilt = KitchenTicket::fromHistory(new KitchenTicketId('ticket-1'), $original->pendingEvents());
+        $rebuilt = KitchenTicket::fromHistory(new KitchenTicketId('ticket-1'), $original->pendingEvents());
 
-    expect($rebuilt->isComplete())->toBeFalse()
-        ->and($rebuilt->expectedVersion())->toBe(3)
-        ->and($rebuilt->pendingEvents())->toHaveCount(0);
+        expect($rebuilt->isComplete())->toBeFalse()
+            ->and($rebuilt->expectedVersion())->toBe(3)
+            ->and($rebuilt->pendingEvents())->toHaveCount(0);
+    });
 });
