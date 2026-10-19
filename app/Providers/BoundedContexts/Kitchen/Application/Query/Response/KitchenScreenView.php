@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Providers\BoundedContexts\Kitchen\Application\Query\Response;
 
-use App\Providers\BoundedContexts\SharedKernel\Application\QueryResponse;
+use App\Providers\Modules\SharedKernel\Application\QueryResponse;
 
 final readonly class KitchenScreenView implements QueryResponse
 {

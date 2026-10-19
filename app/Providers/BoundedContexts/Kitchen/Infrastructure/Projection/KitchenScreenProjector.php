@@ -6,10 +6,10 @@ namespace App\Providers\BoundedContexts\Kitchen\Infrastructure\Projection;
 
 use App\Providers\BoundedContexts\Kitchen\Domain\KitchenEvent;
 use App\Providers\BoundedContexts\Kitchen\Infrastructure\Tables;
-use App\Providers\BoundedContexts\SharedKernel\Application\RebuildableProjector;
-use App\Providers\BoundedContexts\SharedKernel\Domain\EventType;
 use App\Providers\Modules\EventStore\Domain\CheckpointStore;
 use App\Providers\Modules\EventStore\Domain\EventStore;
+use App\Providers\Modules\SharedKernel\Application\RebuildableProjector;
+use App\Providers\Modules\SharedKernel\Domain\EventType;
 use Illuminate\Support\Facades\DB;
 
 /**

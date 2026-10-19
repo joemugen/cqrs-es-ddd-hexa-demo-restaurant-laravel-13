@@ -8,7 +8,7 @@ use App\Providers\BoundedContexts\Kitchen\Domain\LineId;
 use App\Providers\BoundedContexts\Kitchen\Domain\PartyRef;
 use App\Providers\BoundedContexts\Kitchen\Domain\TableLabel;
 use App\Providers\BoundedContexts\Kitchen\Domain\TicketLine;
-use App\Providers\BoundedContexts\SharedKernel\Domain\DomainEvent;
+use App\Providers\Modules\SharedKernel\Domain\DomainEvent;
 
 function openTicket(): KitchenTicket
 {

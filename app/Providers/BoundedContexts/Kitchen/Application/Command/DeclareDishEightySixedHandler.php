@@ -7,10 +7,10 @@ namespace App\Providers\BoundedContexts\Kitchen\Application\Command;
 use App\Providers\BoundedContexts\Kitchen\Application\Command\Response\DishEightySixed;
 use App\Providers\BoundedContexts\Kitchen\Application\DishRepository;
 use App\Providers\BoundedContexts\Kitchen\Domain\KitchenEvent;
-use App\Providers\BoundedContexts\SharedKernel\Application\Bus\Attribute\AsCommandHandler;
-use App\Providers\BoundedContexts\SharedKernel\Application\CommandHandler;
 use App\Providers\Modules\EventStore\Application\IntegrationBus;
 use App\Providers\Modules\EventStore\Domain\IntegrationEvent;
+use App\Providers\Modules\SharedKernel\Application\Bus\Attribute\AsCommandHandler;
+use App\Providers\Modules\SharedKernel\Application\CommandHandler;
 
 /**
  * @implements CommandHandler<DeclareDishEightySixed, DishEightySixed>

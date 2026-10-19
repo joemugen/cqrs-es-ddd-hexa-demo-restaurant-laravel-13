@@ -3,7 +3,7 @@
 use App\Providers\BoundedContexts\Kitchen\Domain\DishName;
 use App\Providers\BoundedContexts\Kitchen\Domain\KitchenTicketId;
 use App\Providers\BoundedContexts\Kitchen\Domain\TableLabel;
-use App\Providers\BoundedContexts\SharedKernel\Domain\InvalidValue;
+use App\Providers\Modules\SharedKernel\Domain\InvalidValue;
 
 describe('a dish name', function (): void {
     it('accepts a recipe name', function (): void {

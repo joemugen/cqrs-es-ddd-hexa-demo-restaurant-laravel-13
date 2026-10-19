@@ -8,10 +8,10 @@ use App\Providers\BoundedContexts\FrontOfHouse\Application\Command\Response\Dish
 use App\Providers\BoundedContexts\FrontOfHouse\Application\MenuRepository;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\PassRepository;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\FrontOfHouseEvent;
-use App\Providers\BoundedContexts\SharedKernel\Application\Bus\Attribute\AsCommandHandler;
-use App\Providers\BoundedContexts\SharedKernel\Application\CommandHandler;
 use App\Providers\Modules\EventStore\Application\IntegrationBus;
 use App\Providers\Modules\EventStore\Domain\IntegrationEvent;
+use App\Providers\Modules\SharedKernel\Application\Bus\Attribute\AsCommandHandler;
+use App\Providers\Modules\SharedKernel\Application\CommandHandler;
 
 /**
  * @implements CommandHandler<ServeDish, DishServed>

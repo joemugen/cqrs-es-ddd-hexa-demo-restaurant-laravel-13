@@ -6,7 +6,7 @@ namespace App\Providers\BoundedContexts\Kitchen\Application\Command;
 
 use App\Providers\BoundedContexts\Kitchen\Domain\KitchenTicketId;
 use App\Providers\BoundedContexts\Kitchen\Domain\LineId;
-use App\Providers\BoundedContexts\SharedKernel\Application\Command;
+use App\Providers\Modules\SharedKernel\Application\Command;
 
 final readonly class MarkDishReady implements Command
 {

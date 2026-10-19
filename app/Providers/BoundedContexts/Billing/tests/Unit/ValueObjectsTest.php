@@ -3,7 +3,7 @@
 use App\Providers\BoundedContexts\Billing\Domain\BillId;
 use App\Providers\BoundedContexts\Billing\Domain\CoverRef;
 use App\Providers\BoundedContexts\Billing\Domain\SourceKey;
-use App\Providers\BoundedContexts\SharedKernel\Domain\InvalidValue;
+use App\Providers\Modules\SharedKernel\Domain\InvalidValue;
 
 describe('a source key', function (): void {
     it('names the ticket and the line a dish came from', function (): void {

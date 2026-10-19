@@ -14,8 +14,8 @@ use App\Providers\BoundedContexts\Kitchen\Domain\LineId;
 use App\Providers\BoundedContexts\Kitchen\Domain\PartyRef;
 use App\Providers\BoundedContexts\Kitchen\Domain\TableLabel;
 use App\Providers\BoundedContexts\Kitchen\Infrastructure\Tables;
-use App\Providers\BoundedContexts\SharedKernel\Application\Bus\Attribute\AsQueryHandler;
-use App\Providers\BoundedContexts\SharedKernel\Application\QueryHandler;
+use App\Providers\Modules\SharedKernel\Application\Bus\Attribute\AsQueryHandler;
+use App\Providers\Modules\SharedKernel\Application\QueryHandler;
 use Illuminate\Support\Facades\DB;
 
 /**

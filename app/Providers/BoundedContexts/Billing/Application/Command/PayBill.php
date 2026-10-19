@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Providers\BoundedContexts\Billing\Application\Command;
 
 use App\Providers\BoundedContexts\Billing\Domain\BillId;
-use App\Providers\BoundedContexts\SharedKernel\Application\Command;
+use App\Providers\Modules\SharedKernel\Application\Command;
 
 final readonly class PayBill implements Command
 {

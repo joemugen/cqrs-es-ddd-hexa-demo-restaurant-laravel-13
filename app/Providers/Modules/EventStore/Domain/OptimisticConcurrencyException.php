@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Providers\Modules\EventStore\Domain;
 
-use App\Providers\BoundedContexts\SharedKernel\Domain\StreamId;
+use App\Providers\Modules\SharedKernel\Domain\StreamId;
 use RuntimeException;
 
 final class OptimisticConcurrencyException extends RuntimeException

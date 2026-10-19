@@ -12,8 +12,8 @@ use App\Providers\BoundedContexts\Billing\Domain\BillId;
 use App\Providers\BoundedContexts\Billing\Domain\BillingException;
 use App\Providers\BoundedContexts\Billing\Domain\CoverRef;
 use App\Providers\BoundedContexts\Billing\Infrastructure\Tables;
-use App\Providers\BoundedContexts\SharedKernel\Application\Bus\Attribute\AsQueryHandler;
-use App\Providers\BoundedContexts\SharedKernel\Application\QueryHandler;
+use App\Providers\Modules\SharedKernel\Application\Bus\Attribute\AsQueryHandler;
+use App\Providers\Modules\SharedKernel\Application\QueryHandler;
 use Illuminate\Support\Facades\DB;
 
 /**

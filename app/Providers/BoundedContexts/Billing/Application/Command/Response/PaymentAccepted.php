@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Providers\BoundedContexts\Billing\Application\Command\Response;
 
 use App\Providers\BoundedContexts\Billing\Domain\BillId;
-use App\Providers\BoundedContexts\SharedKernel\Application\CommandResponse;
+use App\Providers\Modules\SharedKernel\Application\CommandResponse;
 
 final readonly class PaymentAccepted implements CommandResponse
 {

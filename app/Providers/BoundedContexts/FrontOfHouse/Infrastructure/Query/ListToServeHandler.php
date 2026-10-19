@@ -14,8 +14,8 @@ use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableId;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableLabel;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\TicketId;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Tables;
-use App\Providers\BoundedContexts\SharedKernel\Application\Bus\Attribute\AsQueryHandler;
-use App\Providers\BoundedContexts\SharedKernel\Application\QueryHandler;
+use App\Providers\Modules\SharedKernel\Application\Bus\Attribute\AsQueryHandler;
+use App\Providers\Modules\SharedKernel\Application\QueryHandler;
 use Illuminate\Support\Facades\DB;
 
 /**

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Providers\BoundedContexts\Billing\Domain;
 
-use App\Providers\BoundedContexts\SharedKernel\Domain\StringValue;
+use App\Providers\Modules\SharedKernel\Domain\StringValue;
 
 /**
  * Where a served dish came from: the kitchen ticket and the line, so a dish is charged once.

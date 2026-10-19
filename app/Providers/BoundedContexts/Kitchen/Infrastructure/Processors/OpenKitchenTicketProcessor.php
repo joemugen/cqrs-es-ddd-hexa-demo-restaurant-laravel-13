@@ -14,9 +14,9 @@ use App\Providers\BoundedContexts\Kitchen\Domain\PartyRef;
 use App\Providers\BoundedContexts\Kitchen\Domain\TableLabel;
 use App\Providers\BoundedContexts\Kitchen\Infrastructure\Bus\KitchenCommandBus;
 use App\Providers\BoundedContexts\Kitchen\Infrastructure\ConsumedEvents;
-use App\Providers\BoundedContexts\SharedKernel\Application\Processor;
 use App\Providers\Modules\EventStore\Domain\CheckpointStore;
 use App\Providers\Modules\EventStore\Domain\EventStore;
+use App\Providers\Modules\SharedKernel\Application\Processor;
 
 /**
  * A processor reacts once. It is not a projection: replaying it would open tickets again.

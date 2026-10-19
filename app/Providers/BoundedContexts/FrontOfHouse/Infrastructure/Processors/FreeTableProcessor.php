@@ -8,9 +8,9 @@ use App\Providers\BoundedContexts\FrontOfHouse\Application\Command\FreeTable;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableId;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Bus\FrontOfHouseCommandBus;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\ConsumedEvents;
-use App\Providers\BoundedContexts\SharedKernel\Application\Processor;
 use App\Providers\Modules\EventStore\Domain\CheckpointStore;
 use App\Providers\Modules\EventStore\Domain\EventStore;
+use App\Providers\Modules\SharedKernel\Application\Processor;
 
 /**
  * The dining room hears that the bill is paid and clears the table. Once.

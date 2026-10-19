@@ -6,7 +6,7 @@
 >
     <testsuites>
         <testsuite name="Unit">
-            <directory suffix="Test.php">app/Providers/BoundedContexts/SharedKernel/tests/Unit</directory>
+            <directory suffix="Test.php">app/Providers/Modules/SharedKernel/tests/Unit</directory>
             <directory suffix="Test.php">app/Providers/Modules/EventStore/tests/Unit</directory>
             <directory suffix="Test.php">app/Providers/BoundedContexts/FrontOfHouse/tests/Unit</directory>
             <directory suffix="Test.php">app/Providers/BoundedContexts/Kitchen/tests/Unit</directory>
@@ -14,7 +14,7 @@
         </testsuite>
         <testsuite name="Feature">
             <directory>tests/Feature</directory>
-            <directory suffix="Test.php">app/Providers/BoundedContexts/SharedKernel/tests/Feature</directory>
+            <directory suffix="Test.php">app/Providers/Modules/SharedKernel/tests/Feature</directory>
             <directory suffix="Test.php">app/Providers/Modules/EventStore/tests/Feature</directory>
             <directory suffix="Test.php">app/Providers/BoundedContexts/FrontOfHouse/tests/Feature</directory>
             <directory suffix="Test.php">app/Providers/BoundedContexts/Kitchen/tests/Feature</directory>

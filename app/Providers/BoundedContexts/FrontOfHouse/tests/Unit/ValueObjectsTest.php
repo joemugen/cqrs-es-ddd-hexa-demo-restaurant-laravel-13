@@ -3,7 +3,7 @@
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\DishName;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableId;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableLabel;
-use App\Providers\BoundedContexts\SharedKernel\Domain\InvalidValue;
+use App\Providers\Modules\SharedKernel\Domain\InvalidValue;
 
 describe('a dish name', function (): void {
     it('accepts a menu name', function (): void {

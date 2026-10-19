@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Providers\Modules\EventStore\Domain;
 
-use App\Providers\BoundedContexts\SharedKernel\Domain\EventType;
+use App\Providers\Modules\SharedKernel\Domain\EventType;
 
 /**
  * A fact one context tells the others. It carries plain data: listeners do not share a class with the publisher.

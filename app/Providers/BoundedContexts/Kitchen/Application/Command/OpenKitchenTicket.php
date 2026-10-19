@@ -8,7 +8,7 @@ use App\Providers\BoundedContexts\Kitchen\Domain\KitchenTicketId;
 use App\Providers\BoundedContexts\Kitchen\Domain\PartyRef;
 use App\Providers\BoundedContexts\Kitchen\Domain\TableLabel;
 use App\Providers\BoundedContexts\Kitchen\Domain\TicketLine;
-use App\Providers\BoundedContexts\SharedKernel\Application\Command;
+use App\Providers\Modules\SharedKernel\Application\Command;
 
 final readonly class OpenKitchenTicket implements Command
 {

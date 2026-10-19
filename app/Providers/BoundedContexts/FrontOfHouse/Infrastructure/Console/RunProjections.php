@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Console;
 
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Projection\ToServeProjector;
-use App\Providers\BoundedContexts\SharedKernel\Infrastructure\Eventing\EventConsumers;
+use App\Providers\Modules\SharedKernel\Infrastructure\Eventing\EventConsumers;
 use Illuminate\Console\Command;
 
 final class RunProjections extends Command

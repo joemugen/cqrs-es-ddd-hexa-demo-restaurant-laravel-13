@@ -8,13 +8,13 @@ use App\Providers\BoundedContexts\Kitchen\Application\KitchenTicketRepository;
 use App\Providers\BoundedContexts\Kitchen\Domain\KitchenException;
 use App\Providers\BoundedContexts\Kitchen\Domain\KitchenTicket;
 use App\Providers\BoundedContexts\Kitchen\Domain\KitchenTicketId;
-use App\Providers\BoundedContexts\SharedKernel\Domain\ConcurrencyConflict;
-use App\Providers\BoundedContexts\SharedKernel\Domain\DomainEvent;
-use App\Providers\BoundedContexts\SharedKernel\Domain\DomainEvents;
-use App\Providers\BoundedContexts\SharedKernel\Domain\StreamId;
 use App\Providers\Modules\EventStore\Domain\EventStore;
 use App\Providers\Modules\EventStore\Domain\OptimisticConcurrencyException;
 use App\Providers\Modules\EventStore\Domain\StoredEvent;
+use App\Providers\Modules\SharedKernel\Domain\ConcurrencyConflict;
+use App\Providers\Modules\SharedKernel\Domain\DomainEvent;
+use App\Providers\Modules\SharedKernel\Domain\DomainEvents;
+use App\Providers\Modules\SharedKernel\Domain\StreamId;
 use DateTimeImmutable;
 use DateTimeZone;
 

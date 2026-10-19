@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Providers\BoundedContexts\Billing\Domain;
 
-use App\Providers\BoundedContexts\SharedKernel\Domain\AggregateRoot;
+use App\Providers\Modules\SharedKernel\Domain\AggregateRoot;
 
 final class Bill implements AggregateRoot
 {

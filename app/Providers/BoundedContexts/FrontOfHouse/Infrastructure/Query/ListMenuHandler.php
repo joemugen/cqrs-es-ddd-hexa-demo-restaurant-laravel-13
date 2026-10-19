@@ -10,8 +10,8 @@ use App\Providers\BoundedContexts\FrontOfHouse\Application\Query\Response\MenuVi
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\DishName;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\MenuItemId;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Tables;
-use App\Providers\BoundedContexts\SharedKernel\Application\Bus\Attribute\AsQueryHandler;
-use App\Providers\BoundedContexts\SharedKernel\Application\QueryHandler;
+use App\Providers\Modules\SharedKernel\Application\Bus\Attribute\AsQueryHandler;
+use App\Providers\Modules\SharedKernel\Application\QueryHandler;
 use Illuminate\Support\Facades\DB;
 
 /**

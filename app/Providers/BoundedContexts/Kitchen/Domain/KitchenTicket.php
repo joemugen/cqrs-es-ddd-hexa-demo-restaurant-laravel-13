@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace App\Providers\BoundedContexts\Kitchen\Domain;
 
-use App\Providers\BoundedContexts\SharedKernel\Domain\AggregateId;
-use App\Providers\BoundedContexts\SharedKernel\Domain\DomainEvent;
-use App\Providers\BoundedContexts\SharedKernel\Domain\DomainEvents;
-use App\Providers\BoundedContexts\SharedKernel\Domain\EventSourcedAggregate;
-use App\Providers\BoundedContexts\SharedKernel\Domain\StreamId;
+use App\Providers\Modules\SharedKernel\Domain\AggregateId;
+use App\Providers\Modules\SharedKernel\Domain\DomainEvent;
+use App\Providers\Modules\SharedKernel\Domain\DomainEvents;
+use App\Providers\Modules\SharedKernel\Domain\EventSourcedAggregate;
+use App\Providers\Modules\SharedKernel\Domain\StreamId;
 
 final class KitchenTicket implements EventSourcedAggregate
 {

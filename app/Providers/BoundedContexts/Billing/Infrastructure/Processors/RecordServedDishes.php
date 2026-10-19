@@ -9,9 +9,9 @@ use App\Providers\BoundedContexts\Billing\Domain\CoverRef;
 use App\Providers\BoundedContexts\Billing\Domain\ServedDish;
 use App\Providers\BoundedContexts\Billing\Domain\SourceKey;
 use App\Providers\BoundedContexts\Billing\Infrastructure\ConsumedEvents;
-use App\Providers\BoundedContexts\SharedKernel\Application\Processor;
 use App\Providers\Modules\EventStore\Domain\CheckpointStore;
 use App\Providers\Modules\EventStore\Domain\EventStore;
+use App\Providers\Modules\SharedKernel\Application\Processor;
 
 /**
  * Copies a served dish onto the till. It is not replayed: a charge is taken once.

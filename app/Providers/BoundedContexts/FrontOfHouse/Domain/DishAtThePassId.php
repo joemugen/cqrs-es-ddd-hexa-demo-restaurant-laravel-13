@@ -4,6 +4,6 @@ declare(strict_types=1);
 
 namespace App\Providers\BoundedContexts\FrontOfHouse\Domain;
 
-use App\Providers\BoundedContexts\SharedKernel\Domain\StringId;
+use App\Providers\Modules\SharedKernel\Domain\StringId;
 
 final readonly class DishAtThePassId extends StringId {}

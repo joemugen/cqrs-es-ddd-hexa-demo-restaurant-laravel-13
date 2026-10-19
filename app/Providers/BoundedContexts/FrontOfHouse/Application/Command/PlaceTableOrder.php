@@ -7,7 +7,7 @@ namespace App\Providers\BoundedContexts\FrontOfHouse\Application\Command;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\RequestedLine;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableId;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableOrderId;
-use App\Providers\BoundedContexts\SharedKernel\Application\Command;
+use App\Providers\Modules\SharedKernel\Application\Command;
 
 final readonly class PlaceTableOrder implements Command
 {

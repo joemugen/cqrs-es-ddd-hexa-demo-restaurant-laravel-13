@@ -6,7 +6,7 @@ use App\Providers\BoundedContexts\Kitchen\Domain\KitchenTicket;
 use App\Providers\BoundedContexts\Kitchen\Domain\KitchenTicketId;
 use App\Providers\BoundedContexts\Kitchen\Infrastructure\KitchenSeeder;
 use App\Providers\BoundedContexts\Kitchen\Infrastructure\Projection\KitchenScreenProjector;
-use App\Providers\BoundedContexts\SharedKernel\Domain\ConcurrencyConflict;
+use App\Providers\Modules\SharedKernel\Domain\ConcurrencyConflict;
 
 describe('the kitchen ticket', function () {
     beforeEach(function () {

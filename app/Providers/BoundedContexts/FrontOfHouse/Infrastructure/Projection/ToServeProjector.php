@@ -6,10 +6,10 @@ namespace App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Projection;
 
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\ConsumedEvents;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Tables;
-use App\Providers\BoundedContexts\SharedKernel\Application\Consumption\RunsOnQueue;
-use App\Providers\BoundedContexts\SharedKernel\Application\Projector;
 use App\Providers\Modules\EventStore\Domain\CheckpointStore;
 use App\Providers\Modules\EventStore\Domain\EventStore;
+use App\Providers\Modules\SharedKernel\Application\Consumption\RunsOnQueue;
+use App\Providers\Modules\SharedKernel\Application\Projector;
 use Illuminate\Support\Facades\DB;
 
 /**

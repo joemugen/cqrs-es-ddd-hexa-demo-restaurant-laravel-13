@@ -7,8 +7,8 @@ namespace App\Providers\BoundedContexts\FrontOfHouse\Application\Command;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\Command\Response\TableSeated;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\FloorPlan;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\TableRepository;
-use App\Providers\BoundedContexts\SharedKernel\Application\Bus\Attribute\AsCommandHandler;
-use App\Providers\BoundedContexts\SharedKernel\Application\CommandHandler;
+use App\Providers\Modules\SharedKernel\Application\Bus\Attribute\AsCommandHandler;
+use App\Providers\Modules\SharedKernel\Application\CommandHandler;
 
 /**
  * @implements CommandHandler<SeatGuests, TableSeated>

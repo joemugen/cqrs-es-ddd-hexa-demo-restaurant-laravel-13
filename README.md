@@ -46,16 +46,16 @@ Prices on the bill are tax-inclusive. Food eaten in is 10% (`gross * 10 / 110`) 
 
 ```
 app/Providers/
-  Modules/
+  Modules/               technical machinery the contexts share, importing none of them
+    SharedKernel/        the contracts, buses and value types every context implements
     EventStore/          the log, the checkpoints, the in-process wake-up
   BoundedContexts/
-    SharedKernel/        the contracts every context implements
     FrontOfHouse/        dining room
     Kitchen/             tickets and the pass screen
     Billing/             the till
 ```
 
-A bounded context has its own service provider, registered in `bootstrap/providers.php`. The provider loads the context's config, routes, and migrations, and binds ports to adapters. Pest discovers `tests/Unit` and `tests/Feature` inside each context. A module such as `EventStore` is not a bounded context: it models no part of the restaurant, it is technical machinery the contexts share, so it lives beside them and imports none of them.
+A bounded context has its own service provider, registered in `bootstrap/providers.php`. The provider loads the context's config, routes, and migrations, and binds ports to adapters. Pest discovers `tests/Unit` and `tests/Feature` inside each context. `SharedKernel` and `EventStore` are modules, not bounded contexts: they model no part of the restaurant, they are technical machinery the contexts share, so they live beside them and import none of them.
 
 Inside a context:
 

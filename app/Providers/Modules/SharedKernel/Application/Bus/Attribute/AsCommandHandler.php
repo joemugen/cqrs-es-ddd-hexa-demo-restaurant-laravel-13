@@ -1,0 +1,19 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Providers\Modules\SharedKernel\Application\Bus\Attribute;
+
+use Attribute;
+
+/**
+ * Declares the command a handler handles. The bus checks it against the type of __invoke().
+ */
+#[Attribute(Attribute::TARGET_CLASS)]
+final readonly class AsCommandHandler
+{
+    /**
+     * @param  class-string  $message
+     */
+    public function __construct(public string $message) {}
+}

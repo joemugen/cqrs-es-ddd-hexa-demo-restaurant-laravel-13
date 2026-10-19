@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Providers\Modules\EventStore\Domain;
 
-use App\Providers\BoundedContexts\SharedKernel\Domain\DomainEvents;
-use App\Providers\BoundedContexts\SharedKernel\Domain\StreamId;
+use App\Providers\Modules\SharedKernel\Domain\DomainEvents;
+use App\Providers\Modules\SharedKernel\Domain\StreamId;
 
 interface EventStore
 {

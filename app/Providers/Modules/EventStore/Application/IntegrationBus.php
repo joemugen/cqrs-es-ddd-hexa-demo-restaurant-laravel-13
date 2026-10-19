@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Providers\Modules\EventStore\Application;
 
-use App\Providers\BoundedContexts\SharedKernel\Domain\EventType;
 use App\Providers\Modules\EventStore\Domain\IntegrationEvent;
+use App\Providers\Modules\SharedKernel\Domain\EventType;
 use Closure;
 
 interface IntegrationBus

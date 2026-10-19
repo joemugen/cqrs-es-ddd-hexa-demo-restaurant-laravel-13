@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace App\Providers\Modules\EventStore\Infrastructure;
 
-use App\Providers\BoundedContexts\SharedKernel\Domain\DomainEvents;
-use App\Providers\BoundedContexts\SharedKernel\Domain\EventType;
-use App\Providers\BoundedContexts\SharedKernel\Domain\StreamId;
 use App\Providers\Modules\EventStore\Application\AfterAppend;
 use App\Providers\Modules\EventStore\Domain\EventStore;
 use App\Providers\Modules\EventStore\Domain\OptimisticConcurrencyException;
 use App\Providers\Modules\EventStore\Domain\StoredEvent;
+use App\Providers\Modules\SharedKernel\Domain\DomainEvents;
+use App\Providers\Modules\SharedKernel\Domain\EventType;
+use App\Providers\Modules\SharedKernel\Domain\StreamId;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 

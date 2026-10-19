@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Providers\BoundedContexts\Billing\Application\Query;
 
 use App\Providers\BoundedContexts\Billing\Domain\CoverRef;
-use App\Providers\BoundedContexts\SharedKernel\Application\Query;
+use App\Providers\Modules\SharedKernel\Application\Query;
 
 final readonly class GetBill implements Query
 {

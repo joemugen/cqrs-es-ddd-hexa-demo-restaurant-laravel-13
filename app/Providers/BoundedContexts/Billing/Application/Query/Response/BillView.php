@@ -6,7 +6,7 @@ namespace App\Providers\BoundedContexts\Billing\Application\Query\Response;
 
 use App\Providers\BoundedContexts\Billing\Domain\BillId;
 use App\Providers\BoundedContexts\Billing\Domain\CoverRef;
-use App\Providers\BoundedContexts\SharedKernel\Application\QueryResponse;
+use App\Providers\Modules\SharedKernel\Application\QueryResponse;
 
 final readonly class BillView implements QueryResponse
 {
