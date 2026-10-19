@@ -13,12 +13,12 @@ use Illuminate\Support\Facades\DB;
 
 final class DatabaseDishCatalog implements DishCatalog
 {
-    public function linesFor(array $ordered): array
+    public function linesFor(array $ordered, int $asOfPosition): array
     {
-        return array_map(fn (OrderedLine $line): TicketLine => $this->ticketLine($line), $ordered);
+        return array_map(fn (OrderedLine $line): TicketLine => $this->ticketLine($line, $asOfPosition), $ordered);
     }
 
-    private function ticketLine(OrderedLine $line): TicketLine
+    private function ticketLine(OrderedLine $line, int $asOfPosition): TicketLine
     {
         $dish = DB::table(Tables::DISHES)->where('name', (string) $line->name)->first();
 
@@ -26,7 +26,7 @@ final class DatabaseDishCatalog implements DishCatalog
             throw new KitchenException("The kitchen has no dish called {$line->name}.");
         }
 
-        if (! $dish->in_stock) {
+        if (! $dish->in_stock && $this->wasEightySixedBefore($dish, $asOfPosition)) {
             throw new KitchenException("{$dish->name} is 86.");
         }
 
@@ -39,5 +39,13 @@ final class DatabaseDishCatalog implements DishCatalog
             course: $line->course,
             allergens: array_values($line->allergens),
         );
+    }
+
+    /**
+     * A dish out of stock with no recorded position predates the position and counts as 86 for every order.
+     */
+    private function wasEightySixedBefore(object $dish, int $asOfPosition): bool
+    {
+        return $dish->eighty_sixed_position === null || (int) $dish->eighty_sixed_position < $asOfPosition;
     }
 }

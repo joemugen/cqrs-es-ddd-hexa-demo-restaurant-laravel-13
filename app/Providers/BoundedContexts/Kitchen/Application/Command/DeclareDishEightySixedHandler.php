@@ -28,9 +28,10 @@ final readonly class DeclareDishEightySixedHandler implements CommandHandler
         $dish = $this->dishes->get($command->dishId);
         $dish->eightySix();
         $this->dishes->save($dish);
-        $this->bus->publish(IntegrationEvent::named(KitchenEvent::DISH_EIGHTY_SIXED, [
+        $position = $this->bus->publish(IntegrationEvent::named(KitchenEvent::DISH_EIGHTY_SIXED, [
             'dishName' => (string) $dish->name(),
         ]));
+        $this->dishes->recordEightySixedAt($dish->id(), $position);
 
         return new DishEightySixed($command->dishId);
     }

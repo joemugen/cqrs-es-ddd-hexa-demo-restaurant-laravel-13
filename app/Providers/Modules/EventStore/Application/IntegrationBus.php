@@ -12,8 +12,10 @@ interface IntegrationBus
 {
     /**
      * Record a fact for other bounded contexts and tell in-process listeners.
+     *
+     * @return int where the fact sits in the log: the logical clock a context can compare other facts with
      */
-    public function publish(IntegrationEvent $event): void;
+    public function publish(IntegrationEvent $event): int;
 
     /**
      * @param  Closure(IntegrationEvent): void  $listener

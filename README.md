@@ -120,6 +120,14 @@ Before it opens a transaction or takes a lock, a worker asks each consumer `hasW
 
 A consumer that depends on another one says so in code. `PrepareBillProcessor` reads its events, then brings the till's ledger of served dishes up to date, so a bill request never overtakes the dishes served before it, whatever order the consumers wake in.
 
+### Eventual consistency: judge a fact where it happened
+
+With a worker, a consumer may read a fact long after it was appended, so it must not judge it against the state of the world now. The kitchen shows it: table 7 orders a steak, the kitchen declares it 86, and only then does the kitchen worker read the order. The steak was available when the order was placed, so the ticket opens.
+
+The kitchen records the log position of the 86 (`kitchen_dishes.eighty_sixed_position`, which `IntegrationBus::publish()` and `EventStore::append()` now return), and `DishCatalog::linesFor()` takes the position of the order. A dish is refused only when it was declared 86 at a position before the order's. The log position is the clock all consumers share.
+
+Not covered yet: an order placed *after* the 86 but accepted by the dining room because its menu had not caught up. The kitchen then refuses it, and the consumer keeps failing on that event (see the poison events item of the roadmap).
+
 ### Locks
 
 Two processes must never consume the same events, so there are two locks, both cache locks.
@@ -209,8 +217,8 @@ The kitchen screen catches up after the order's transaction commits, before the 
 | 4. Fire, ready, kitchen screen | `app/Providers/BoundedContexts/Kitchen/Domain/KitchenTicket.php#L71-L126`, `app/Providers/BoundedContexts/Kitchen/Infrastructure/Projection/KitchenScreenProjector.php#L63-L112` |
 | 5. Queued pass, then serve | `app/Providers/BoundedContexts/FrontOfHouse/Infrastructure/Projection/ToServeProjector.php#L33-L57`, `app/Providers/BoundedContexts/FrontOfHouse/Infrastructure/Projection/ProjectToServeList.php#L11-L19`, `app/Providers/BoundedContexts/FrontOfHouse/Application/Command/ServeDishHandler.php#L28-L44` |
 | 6. Second order | `tests/Feature/FullServiceTest.php#L53-L68` |
-| 7. 86 the menu | `app/Providers/BoundedContexts/Kitchen/Domain/Dish.php#L29-L36`, `app/Providers/BoundedContexts/Kitchen/Application/Command/DeclareDishEightySixedHandler.php#L26-L36`, `app/Providers/BoundedContexts/FrontOfHouse/Infrastructure/Processors/MarkMenuItemUnavailableProcessor.php#L33-L53` |
+| 7. 86 the menu | `app/Providers/BoundedContexts/Kitchen/Domain/Dish.php#L29-L36`, `app/Providers/BoundedContexts/Kitchen/Application/Command/DeclareDishEightySixedHandler.php#L26-L37`, `app/Providers/BoundedContexts/FrontOfHouse/Infrastructure/Processors/MarkMenuItemUnavailableProcessor.php#L33-L53` |
 | 8. Bill, pay, free the table | `app/Providers/BoundedContexts/FrontOfHouse/Application/Command/RequestBillHandler.php#L27-L40`, `app/Providers/BoundedContexts/Billing/Infrastructure/Processors/RecordServedDishes.php#L35-L60`, `app/Providers/BoundedContexts/Billing/Application/Command/PrepareBillHandler.php#L27-L49`, `app/Providers/BoundedContexts/Billing/Domain/Bill.php#L44-L67`, `app/Providers/BoundedContexts/Billing/Application/Command/PayBillHandler.php#L26-L40`, `app/Providers/BoundedContexts/FrontOfHouse/Application/Command/FreeTableHandler.php#L27-L35` |
 | Level 1 | `SeatGuestsHandler.php#L27-L35` and `FreeTableHandler.php#L27-L35` |
 | Level 2 | `ToServeProjector.php#L33-L57` and `ProjectToServeList.php#L11-L19` |
-| Level 3 | `app/Providers/Modules/EventStore/Infrastructure/DatabaseEventStore.php#L22-L66`, `app/Providers/BoundedContexts/Kitchen/Infrastructure/EventStoreKitchenTicketRepository.php#L48-L65`, `app/Providers/Modules/EventStore/Infrastructure/InProcessAfterAppend.php#L53-L60` |
+| Level 3 | `app/Providers/Modules/EventStore/Infrastructure/DatabaseEventStore.php#L22-L71`, `app/Providers/BoundedContexts/Kitchen/Infrastructure/EventStoreKitchenTicketRepository.php#L48-L65`, `app/Providers/Modules/EventStore/Infrastructure/InProcessAfterAppend.php#L53-L60` |

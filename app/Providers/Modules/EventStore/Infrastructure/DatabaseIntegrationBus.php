@@ -20,9 +20,9 @@ final class DatabaseIntegrationBus implements IntegrationBus
 
     public function __construct(private EventStore $events) {}
 
-    public function publish(IntegrationEvent $event): void
+    public function publish(IntegrationEvent $event): int
     {
-        $this->events->append(
+        $position = $this->events->append(
             new StreamId('integration-'.bin2hex(random_bytes(8))),
             0,
             DomainEvents::of(DomainEvent::now((string) $event->type, $event->payload)),
@@ -31,6 +31,8 @@ final class DatabaseIntegrationBus implements IntegrationBus
         foreach ($this->listeners[(string) $event->type] ?? [] as $listener) {
             $listener($event);
         }
+
+        return $position;
     }
 
     public function listen(EventType $type, Closure $listener): void

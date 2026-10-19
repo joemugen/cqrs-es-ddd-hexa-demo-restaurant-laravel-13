@@ -13,8 +13,10 @@ interface EventStore
      * Append facts to a stream if nobody else wrote since $expectedVersion.
      *
      * Version 0 means the stream does not exist yet. A stale version throws.
+     *
+     * @return int the position in the log of the last fact written, 0 when there was none
      */
-    public function append(StreamId $streamId, int $expectedVersion, DomainEvents $events): void;
+    public function append(StreamId $streamId, int $expectedVersion, DomainEvents $events): int;
 
     /**
      * Whether any event sits past $position. A read that does not load the events.

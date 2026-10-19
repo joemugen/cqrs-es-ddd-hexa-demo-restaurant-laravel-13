@@ -51,7 +51,7 @@ final class OpenKitchenTicketProcessor implements Processor
                     ticketId: new KitchenTicketId((string) $event->payload['tableOrderId']),
                     partyRef: new PartyRef((string) $event->payload['tableId']),
                     tableLabel: new TableLabel((string) $event->payload['tableLabel']),
-                    lines: $this->dishes->linesFor($this->orderedLines($event->payload['lines'])),
+                    lines: $this->dishes->linesFor($this->orderedLines($event->payload['lines']), $event->position),
                 ));
             }
 

@@ -30,6 +30,11 @@ final class DatabaseDishRepository implements DishRepository
         );
     }
 
+    public function recordEightySixedAt(DishId $id, int $position): void
+    {
+        DB::table(Tables::DISHES)->where('id', (string) $id)->update(['eighty_sixed_position' => $position]);
+    }
+
     public function save(Dish $dish): void
     {
         DB::table(Tables::DISHES)->where('id', (string) $dish->id())->update([

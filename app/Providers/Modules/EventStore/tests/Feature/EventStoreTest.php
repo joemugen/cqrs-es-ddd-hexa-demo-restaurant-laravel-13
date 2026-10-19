@@ -91,4 +91,19 @@ describe('the event store', function () {
             ->and($events[0]->type->is('tests.ping'))->toBeTrue()
             ->and($events[0]->payload)->toBe(['tableOrderId' => 'order-1']);
     });
+
+    test('append and publish return the position of the last fact they wrote', function () {
+        $store = app(EventStore::class);
+
+        $first = $store->append(new StreamId('stream-a'), 0, DomainEvents::of(eventStoreMessage('one')));
+        $last = $store->append(new StreamId('stream-b'), 0, DomainEvents::of(eventStoreMessage('two'), eventStoreMessage('three')));
+        $published = app(IntegrationBus::class)->publish(IntegrationEvent::named('tests.ping', []));
+
+        $positions = array_map(fn ($event) => $event->position, $store->readAllFrom(0));
+
+        expect($first)->toBe($positions[0])
+            ->and($last)->toBe($positions[2])
+            ->and($published)->toBe($positions[3])
+            ->and($store->append(new StreamId('stream-c'), 0, new DomainEvents))->toBe(0);
+    });
 });

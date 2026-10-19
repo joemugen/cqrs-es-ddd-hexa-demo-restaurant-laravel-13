@@ -19,15 +19,15 @@ final class DatabaseEventStore implements EventStore
 {
     public function __construct(private AfterAppend $afterAppend) {}
 
-    public function append(StreamId $streamId, int $expectedVersion, DomainEvents $events): void
+    public function append(StreamId $streamId, int $expectedVersion, DomainEvents $events): int
     {
         if ($events->isEmpty()) {
-            return;
+            return 0;
         }
 
         $table = (string) config('event_store.events_table');
 
-        DB::transaction(function () use ($streamId, $expectedVersion, $events, $table): void {
+        $position = DB::transaction(function () use ($streamId, $expectedVersion, $events, $table): int {
             $actual = $this->version($table, $streamId);
 
             if ($actual !== $expectedVersion) {
@@ -35,19 +35,20 @@ final class DatabaseEventStore implements EventStore
             }
 
             $version = $expectedVersion;
+            $position = 0;
 
             foreach ($events as $event) {
                 $version++;
 
                 try {
-                    DB::table($table)->insert([
+                    $position = DB::table($table)->insertGetId([
                         'stream_id' => (string) $streamId,
                         'version' => $version,
                         'type' => (string) $event->type,
                         'payload' => json_encode($event->payload, JSON_THROW_ON_ERROR),
                         'occurred_at' => $event->occurredAt->format('Y-m-d H:i:s'),
                         'correlation_id' => Correlation::current(),
-                    ]);
+                    ], 'position');
                 } catch (UniqueConstraintViolationException) {
                     throw new OptimisticConcurrencyException(
                         $streamId,
@@ -56,6 +57,8 @@ final class DatabaseEventStore implements EventStore
                     );
                 }
             }
+
+            return $position;
         });
 
         // Bind to the writer's transaction when one is still open, so a consumer
@@ -63,6 +66,8 @@ final class DatabaseEventStore implements EventStore
         DB::afterCommit(function (): void {
             $this->afterAppend->notify();
         });
+
+        return $position;
     }
 
     public function hasEventsAfter(int $position): bool
