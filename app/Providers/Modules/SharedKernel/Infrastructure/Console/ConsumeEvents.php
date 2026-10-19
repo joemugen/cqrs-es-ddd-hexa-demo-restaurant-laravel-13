@@ -7,11 +7,10 @@ namespace App\Providers\Modules\SharedKernel\Infrastructure\Console;
 use App\Providers\Modules\SharedKernel\Application\EventConsumer;
 use App\Providers\Modules\SharedKernel\Infrastructure\Bus\ContextDiscovery;
 use App\Providers\Modules\SharedKernel\Infrastructure\Eventing\ConsumerWorker;
-use App\Providers\Modules\SharedKernel\Infrastructure\Eventing\EventConsumers;
-use App\Providers\Modules\SharedKernel\Infrastructure\Eventing\ExclusiveConsumer;
 use Illuminate\Cache\ArrayStore;
 use Illuminate\Cache\NullStore;
 use Illuminate\Console\Command;
+use Illuminate\Contracts\Container\Container;
 use Illuminate\Support\Facades\Cache;
 use ReflectionClass;
 use Throwable;
@@ -19,8 +18,8 @@ use Throwable;
 /**
  * Subscribes to the event log for one context: consumes what is new, then waits for more until it is stopped.
  * A context extends it and only names itself; its consumers are discovered in Infrastructure/Processors
- * and Infrastructure/Projection. A lock keeps a second worker for the same context from starting, and each consumer
- * has its own lock, so even then no event is handled twice.
+ * and Infrastructure/Projection. One worker consumes a context: a lock keeps a second one from starting, so the
+ * consumers of a context never run side by side and each reads the log in order from its own checkpoint.
  */
 abstract class ConsumeEvents extends Command
 {
@@ -40,10 +39,10 @@ abstract class ConsumeEvents extends Command
      */
     abstract protected function contextName(): string;
 
-    public function handle(ContextDiscovery $discovery, ConsumerWorker $worker, EventConsumers $factory): int
+    public function handle(ContextDiscovery $discovery, ConsumerWorker $worker, Container $container): int
     {
         $consumers = array_map(
-            fn (string $consumer) => $factory->make($consumer),
+            fn (string $consumer) => $container->make($consumer),
             $discovery->eventConsumers($this->contextRoot()),
         );
 
@@ -106,7 +105,7 @@ abstract class ConsumeEvents extends Command
 
     private function nameOf(EventConsumer $consumer): string
     {
-        return class_basename($consumer instanceof ExclusiveConsumer ? $consumer->consumerName() : $consumer::class);
+        return class_basename($consumer::class);
     }
 
     /**

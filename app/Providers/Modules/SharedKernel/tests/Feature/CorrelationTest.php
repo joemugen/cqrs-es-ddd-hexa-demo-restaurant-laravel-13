@@ -12,7 +12,7 @@ use App\Providers\Modules\EventStore\Domain\EventStore;
 use App\Providers\Modules\EventStore\Domain\StoredEvent;
 use App\Providers\Modules\SharedKernel\Application\EventConsumer;
 use App\Providers\Modules\SharedKernel\Infrastructure\Correlation;
-use App\Providers\Modules\SharedKernel\Infrastructure\Eventing\ExclusiveConsumer;
+use App\Providers\Modules\SharedKernel\Infrastructure\Eventing\ConsumerWorker;
 use Illuminate\Support\Facades\Context;
 
 const UUID_PATTERN = '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/';
@@ -119,9 +119,9 @@ describe('the correlation id', function (): void {
     });
 
     describe('around a consumer', function (): void {
-        it('is the same after the consumer ran as it was before', function (): void {
+        it('is the same after the worker ran a consumer as it was before', function (): void {
             Correlation::begin('outer');
-            $consumer = new ExclusiveConsumer(new class implements EventConsumer
+            $consumer = new class implements EventConsumer
             {
                 public function hasWork(): bool
                 {
@@ -132,18 +132,18 @@ describe('the correlation id', function (): void {
                 {
                     Correlation::resume('inner');
 
-                    return 1;
+                    return 0;
                 }
-            }, 30);
+            };
 
-            $consumer->consume();
+            (new ConsumerWorker(sleep: fn (float $seconds) => null))->work([$consumer], stopWhenEmpty: true);
 
             expect(Correlation::current())->toBe('outer');
         });
 
         it('is gone again when there was none before', function (): void {
             Context::forget('correlation_id');
-            $consumer = new ExclusiveConsumer(new class implements EventConsumer
+            $consumer = new class implements EventConsumer
             {
                 public function hasWork(): bool
                 {
@@ -154,11 +154,11 @@ describe('the correlation id', function (): void {
                 {
                     Correlation::resume('inner');
 
-                    return 1;
+                    return 0;
                 }
-            }, 30);
+            };
 
-            $consumer->consume();
+            (new ConsumerWorker(sleep: fn (float $seconds) => null))->work([$consumer], stopWhenEmpty: true);
 
             expect(Correlation::current())->toBeNull();
         });

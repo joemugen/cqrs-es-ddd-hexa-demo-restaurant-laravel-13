@@ -128,14 +128,23 @@ The kitchen records the log position of the 86 (`kitchen_dishes.eighty_sixed_pos
 
 Not covered yet: an order placed *after* the 86 but accepted by the dining room because its menu had not caught up. The kitchen then refuses it, and the consumer keeps failing on that event (see the poison events item of the roadmap).
 
-### Locks
+### One worker per context
 
-Two processes must never consume the same events, so there are two locks, both cache locks.
+A context is consumed by exactly one worker, so there is no partitioning to do and no two consumers ever read the same checkpoint. `event-worker:<context>` is a cache lock taken when a worker starts and renewed every third of its life. A second `kitchen:consume` refuses to start, says so and exits with code 1. If a worker dies, the lock expires by itself and a restart is never blocked for long. Contexts do not block each other: each has its own worker and its own checkpoints.
 
-- **A lock per consumer** (`event-consumer:<class>`) is held for the length of one pass, whoever wakes the consumer: a request in sync mode, a worker or the queued job. A process that finds it taken skips the pass. The checkpoint is read inside the lock, so a process that waits its turn starts where the previous one stopped.
-- **A lock per context worker** (`event-worker:<context>`) is taken when a worker starts and renewed after each pass. A second `kitchen:consume` refuses to start, says so and exits with code 1. If a worker dies, the lock expires by itself.
+`EVENT_CONSUMER_LOCK_SECONDS` (120 by default) is how long that lock lives without being renewed. Keep it longer than the longest pass of a consumer. The cache store must be shared by every process: `database` (the default in `.env.example`) or `redis`. With `array` or `null` the command warns that the lock cannot protect anything. `php artisan cache:clear` frees it by hand.
 
-`EVENT_CONSUMER_LOCK_SECONDS` (120 by default) is how long a lock lives without being renewed or released. Keep it longer than the longest pass of a consumer. The cache store must be shared by every process: `database` (the default in `.env.example`) or `redis`. With `array` or `null` the command warns that locks cannot protect anything. `php artisan cache:clear` frees a lock by hand.
+In `sync` mode there is no worker: the process that appended the fact consumes it, right after its commit. That assumes one process at a time, which holds for `php artisan serve`, the tests and a queue with one worker. A web server that handles requests in parallel should run in `worker` mode.
+
+### What the log guarantees
+
+- **Append only.** The store only inserts into `events`. A fact is never updated or deleted, a mistake is answered by a new fact, and a test records every SQL statement of a whole service, in both modes, to prove it. The read models, the checkpoints and the table of idempotency keys are mutable, the log is not.
+- **In order, per consumer.** A consumer reads the events past its checkpoint ordered by position, and writes the checkpoint last, in the same transaction as its effects. If a pass fails, everything it wrote is rolled back and the next pass starts again at the same checkpoint, so it never skips an event.
+- **At least once.** After a failure a consumer may see an event a second time, so every consumer is idempotent: a ticket that exists is not opened again, a served dish is recorded with `insertOrIgnore`, a bill is found by its derived id.
+- **No order between consumers.** Two consumers of a context, or of two contexts, are not synchronised. A consumer that needs another one to be up to date says so in code, as `PrepareBillProcessor` does for the till's ledger.
+- **Position is the order.** It is the autoincrement key of `events`. With SQLite there is one writer at a time, so positions are in commit order. On a database that hands out positions to concurrent transactions, a reader could see 6 before 5 is committed and skip it: read only up to a position every earlier transaction has committed before you move to such a database.
+
+If one worker per context ever becomes too slow, the pattern is partitioning: split the log by a stable key such as the stream id, give each partition its own worker and its own checkpoints, and keep the order inside a partition. The order between partitions is lost, so a key must keep together every event that has to stay ordered.
 
 ## Tracing a request
 
@@ -215,10 +224,10 @@ The kitchen screen catches up after the order's transaction commits, before the 
 | 2. Place a table order | `app/Providers/BoundedContexts/FrontOfHouse/Application/Command/PlaceTableOrderHandler.php#L33-L55` |
 | 3. Open a kitchen ticket | `app/Providers/BoundedContexts/Kitchen/Infrastructure/Processors/OpenKitchenTicketProcessor.php#L41-L64`, `app/Providers/BoundedContexts/Kitchen/Domain/KitchenTicket.php#L40-L55` |
 | 4. Fire, ready, kitchen screen | `app/Providers/BoundedContexts/Kitchen/Domain/KitchenTicket.php#L71-L126`, `app/Providers/BoundedContexts/Kitchen/Infrastructure/Projection/KitchenScreenProjector.php#L63-L112` |
-| 5. Queued pass, then serve | `app/Providers/BoundedContexts/FrontOfHouse/Infrastructure/Projection/ToServeProjector.php#L33-L57`, `app/Providers/BoundedContexts/FrontOfHouse/Infrastructure/Projection/ProjectToServeList.php#L11-L19`, `app/Providers/BoundedContexts/FrontOfHouse/Application/Command/ServeDishHandler.php#L28-L44` |
+| 5. Queued pass, then serve | `app/Providers/BoundedContexts/FrontOfHouse/Infrastructure/Projection/ToServeProjector.php#L33-L57`, `app/Providers/BoundedContexts/FrontOfHouse/Infrastructure/Projection/ProjectToServeList.php#L10-L18`, `app/Providers/BoundedContexts/FrontOfHouse/Application/Command/ServeDishHandler.php#L28-L44` |
 | 6. Second order | `tests/Feature/FullServiceTest.php#L53-L68` |
 | 7. 86 the menu | `app/Providers/BoundedContexts/Kitchen/Domain/Dish.php#L29-L36`, `app/Providers/BoundedContexts/Kitchen/Application/Command/DeclareDishEightySixedHandler.php#L26-L37`, `app/Providers/BoundedContexts/FrontOfHouse/Infrastructure/Processors/MarkMenuItemUnavailableProcessor.php#L33-L53` |
 | 8. Bill, pay, free the table | `app/Providers/BoundedContexts/FrontOfHouse/Application/Command/RequestBillHandler.php#L27-L40`, `app/Providers/BoundedContexts/Billing/Infrastructure/Processors/RecordServedDishes.php#L35-L60`, `app/Providers/BoundedContexts/Billing/Application/Command/PrepareBillHandler.php#L27-L49`, `app/Providers/BoundedContexts/Billing/Domain/Bill.php#L44-L67`, `app/Providers/BoundedContexts/Billing/Application/Command/PayBillHandler.php#L26-L40`, `app/Providers/BoundedContexts/FrontOfHouse/Application/Command/FreeTableHandler.php#L27-L35` |
 | Level 1 | `SeatGuestsHandler.php#L27-L35` and `FreeTableHandler.php#L27-L35` |
-| Level 2 | `ToServeProjector.php#L33-L57` and `ProjectToServeList.php#L11-L19` |
+| Level 2 | `ToServeProjector.php#L33-L57` and `ProjectToServeList.php#L10-L18` |
 | Level 3 | `app/Providers/Modules/EventStore/Infrastructure/DatabaseEventStore.php#L22-L71`, `app/Providers/BoundedContexts/Kitchen/Infrastructure/EventStoreKitchenTicketRepository.php#L48-L65`, `app/Providers/Modules/EventStore/Infrastructure/InProcessAfterAppend.php#L53-L60` |

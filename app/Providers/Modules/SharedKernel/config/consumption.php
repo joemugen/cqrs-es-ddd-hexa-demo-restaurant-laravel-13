@@ -9,9 +9,9 @@ return [
     'mode' => env('EVENT_CONSUMPTION', 'sync'),
 
     /*
-     * How long a consumer lock lives without being released, in seconds. It frees a lock whose
-     * process died, so it must be longer than the longest pass of a consumer.
-     * Locks need a cache store shared by every process: database or redis, not array.
+     * How long the lock of a context worker lives without being renewed, in seconds. It frees the lock of a
+     * worker that died, so it must be longer than the longest pass of a consumer. One worker consumes a
+     * context, and the lock needs a cache store shared by every process: database or redis, not array.
      */
     'lock_seconds' => (int) env('EVENT_CONSUMER_LOCK_SECONDS', 120),
 ];

@@ -7,7 +7,7 @@ namespace App\Providers\Modules\EventStore\Infrastructure;
 use App\Providers\Modules\EventStore\Application\AfterAppend;
 use App\Providers\Modules\SharedKernel\Application\Consumption\RunsOnQueue;
 use App\Providers\Modules\SharedKernel\Infrastructure\Bus\ContextDiscovery;
-use App\Providers\Modules\SharedKernel\Infrastructure\Eventing\EventConsumers;
+use App\Providers\Modules\SharedKernel\Infrastructure\Correlation;
 use Illuminate\Contracts\Container\Container;
 use ReflectionClass;
 
@@ -51,6 +51,6 @@ final readonly class EventConsumption
             return;
         }
 
-        $this->container->make(EventConsumers::class)->make($consumer)->consume();
+        Correlation::within(fn (): int => $this->container->make($consumer)->consume());
     }
 }
