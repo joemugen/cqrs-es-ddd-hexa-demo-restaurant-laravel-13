@@ -16,6 +16,9 @@ use App\Providers\Modules\SharedKernel\Infrastructure\Correlation;
 
 /**
  * Opens one bill from the dishes that have already left the pass.
+ *
+ * It depends on the till's ledger of served dishes. It reads its events first, then brings the ledger up to date,
+ * so every dish served before a bill request is on the till whatever order a worker wakes the two consumers in.
  */
 final class PrepareBillProcessor implements Processor
 {
@@ -25,14 +28,23 @@ final class PrepareBillProcessor implements Processor
         private EventStore $events,
         private CheckpointStore $checkpoints,
         private BillingCommandBus $bus,
+        private RecordServedDishes $ledger,
     ) {}
+
+    public function hasWork(): bool
+    {
+        return $this->events->hasEventsAfter($this->checkpoints->get(self::CHECKPOINT));
+    }
 
     public function consume(): int
     {
         $handled = 0;
         $position = $this->checkpoints->get(self::CHECKPOINT);
 
-        foreach ($this->events->readAllFrom($position) as $event) {
+        $events = $this->events->readAllFrom($position);
+        $this->ledger->consume();
+
+        foreach ($events as $event) {
             if ($event->type->is(ConsumedEvents::FRONT_OF_HOUSE_BILL_REQUESTED)) {
                 $handled++;
                 Correlation::resume($event->correlationId);
