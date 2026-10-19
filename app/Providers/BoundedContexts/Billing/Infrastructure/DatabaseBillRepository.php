@@ -30,6 +30,8 @@ final class DatabaseBillRepository implements BillRepository
 
     public function save(Bill $bill): void
     {
+        $isNew = ! DB::table(Tables::BILLS)->where('id', (string) $bill->id())->exists();
+
         DB::table(Tables::BILLS)->updateOrInsert(['id' => (string) $bill->id()], [
             'cover_ref' => (string) $bill->coverRef(),
             'status' => $bill->isPaid() ? BillStatus::PAID : BillStatus::OPEN,
@@ -39,6 +41,7 @@ final class DatabaseBillRepository implements BillRepository
             'total_cents' => $bill->totalCents(),
             'balance_cents' => $bill->balanceCents(),
             'tip_cents' => $bill->tipCents(),
+            ...($isNew ? ['sequence' => (int) DB::table(Tables::BILLS)->max('sequence') + 1] : []),
         ]);
 
         DB::table(Tables::BILL_LINES)->where('bill_id', (string) $bill->id())->delete();

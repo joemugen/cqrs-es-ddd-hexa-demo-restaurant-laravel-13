@@ -30,7 +30,7 @@ final class KitchenScreenProjector implements RebuildableProjector
         $position = $this->checkpoints->get(self::CHECKPOINT);
 
         foreach ($this->events->readAllFrom($position) as $event) {
-            if ($this->when($event->type, $event->payload)) {
+            if ($this->when($event->type, $event->payload, $event->position)) {
                 $applied++;
             }
 
@@ -52,9 +52,10 @@ final class KitchenScreenProjector implements RebuildableProjector
 
     /**
      * @param  array<string, mixed>  $payload
+     * @param  int  $position  where the event sits in the log, which is what orders the tickets on the screen
      * @return bool whether the event changed the screen
      */
-    public function when(EventType $type, array $payload): bool
+    public function when(EventType $type, array $payload, int $position): bool
     {
         if ($type->is(KitchenEvent::TICKET_OPENED)) {
             DB::table(Tables::SCREEN_TICKETS)->insert([
@@ -62,6 +63,7 @@ final class KitchenScreenProjector implements RebuildableProjector
                 'party_ref' => $payload['partyRef'],
                 'table_label' => $payload['tableLabel'],
                 'done' => false,
+                'opened_position' => $position,
             ]);
 
             foreach ($payload['lines'] as $line) {

@@ -26,6 +26,7 @@ final class GetBillHandler implements QueryHandler
     {
         $bill = DB::table(Tables::BILLS)
             ->where('cover_ref', (string) $query->coverRef)
+            ->orderByDesc('sequence')
             ->orderByDesc('id')
             ->first();
 

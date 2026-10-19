@@ -4,6 +4,9 @@ use App\Providers\BoundedContexts\Billing\Application\BillRepository;
 use App\Providers\BoundedContexts\Billing\Domain\Bill;
 use App\Providers\BoundedContexts\Billing\Domain\BillId;
 use App\Providers\BoundedContexts\Billing\Domain\CoverRef;
+use App\Providers\BoundedContexts\Billing\Domain\DishKind;
+use App\Providers\BoundedContexts\Billing\Domain\ServedDish;
+use App\Providers\BoundedContexts\Billing\Domain\SourceKey;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\FrontOfHouseSeeder;
 use App\Providers\BoundedContexts\Kitchen\Infrastructure\KitchenSeeder;
 
@@ -168,3 +171,17 @@ function serveOnTheLatestTicket(string $course, string $dishName): void
 
     test()->postJson("/api/front-of-house/to-serve/{$waiting['id']}/serve")->assertOk();
 }
+
+describe('the bill of a cover', function () {
+    test('is the latest one, whatever its id sorts like', function () {
+        $dish = new ServedDish(new SourceKey('ticket-1:line-1'), 'Green salad', 1, 1100, DishKind::FOOD);
+        $bills = app(BillRepository::class);
+
+        $bills->save(Bill::prepare(new BillId('zzzz-opened-first'), new CoverRef('table-4'), [$dish]));
+        $bills->save(Bill::prepare(new BillId('aaaa-opened-second'), new CoverRef('table-4'), [$dish]));
+
+        $this->getJson('/api/billing/covers/table-4/bill')
+            ->assertOk()
+            ->assertJsonPath('billId', 'aaaa-opened-second');
+    });
+});

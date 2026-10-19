@@ -29,6 +29,7 @@ final class ListKitchenScreenHandler implements QueryHandler
         $lines = DB::table(Tables::SCREEN_LINES)->orderBy('id')->get()->groupBy('ticket_id');
 
         return new KitchenScreenView(DB::table(Tables::SCREEN_TICKETS)
+            ->orderBy('opened_position')
             ->orderBy('ticket_id')
             ->get()
             ->map(fn (object $ticket): KitchenScreenTicket => new KitchenScreenTicket(
