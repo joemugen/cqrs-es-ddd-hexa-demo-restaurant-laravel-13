@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace App\Providers\BoundedContexts\Kitchen\Infrastructure\Processors;
 
-use App\Providers\BoundedContexts\EventStore\Domain\CheckpointStore;
-use App\Providers\BoundedContexts\EventStore\Domain\EventStore;
 use App\Providers\BoundedContexts\Kitchen\Application\Command\OpenKitchenTicket;
 use App\Providers\BoundedContexts\Kitchen\Application\DishCatalog;
 use App\Providers\BoundedContexts\Kitchen\Domain\DishName;
@@ -17,6 +15,8 @@ use App\Providers\BoundedContexts\Kitchen\Domain\TableLabel;
 use App\Providers\BoundedContexts\Kitchen\Infrastructure\Bus\KitchenCommandBus;
 use App\Providers\BoundedContexts\Kitchen\Infrastructure\ConsumedEvents;
 use App\Providers\BoundedContexts\SharedKernel\Application\Processor;
+use App\Providers\Modules\EventStore\Domain\CheckpointStore;
+use App\Providers\Modules\EventStore\Domain\EventStore;
 
 /**
  * A processor reacts once. It is not a projection: replaying it would open tickets again.

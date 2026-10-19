@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Providers\BoundedContexts\EventStore\Domain;
+namespace App\Providers\Modules\EventStore\Domain;
 
 use App\Providers\BoundedContexts\SharedKernel\Domain\StreamId;
 use RuntimeException;

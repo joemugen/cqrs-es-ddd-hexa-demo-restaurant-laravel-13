@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Providers\BoundedContexts\FrontOfHouse;
 
-use App\Providers\BoundedContexts\EventStore\Infrastructure\EventConsumption;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\FloorPlan;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\MenuRepository;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\PassRepository;
@@ -19,6 +18,7 @@ use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\DatabaseMenuReposi
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\DatabasePassRepository;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\DatabaseTableOrderRepository;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\DatabaseTableRepository;
+use App\Providers\Modules\EventStore\Infrastructure\EventConsumption;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 

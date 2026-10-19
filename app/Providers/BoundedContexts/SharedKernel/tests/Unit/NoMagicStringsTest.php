@@ -5,8 +5,11 @@
  */
 function contextSources(): array
 {
-    $root = dirname(__DIR__, 3);
-    $files = glob($root.'/*/{Application,Domain,Infrastructure}/{,*/,*/*/}*.php', GLOB_BRACE);
+    $files = [];
+
+    foreach (sourceRoots() as $root) {
+        $files = [...$files, ...glob($root.'/*/{Application,Domain,Infrastructure}/{,*/,*/*/}*.php', GLOB_BRACE)];
+    }
 
     return array_combine($files, array_map('file_get_contents', $files));
 }

@@ -1,11 +1,11 @@
 <?php
 
-use App\Providers\BoundedContexts\EventStore\Domain\EventStore;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\PassRepository;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\DishAtThePass;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\DishAtThePassId;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\FrontOfHouseSeeder;
 use App\Providers\BoundedContexts\Kitchen\Infrastructure\KitchenSeeder;
+use App\Providers\Modules\EventStore\Domain\EventStore;
 
 describe('the pass', function () {
     beforeEach(function () {

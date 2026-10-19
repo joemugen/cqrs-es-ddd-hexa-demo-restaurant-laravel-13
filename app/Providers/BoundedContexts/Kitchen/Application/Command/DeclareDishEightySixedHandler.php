@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace App\Providers\BoundedContexts\Kitchen\Application\Command;
 
-use App\Providers\BoundedContexts\EventStore\Application\IntegrationBus;
-use App\Providers\BoundedContexts\EventStore\Domain\IntegrationEvent;
 use App\Providers\BoundedContexts\Kitchen\Application\Command\Response\DishEightySixed;
 use App\Providers\BoundedContexts\Kitchen\Application\DishRepository;
 use App\Providers\BoundedContexts\Kitchen\Domain\KitchenEvent;
 use App\Providers\BoundedContexts\SharedKernel\Application\Bus\Attribute\AsCommandHandler;
 use App\Providers\BoundedContexts\SharedKernel\Application\CommandHandler;
+use App\Providers\Modules\EventStore\Application\IntegrationBus;
+use App\Providers\Modules\EventStore\Domain\IntegrationEvent;
 
 /**
  * @implements CommandHandler<DeclareDishEightySixed, DishEightySixed>

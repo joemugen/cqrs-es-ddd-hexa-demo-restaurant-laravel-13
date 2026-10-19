@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Providers\BoundedContexts\EventStore\Application;
+namespace App\Providers\Modules\EventStore\Application;
 
 use Closure;
 

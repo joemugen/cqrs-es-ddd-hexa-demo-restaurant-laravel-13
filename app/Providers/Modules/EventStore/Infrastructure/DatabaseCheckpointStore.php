@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace App\Providers\BoundedContexts\EventStore\Infrastructure;
+namespace App\Providers\Modules\EventStore\Infrastructure;
 
-use App\Providers\BoundedContexts\EventStore\Domain\CheckpointStore;
+use App\Providers\Modules\EventStore\Domain\CheckpointStore;
 use Illuminate\Support\Facades\DB;
 
 final class DatabaseCheckpointStore implements CheckpointStore

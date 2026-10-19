@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Processors;
 
-use App\Providers\BoundedContexts\EventStore\Domain\CheckpointStore;
-use App\Providers\BoundedContexts\EventStore\Domain\EventStore;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\MenuRepository;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\DishName;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\ConsumedEvents;
 use App\Providers\BoundedContexts\SharedKernel\Application\Processor;
+use App\Providers\Modules\EventStore\Domain\CheckpointStore;
+use App\Providers\Modules\EventStore\Domain\EventStore;
 
 /**
  * Reacts once to a shortage. Replaying it is not how the menu learns a dish is 86.

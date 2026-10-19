@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace App\Providers\BoundedContexts\EventStore\Infrastructure;
+namespace App\Providers\Modules\EventStore\Infrastructure;
 
-use App\Providers\BoundedContexts\EventStore\Application\AfterAppend;
 use App\Providers\BoundedContexts\SharedKernel\Application\Consumption\RunsOnQueue;
 use App\Providers\BoundedContexts\SharedKernel\Infrastructure\Bus\ContextDiscovery;
 use App\Providers\BoundedContexts\SharedKernel\Infrastructure\Eventing\EventConsumers;
+use App\Providers\Modules\EventStore\Application\AfterAppend;
 use Illuminate\Contracts\Container\Container;
 use ReflectionClass;
 

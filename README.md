@@ -45,15 +45,17 @@ Prices on the bill are tax-inclusive. Food eaten in is 10% (`gross * 10 / 110`) 
 ## Layout
 
 ```
-app/Providers/BoundedContexts/
-  SharedKernel/        the contracts every context implements
-  EventStore/          the log, the checkpoints, the in-process wake-up
-  FrontOfHouse/        dining room
-  Kitchen/             tickets and the pass screen
-  Billing/             the till
+app/Providers/
+  Modules/
+    EventStore/          the log, the checkpoints, the in-process wake-up
+  BoundedContexts/
+    SharedKernel/        the contracts every context implements
+    FrontOfHouse/        dining room
+    Kitchen/             tickets and the pass screen
+    Billing/             the till
 ```
 
-Each module is a bounded context with its own service provider, registered in `bootstrap/providers.php`. The provider loads that module's config, routes, and migrations, and binds ports to adapters. Pest discovers `tests/Unit` and `tests/Feature` inside the module.
+A bounded context has its own service provider, registered in `bootstrap/providers.php`. The provider loads the context's config, routes, and migrations, and binds ports to adapters. Pest discovers `tests/Unit` and `tests/Feature` inside each context. A module such as `EventStore` is not a bounded context: it models no part of the restaurant, it is technical machinery the contexts share, so it lives beside them and imports none of them.
 
 Inside a context:
 
@@ -187,4 +189,4 @@ The kitchen screen catches up after the order's transaction commits, before the 
 | 8. Bill, pay, free the table | `app/Providers/BoundedContexts/FrontOfHouse/Application/Command/RequestBillHandler.php#L27-L40`, `app/Providers/BoundedContexts/Billing/Infrastructure/Processors/RecordServedDishes.php#L29-L53`, `app/Providers/BoundedContexts/Billing/Application/Command/PrepareBillHandler.php#L27-L49`, `app/Providers/BoundedContexts/Billing/Domain/Bill.php#L44-L67`, `app/Providers/BoundedContexts/Billing/Application/Command/PayBillHandler.php#L26-L40`, `app/Providers/BoundedContexts/FrontOfHouse/Application/Command/FreeTableHandler.php#L27-L35` |
 | Level 1 | `SeatGuestsHandler.php#L27-L35` and `FreeTableHandler.php#L27-L35` |
 | Level 2 | `ToServeProjector.php#L28-L52` and `ProjectToServeList.php#L11-L19` |
-| Level 3 | `app/Providers/BoundedContexts/EventStore/Infrastructure/DatabaseEventStore.php#L21-L64`, `app/Providers/BoundedContexts/Kitchen/Infrastructure/EventStoreKitchenTicketRepository.php#L48-L65`, `app/Providers/BoundedContexts/EventStore/Infrastructure/InProcessAfterAppend.php#L53-L60` |
+| Level 3 | `app/Providers/Modules/EventStore/Infrastructure/DatabaseEventStore.php#L21-L64`, `app/Providers/BoundedContexts/Kitchen/Infrastructure/EventStoreKitchenTicketRepository.php#L48-L65`, `app/Providers/Modules/EventStore/Infrastructure/InProcessAfterAppend.php#L53-L60` |

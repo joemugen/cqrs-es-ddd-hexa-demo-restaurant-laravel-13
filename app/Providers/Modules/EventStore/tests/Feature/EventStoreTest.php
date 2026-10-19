@@ -1,14 +1,14 @@
 <?php
 
-use App\Providers\BoundedContexts\EventStore\Application\IntegrationBus;
-use App\Providers\BoundedContexts\EventStore\Domain\CheckpointStore;
-use App\Providers\BoundedContexts\EventStore\Domain\EventStore;
-use App\Providers\BoundedContexts\EventStore\Domain\IntegrationEvent;
-use App\Providers\BoundedContexts\EventStore\Domain\OptimisticConcurrencyException;
 use App\Providers\BoundedContexts\SharedKernel\Domain\DomainEvent;
 use App\Providers\BoundedContexts\SharedKernel\Domain\DomainEvents;
 use App\Providers\BoundedContexts\SharedKernel\Domain\EventType;
 use App\Providers\BoundedContexts\SharedKernel\Domain\StreamId;
+use App\Providers\Modules\EventStore\Application\IntegrationBus;
+use App\Providers\Modules\EventStore\Domain\CheckpointStore;
+use App\Providers\Modules\EventStore\Domain\EventStore;
+use App\Providers\Modules\EventStore\Domain\IntegrationEvent;
+use App\Providers\Modules\EventStore\Domain\OptimisticConcurrencyException;
 
 function eventStoreMessage(string $type, array $payload = []): DomainEvent
 {

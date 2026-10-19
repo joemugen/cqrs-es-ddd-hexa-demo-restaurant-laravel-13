@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace App\Providers\BoundedContexts\FrontOfHouse\Application\Command;
 
-use App\Providers\BoundedContexts\EventStore\Application\IntegrationBus;
-use App\Providers\BoundedContexts\EventStore\Domain\IntegrationEvent;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\Command\Response\TableOrderPlaced;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\MenuRepository;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\TableOrderRepository;
@@ -16,6 +14,8 @@ use App\Providers\BoundedContexts\FrontOfHouse\Domain\RequestedLine;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableOrder;
 use App\Providers\BoundedContexts\SharedKernel\Application\Bus\Attribute\AsCommandHandler;
 use App\Providers\BoundedContexts\SharedKernel\Application\CommandHandler;
+use App\Providers\Modules\EventStore\Application\IntegrationBus;
+use App\Providers\Modules\EventStore\Domain\IntegrationEvent;
 
 /**
  * @implements CommandHandler<PlaceTableOrder, TableOrderPlaced>

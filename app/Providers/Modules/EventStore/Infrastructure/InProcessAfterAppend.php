@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace App\Providers\BoundedContexts\EventStore\Infrastructure;
+namespace App\Providers\Modules\EventStore\Infrastructure;
 
-use App\Providers\BoundedContexts\EventStore\Application\AfterAppend;
+use App\Providers\Modules\EventStore\Application\AfterAppend;
 use Closure;
 use Illuminate\Support\Facades\DB;
 use Throwable;

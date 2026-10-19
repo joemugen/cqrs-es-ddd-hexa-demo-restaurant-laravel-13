@@ -4,9 +4,6 @@ declare(strict_types=1);
 
 namespace App\Providers\BoundedContexts\Kitchen\Infrastructure;
 
-use App\Providers\BoundedContexts\EventStore\Domain\EventStore;
-use App\Providers\BoundedContexts\EventStore\Domain\OptimisticConcurrencyException;
-use App\Providers\BoundedContexts\EventStore\Domain\StoredEvent;
 use App\Providers\BoundedContexts\Kitchen\Application\KitchenTicketRepository;
 use App\Providers\BoundedContexts\Kitchen\Domain\KitchenException;
 use App\Providers\BoundedContexts\Kitchen\Domain\KitchenTicket;
@@ -15,6 +12,9 @@ use App\Providers\BoundedContexts\SharedKernel\Domain\ConcurrencyConflict;
 use App\Providers\BoundedContexts\SharedKernel\Domain\DomainEvent;
 use App\Providers\BoundedContexts\SharedKernel\Domain\DomainEvents;
 use App\Providers\BoundedContexts\SharedKernel\Domain\StreamId;
+use App\Providers\Modules\EventStore\Domain\EventStore;
+use App\Providers\Modules\EventStore\Domain\OptimisticConcurrencyException;
+use App\Providers\Modules\EventStore\Domain\StoredEvent;
 use DateTimeImmutable;
 use DateTimeZone;
 

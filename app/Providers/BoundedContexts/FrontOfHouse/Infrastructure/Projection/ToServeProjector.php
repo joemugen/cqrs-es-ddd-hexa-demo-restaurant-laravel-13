@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Projection;
 
-use App\Providers\BoundedContexts\EventStore\Domain\CheckpointStore;
-use App\Providers\BoundedContexts\EventStore\Domain\EventStore;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\ConsumedEvents;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Tables;
 use App\Providers\BoundedContexts\SharedKernel\Application\Consumption\RunsOnQueue;
 use App\Providers\BoundedContexts\SharedKernel\Application\Projector;
+use App\Providers\Modules\EventStore\Domain\CheckpointStore;
+use App\Providers\Modules\EventStore\Domain\EventStore;
 use Illuminate\Support\Facades\DB;
 
 /**

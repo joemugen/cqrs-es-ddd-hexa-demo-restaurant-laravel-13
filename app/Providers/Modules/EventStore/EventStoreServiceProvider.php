@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace App\Providers\BoundedContexts\EventStore;
+namespace App\Providers\Modules\EventStore;
 
-use App\Providers\BoundedContexts\EventStore\Application\AfterAppend;
-use App\Providers\BoundedContexts\EventStore\Application\IntegrationBus;
-use App\Providers\BoundedContexts\EventStore\Domain\CheckpointStore;
-use App\Providers\BoundedContexts\EventStore\Domain\EventStore;
-use App\Providers\BoundedContexts\EventStore\Infrastructure\DatabaseCheckpointStore;
-use App\Providers\BoundedContexts\EventStore\Infrastructure\DatabaseEventStore;
-use App\Providers\BoundedContexts\EventStore\Infrastructure\DatabaseIntegrationBus;
-use App\Providers\BoundedContexts\EventStore\Infrastructure\InProcessAfterAppend;
+use App\Providers\Modules\EventStore\Application\AfterAppend;
+use App\Providers\Modules\EventStore\Application\IntegrationBus;
+use App\Providers\Modules\EventStore\Domain\CheckpointStore;
+use App\Providers\Modules\EventStore\Domain\EventStore;
+use App\Providers\Modules\EventStore\Infrastructure\DatabaseCheckpointStore;
+use App\Providers\Modules\EventStore\Infrastructure\DatabaseEventStore;
+use App\Providers\Modules\EventStore\Infrastructure\DatabaseIntegrationBus;
+use App\Providers\Modules\EventStore\Infrastructure\InProcessAfterAppend;
 use Illuminate\Support\ServiceProvider;
 
 final class EventStoreServiceProvider extends ServiceProvider

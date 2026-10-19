@@ -42,8 +42,8 @@ describe('context discovery', function (): void {
         it('finds nothing in a context without handlers', function (): void {
             $discovery = discoveryWithCacheAt($this->cachePath);
 
-            expect($discovery->commandHandlers(contextsRoot().'/EventStore'))->toBe([])
-                ->and($discovery->queryHandlers(contextsRoot().'/EventStore'))->toBe([]);
+            expect($discovery->commandHandlers(app_path('Providers/Modules/EventStore')))->toBe([])
+                ->and($discovery->queryHandlers(app_path('Providers/Modules/EventStore')))->toBe([]);
         });
     });
 

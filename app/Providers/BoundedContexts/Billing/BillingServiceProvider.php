@@ -11,7 +11,7 @@ use App\Providers\BoundedContexts\Billing\Infrastructure\Bus\BillingQueryBus;
 use App\Providers\BoundedContexts\Billing\Infrastructure\Console\ConsumeBillingEvents;
 use App\Providers\BoundedContexts\Billing\Infrastructure\DatabaseBillRepository;
 use App\Providers\BoundedContexts\Billing\Infrastructure\DatabaseServedLedger;
-use App\Providers\BoundedContexts\EventStore\Infrastructure\EventConsumption;
+use App\Providers\Modules\EventStore\Infrastructure\EventConsumption;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 

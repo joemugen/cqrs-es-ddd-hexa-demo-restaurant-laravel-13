@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace App\Providers\BoundedContexts\FrontOfHouse\Application\Command;
 
-use App\Providers\BoundedContexts\EventStore\Application\IntegrationBus;
-use App\Providers\BoundedContexts\EventStore\Domain\IntegrationEvent;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\Command\Response\BillRequested;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\TableRepository;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\FrontOfHouseEvent;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\FrontOfHouseException;
 use App\Providers\BoundedContexts\SharedKernel\Application\Bus\Attribute\AsCommandHandler;
 use App\Providers\BoundedContexts\SharedKernel\Application\CommandHandler;
+use App\Providers\Modules\EventStore\Application\IntegrationBus;
+use App\Providers\Modules\EventStore\Domain\IntegrationEvent;
 
 /**
  * @implements CommandHandler<RequestBill, BillRequested>

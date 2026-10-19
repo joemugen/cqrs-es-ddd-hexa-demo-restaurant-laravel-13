@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Providers\BoundedContexts\Kitchen;
 
-use App\Providers\BoundedContexts\EventStore\Infrastructure\EventConsumption;
 use App\Providers\BoundedContexts\Kitchen\Application\DishCatalog;
 use App\Providers\BoundedContexts\Kitchen\Application\DishRepository;
 use App\Providers\BoundedContexts\Kitchen\Application\KitchenTicketRepository;
@@ -14,6 +13,7 @@ use App\Providers\BoundedContexts\Kitchen\Infrastructure\Console\ConsumeKitchenE
 use App\Providers\BoundedContexts\Kitchen\Infrastructure\DatabaseDishCatalog;
 use App\Providers\BoundedContexts\Kitchen\Infrastructure\DatabaseDishRepository;
 use App\Providers\BoundedContexts\Kitchen\Infrastructure\EventStoreKitchenTicketRepository;
+use App\Providers\Modules\EventStore\Infrastructure\EventConsumption;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 

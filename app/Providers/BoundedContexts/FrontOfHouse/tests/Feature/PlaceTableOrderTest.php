@@ -1,12 +1,12 @@
 <?php
 
-use App\Providers\BoundedContexts\EventStore\Domain\EventStore;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\MenuRepository;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\DishName;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\Menu;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\MenuItem;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\FrontOfHouseSeeder;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Tables;
+use App\Providers\Modules\EventStore\Domain\EventStore;
 use Illuminate\Support\Facades\DB;
 
 describe('placing a table order', function () {

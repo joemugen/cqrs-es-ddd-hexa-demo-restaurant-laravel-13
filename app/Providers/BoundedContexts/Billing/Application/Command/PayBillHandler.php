@@ -7,10 +7,10 @@ namespace App\Providers\BoundedContexts\Billing\Application\Command;
 use App\Providers\BoundedContexts\Billing\Application\BillRepository;
 use App\Providers\BoundedContexts\Billing\Application\Command\Response\PaymentAccepted;
 use App\Providers\BoundedContexts\Billing\Domain\BillingEvent;
-use App\Providers\BoundedContexts\EventStore\Application\IntegrationBus;
-use App\Providers\BoundedContexts\EventStore\Domain\IntegrationEvent;
 use App\Providers\BoundedContexts\SharedKernel\Application\Bus\Attribute\AsCommandHandler;
 use App\Providers\BoundedContexts\SharedKernel\Application\CommandHandler;
+use App\Providers\Modules\EventStore\Application\IntegrationBus;
+use App\Providers\Modules\EventStore\Domain\IntegrationEvent;
 
 /**
  * @implements CommandHandler<PayBill, PaymentAccepted>

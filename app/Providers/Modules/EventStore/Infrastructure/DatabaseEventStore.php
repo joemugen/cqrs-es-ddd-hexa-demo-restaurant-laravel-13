@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace App\Providers\BoundedContexts\EventStore\Infrastructure;
+namespace App\Providers\Modules\EventStore\Infrastructure;
 
-use App\Providers\BoundedContexts\EventStore\Application\AfterAppend;
-use App\Providers\BoundedContexts\EventStore\Domain\EventStore;
-use App\Providers\BoundedContexts\EventStore\Domain\OptimisticConcurrencyException;
-use App\Providers\BoundedContexts\EventStore\Domain\StoredEvent;
 use App\Providers\BoundedContexts\SharedKernel\Domain\DomainEvents;
 use App\Providers\BoundedContexts\SharedKernel\Domain\EventType;
 use App\Providers\BoundedContexts\SharedKernel\Domain\StreamId;
+use App\Providers\Modules\EventStore\Application\AfterAppend;
+use App\Providers\Modules\EventStore\Domain\EventStore;
+use App\Providers\Modules\EventStore\Domain\OptimisticConcurrencyException;
+use App\Providers\Modules\EventStore\Domain\StoredEvent;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 

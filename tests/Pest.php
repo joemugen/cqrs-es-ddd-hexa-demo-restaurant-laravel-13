@@ -8,20 +8,38 @@ pest()->extend(TestCase::class)
     ->in(
         'Feature',
         '../app/Providers/BoundedContexts/*/tests/Feature',
+        '../app/Providers/Modules/*/tests/Feature',
     );
 
 /**
- * Fully qualified names of the context classes whose file matches a glob such as "*\/Application/Command/*Handler.php".
+ * Where the code lives: bounded contexts, and the modules (shared kernel, event store) they build on.
+ *
+ * @return list<string>
+ */
+function sourceRoots(): array
+{
+    return [
+        dirname(__DIR__).'/app/Providers/BoundedContexts',
+        dirname(__DIR__).'/app/Providers/Modules',
+    ];
+}
+
+/**
+ * Fully qualified names of the classes, in contexts and modules, whose file matches a glob such as
+ * "*\/Application/Command/*Handler.php".
  *
  * @return list<class-string>
  */
 function classesIn(string $pattern): array
 {
-    $root = dirname(__DIR__).'/app/Providers/BoundedContexts';
+    $app = dirname(__DIR__).'/app/';
+    $classes = [];
 
-    return array_map(
-        fn (string $file): string => 'App\\Providers\\BoundedContexts\\'
-            .str_replace(['/', '.php'], ['\\', ''], substr($file, strlen($root) + 1)),
-        glob($root.'/'.$pattern, GLOB_BRACE),
-    );
+    foreach (sourceRoots() as $root) {
+        foreach (glob($root.'/'.$pattern, GLOB_BRACE) ?: [] as $file) {
+            $classes[] = 'App\\'.str_replace(['/', '.php'], ['\\', ''], substr($file, strlen($app)));
+        }
+    }
+
+    return $classes;
 }
