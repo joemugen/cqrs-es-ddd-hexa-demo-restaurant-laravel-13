@@ -128,23 +128,18 @@ The kitchen records the log position of the 86 (`kitchen_dishes.eighty_sixed_pos
 
 Not covered yet: an order placed *after* the 86 but accepted by the dining room because its menu had not caught up. The kitchen then refuses it, and the consumer keeps failing on that event (see the poison events item of the roadmap).
 
-### One worker per context
+### One worker per stream
 
-A context is consumed by exactly one worker, so there is no partitioning to do and no two consumers ever read the same checkpoint. `event-worker:<context>` is a cache lock taken when a worker starts and renewed every third of its life. A second `kitchen:consume` refuses to start, says so and exits with code 1. If a worker dies, the lock expires by itself and a restart is never blocked for long. Contexts do not block each other: each has its own worker and its own checkpoints.
+The event store does not partition the log, so its limit today is **one worker per stream**: one for each context, running all its consumers. A cache lock, `event-worker:<context>`, enforces it. A second `kitchen:consume` is refused and exits with code 1, and so is any worker whose cache store cannot share a lock between processes (`array`, `null`) outside the tests. If a worker dies, the lock expires by itself after `EVENT_CONSUMER_LOCK_SECONDS` (120), which must exceed the longest pass of a consumer. Use `database` or `redis` as `CACHE_STORE`. `php artisan cache:clear` frees the lock by hand.
 
-`EVENT_CONSUMER_LOCK_SECONDS` (120 by default) is how long that lock lives without being renewed. Keep it longer than the longest pass of a consumer. The cache store must be shared by every process: `database` (the default in `.env.example`) or `redis`. With `array` or `null` the command warns that the lock cannot protect anything. `php artisan cache:clear` frees it by hand.
-
-In `sync` mode there is no worker: the process that appended the fact consumes it, right after its commit. That assumes one process at a time, which holds for `php artisan serve`, the tests and a queue with one worker. A web server that handles requests in parallel should run in `worker` mode.
+In `sync` mode the process that appended the fact consumes it, one at a time: fine for `artisan serve`, the tests and one queue worker, not for a server that handles requests in parallel, which must use worker mode.
 
 ### What the log guarantees
 
-- **Append only.** The store only inserts into `events`. A fact is never updated or deleted, a mistake is answered by a new fact, and a test records every SQL statement of a whole service, in both modes, to prove it. The read models, the checkpoints and the table of idempotency keys are mutable, the log is not.
-- **In order, per consumer.** A consumer reads the events past its checkpoint ordered by position, and writes the checkpoint last, in the same transaction as its effects. If a pass fails, everything it wrote is rolled back and the next pass starts again at the same checkpoint, so it never skips an event.
-- **At least once.** After a failure a consumer may see an event a second time, so every consumer is idempotent: a ticket that exists is not opened again, a served dish is recorded with `insertOrIgnore`, a bill is found by its derived id.
-- **No order between consumers.** Two consumers of a context, or of two contexts, are not synchronised. A consumer that needs another one to be up to date says so in code, as `PrepareBillProcessor` does for the till's ledger.
-- **Position is the order.** It is the autoincrement key of `events`. With SQLite there is one writer at a time, so positions are in commit order. On a database that hands out positions to concurrent transactions, a reader could see 6 before 5 is committed and skip it: read only up to a position every earlier transaction has committed before you move to such a database.
-
-If one worker per context ever becomes too slow, the pattern is partitioning: split the log by a stable key such as the stream id, give each partition its own worker and its own checkpoints, and keep the order inside a partition. The order between partitions is lost, so a key must keep together every event that has to stay ordered.
+- **Append only.** `events` only receives inserts, a mistake is answered by a new fact. A test records every statement of a whole service, in both modes.
+- **In order, per consumer.** A consumer reads past its checkpoint by position and writes the checkpoint with its effects in one transaction, so a failed pass starts again at the same place and skips nothing.
+- **At least once.** After a failure a consumer may see an event twice, so each one is idempotent.
+- **No order between consumers.** A consumer that needs another to be up to date says so in code, as `PrepareBillProcessor` does for the ledger of served dishes.
 
 ## Tracing a request
 

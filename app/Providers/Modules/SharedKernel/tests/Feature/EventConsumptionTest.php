@@ -55,6 +55,12 @@ describe('event consumption', function (): void {
             expect($this->getJson('/api/front-of-house/to-serve')->json())->toHaveCount(1);
         });
 
+        it('names the consumers it runs, not only how many', function (): void {
+            $this->artisan('kitchen:consume', ['--stop-when-empty' => true])
+                ->expectsOutputToContain('OpenKitchenTicketProcessor, KitchenScreenProjector')
+                ->assertSuccessful();
+        });
+
         it('reports what it consumed', function (): void {
             $this->artisan('kitchen:consume', ['--stop-when-empty' => true])
                 ->expectsOutputToContain('Consumed')
@@ -69,9 +75,9 @@ describe('event consumption', function (): void {
                 ->assertSuccessful();
         });
 
-        it('says nothing about a consumer that had nothing to do', function (): void {
+        it('shows no activity line for a consumer that had nothing to do', function (): void {
             $this->artisan('billing:consume', ['--stop-when-empty' => true])
-                ->doesntExpectOutputToContain('PrepareBillProcessor')
+                ->doesntExpectOutputToContain('PrepareBillProcessor ..')
                 ->assertSuccessful();
         });
     });

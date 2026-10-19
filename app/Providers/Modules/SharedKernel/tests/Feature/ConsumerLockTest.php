@@ -39,4 +39,12 @@ describe('one worker per context', function (): void {
         expect($lock->get())->toBeTrue();
         $lock->release();
     });
+
+    it('refuses to start when the cache store cannot share its lock between processes, since a second worker could then run', function (): void {
+        $this->app['env'] = 'local';
+
+        $this->artisan('kitchen:consume', ['--stop-when-empty' => true])
+            ->expectsOutputToContain('cannot share a lock between processes')
+            ->assertFailed();
+    });
 });

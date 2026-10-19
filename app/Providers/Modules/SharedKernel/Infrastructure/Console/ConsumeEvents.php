@@ -52,6 +52,12 @@ abstract class ConsumeEvents extends Command
             return self::SUCCESS;
         }
 
+        if (! $this->laravel->environment('testing') && (Cache::getStore() instanceof ArrayStore || Cache::getStore() instanceof NullStore)) {
+            $this->components->error('The cache store cannot share a lock between processes, so a second '.$this->contextName().' worker could run. Set CACHE_STORE to database or redis.');
+
+            return self::FAILURE;
+        }
+
         $sleep = (float) $this->option('sleep');
         $lifetime = max((int) config('consumption.lock_seconds'), (int) ceil($sleep) * 2);
         $lock = Cache::lock('event-worker:'.$this->contextName(), $lifetime);
@@ -62,15 +68,14 @@ abstract class ConsumeEvents extends Command
             return self::FAILURE;
         }
 
-        if (Cache::getStore() instanceof ArrayStore || Cache::getStore() instanceof NullStore) {
-            $this->components->warn('The cache store keeps locks inside this process only. Use database or redis so a second worker is refused.');
-        }
-
         if (function_exists('pcntl_signal')) {
             $this->trap([SIGTERM, SIGINT], fn () => $worker->stop());
         }
 
-        $this->components->info('Consuming events for '.$this->contextName().' ('.count($consumers).' consumers). Stop with Ctrl+C.');
+        $this->components->info('Consuming events for '.$this->contextName().': '.implode(', ', array_map(
+            fn (EventConsumer $consumer): string => $this->nameOf($consumer),
+            $consumers,
+        )).'. Stop with Ctrl+C.');
 
         $renewedAt = microtime(true);
 
