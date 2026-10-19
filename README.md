@@ -65,6 +65,8 @@ Inside a context:
 
 The contracts live in `SharedKernel`. Identifiers and names are types, not strings: a `TableId` is not a `BillId`, and each aggregate `id()` returns an `AggregateId`. They cast to string and serialize to JSON. Raw strings stay at the edges: SQL columns, event payloads and HTTP input.
 
+Ids the system generates are namespaced UUIDs (version 5): the namespace is derived per aggregate type, so a bill id is never an order id, and the name comes from the business fact. A bill id is the cover plus the position of the event that asked for it, so replaying that event finds the same bill. An order id is the table plus the `Idempotency-Key` header of `POST /tables/{tableId}/orders`: sending the same key again returns the same `tableOrderId` and places nothing twice. Without the header every request gets a fresh name. A kitchen ticket takes the id of its order, so its stream is `kitchen-ticket-<uuid>`.
+
 A Pest test in `SharedKernel/tests/Unit/ContractsTest.php` walks every context and fails when a class misses its contract.
 
 ## Buses

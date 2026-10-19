@@ -39,10 +39,19 @@ final class ConsumerWorker
      * @param  float  $sleep  seconds to wait after a pass that handled nothing
      * @param  int  $maxTime  seconds after which the worker stops, 0 for never
      * @param  Closure(): void|null  $afterPass  called after every pass, to renew a lock
+     * @param  Closure(EventConsumer, int): void|null  $onHandled  called for a consumer that handled events
+     * @param  Closure(EventConsumer, Throwable): void|null  $onFailure  called after a failure was reported and rolled back
      * @return int the number of events handled
      */
-    public function work(array $consumers, float $sleep = 1.0, bool $stopWhenEmpty = false, int $maxTime = 0, ?Closure $afterPass = null): int
-    {
+    public function work(
+        array $consumers,
+        float $sleep = 1.0,
+        bool $stopWhenEmpty = false,
+        int $maxTime = 0,
+        ?Closure $afterPass = null,
+        ?Closure $onHandled = null,
+        ?Closure $onFailure = null,
+    ): int {
         $this->stop = false;
         $handledInTotal = 0;
         $startedAt = $this->clock();
@@ -51,7 +60,7 @@ final class ConsumerWorker
             $handled = 0;
 
             foreach ($consumers as $consumer) {
-                $handled += $this->consumeIsolated($consumer);
+                $handled += $this->consumeIsolated($consumer, $onHandled, $onFailure);
             }
 
             $handledInTotal += $handled;
@@ -76,15 +85,25 @@ final class ConsumerWorker
         return $handledInTotal;
     }
 
-    private function consumeIsolated(EventConsumer $consumer): int
+    private function consumeIsolated(EventConsumer $consumer, ?Closure $onHandled, ?Closure $onFailure): int
     {
         try {
-            return DB::transaction(fn (): int => $consumer->consume());
+            $handled = DB::transaction(fn (): int => $consumer->consume());
         } catch (Throwable $failure) {
             report($failure);
 
+            if ($onFailure !== null) {
+                $onFailure($consumer, $failure);
+            }
+
             return 0;
         }
+
+        if ($handled > 0 && $onHandled !== null) {
+            $onHandled($consumer, $handled);
+        }
+
+        return $handled;
     }
 
     private function wait(float $seconds): void

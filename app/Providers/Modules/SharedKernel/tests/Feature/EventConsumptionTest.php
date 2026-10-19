@@ -60,6 +60,20 @@ describe('event consumption', function (): void {
                 ->expectsOutputToContain('Consumed')
                 ->assertSuccessful();
         });
+
+        it('shows a line for each consumer that handled events, so a worker is not a silent process', function (): void {
+            $this->artisan('kitchen:consume', ['--stop-when-empty' => true])
+                ->expectsOutputToContain('OpenKitchenTicketProcessor')
+                ->expectsOutputToContain('KitchenScreenProjector')
+                ->expectsOutputToContain('event(s)')
+                ->assertSuccessful();
+        });
+
+        it('says nothing about a consumer that had nothing to do', function (): void {
+            $this->artisan('billing:consume', ['--stop-when-empty' => true])
+                ->doesntExpectOutputToContain('PrepareBillProcessor')
+                ->assertSuccessful();
+        });
     });
 
     describe('in sync mode', function (): void {

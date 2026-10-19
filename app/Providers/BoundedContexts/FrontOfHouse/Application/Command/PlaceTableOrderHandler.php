@@ -32,6 +32,10 @@ final readonly class PlaceTableOrderHandler implements CommandHandler
 
     public function __invoke(PlaceTableOrder $command): TableOrderPlaced
     {
+        if ($this->orders->exists($command->tableOrderId)) {
+            return new TableOrderPlaced($command->tableOrderId);
+        }
+
         $table = $this->tables->get($command->tableId);
         $menu = $this->menus->containing(array_map(
             fn (RequestedLine $line): MenuItemId => $line->menuItemId,

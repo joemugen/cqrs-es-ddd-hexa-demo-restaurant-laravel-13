@@ -17,6 +17,14 @@ final readonly class ExclusiveConsumer implements EventConsumer
 {
     public function __construct(private EventConsumer $consumer, private int $lockSeconds) {}
 
+    /**
+     * The class of the consumer behind the lock, for logs and worker output.
+     */
+    public function consumerName(): string
+    {
+        return $this->consumer::class;
+    }
+
     public function consume(): int
     {
         $handled = Cache::lock('event-consumer:'.$this->consumer::class, $this->lockSeconds)

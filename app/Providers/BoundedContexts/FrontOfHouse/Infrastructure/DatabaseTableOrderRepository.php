@@ -6,10 +6,16 @@ namespace App\Providers\BoundedContexts\FrontOfHouse\Infrastructure;
 
 use App\Providers\BoundedContexts\FrontOfHouse\Application\TableOrderRepository;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableOrder;
+use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableOrderId;
 use Illuminate\Support\Facades\DB;
 
 final class DatabaseTableOrderRepository implements TableOrderRepository
 {
+    public function exists(TableOrderId $id): bool
+    {
+        return DB::table(Tables::TABLE_ORDERS)->where('id', (string) $id)->exists();
+    }
+
     public function save(TableOrder $order): void
     {
         DB::table(Tables::TABLE_ORDERS)->insert([

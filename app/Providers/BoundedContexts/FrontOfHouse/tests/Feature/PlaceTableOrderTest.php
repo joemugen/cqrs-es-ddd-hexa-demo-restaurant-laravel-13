@@ -109,4 +109,45 @@ describe('placing a table order', function () {
             ])
             ->assertJsonMissing(['station' => 'grill']);
     });
+
+    describe('the order id', function () {
+        beforeEach(function () {
+            $this->postJson('/api/front-of-house/tables/table-4/guests', ['guestCount' => 2])->assertOk();
+            $this->order = ['lines' => [['menuItemId' => 'green-salad', 'quantity' => 1, 'course' => 'starter']]];
+        });
+
+        test('is a namespaced UUID', function () {
+            $id = $this->postJson('/api/front-of-house/tables/table-4/orders', $this->order)->json('tableOrderId');
+
+            expect($id)->toMatch('/^[0-9a-f]{8}-[0-9a-f]{4}-5[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/');
+        });
+
+        test('differs from one order to the next when the caller gives no key', function () {
+            $first = $this->postJson('/api/front-of-house/tables/table-4/orders', $this->order)->json('tableOrderId');
+            $second = $this->postJson('/api/front-of-house/tables/table-4/orders', $this->order)->json('tableOrderId');
+
+            expect($first)->not->toBe($second);
+        });
+
+        test('is the same for the same Idempotency-Key, and the order is placed once', function () {
+            $headers = ['Idempotency-Key' => 'checkout-42'];
+
+            $first = $this->postJson('/api/front-of-house/tables/table-4/orders', $this->order, $headers)->assertOk()->json('tableOrderId');
+            $second = $this->postJson('/api/front-of-house/tables/table-4/orders', $this->order, $headers)->assertOk()->json('tableOrderId');
+
+            expect($second)->toBe($first)
+                ->and(DB::table(Tables::TABLE_ORDERS)->count())->toBe(1)
+                ->and(DB::table(Tables::TABLE_ORDER_LINES)->count())->toBe(1)
+                ->and(collect(app(EventStore::class)->readAllFrom(0))->filter(
+                    fn ($event) => $event->type->is('front_of_house.table_order_placed'),
+                ))->toHaveCount(1);
+        });
+
+        test('differs for another Idempotency-Key', function () {
+            $first = $this->postJson('/api/front-of-house/tables/table-4/orders', $this->order, ['Idempotency-Key' => 'a'])->json('tableOrderId');
+            $second = $this->postJson('/api/front-of-house/tables/table-4/orders', $this->order, ['Idempotency-Key' => 'b'])->json('tableOrderId');
+
+            expect($second)->not->toBe($first);
+        });
+    });
 });

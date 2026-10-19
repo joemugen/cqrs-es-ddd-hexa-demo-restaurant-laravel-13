@@ -32,7 +32,10 @@ final class PlaceTableOrderController
         ), $validated['lines']);
 
         return response()->json($bus->dispatch(new PlaceTableOrder(
-            tableOrderId: new TableOrderId((string) Str::ulid()),
+            tableOrderId: TableOrderId::derivedFrom(
+                new TableId($tableId),
+                $request->header('Idempotency-Key') ?: (string) Str::uuid(),
+            ),
             tableId: new TableId($tableId),
             lines: $lines,
         )));

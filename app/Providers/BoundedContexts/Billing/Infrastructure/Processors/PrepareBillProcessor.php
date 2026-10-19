@@ -12,7 +12,6 @@ use App\Providers\BoundedContexts\Billing\Infrastructure\ConsumedEvents;
 use App\Providers\Modules\EventStore\Domain\CheckpointStore;
 use App\Providers\Modules\EventStore\Domain\EventStore;
 use App\Providers\Modules\SharedKernel\Application\Processor;
-use Illuminate\Support\Str;
 
 /**
  * Opens one bill from the dishes that have already left the pass.
@@ -36,7 +35,7 @@ final class PrepareBillProcessor implements Processor
             if ($event->type->is(ConsumedEvents::FRONT_OF_HOUSE_BILL_REQUESTED)) {
                 $handled++;
                 $this->bus->dispatch(new PrepareBill(
-                    billId: new BillId((string) Str::ulid()),
+                    billId: BillId::forBillRequest(new CoverRef((string) $event->payload['tableId']), $event->position),
                     coverRef: new CoverRef((string) $event->payload['tableId']),
                 ));
             }

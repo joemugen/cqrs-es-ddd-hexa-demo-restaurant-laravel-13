@@ -26,3 +26,14 @@ describe('a cover reference and a bill id', function (): void {
             ->and(fn () => new BillId(''))->toThrow(InvalidValue::class);
     });
 });
+
+describe('a bill id', function (): void {
+    it('is derived from the cover and the position of the bill request, so a replay finds the same bill', function (): void {
+        $id = BillId::forBillRequest(new CoverRef('table-4'), 12);
+
+        expect((string) $id)->toMatch('/^[0-9a-f]{8}-[0-9a-f]{4}-5[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/')
+            ->and($id->equals(BillId::forBillRequest(new CoverRef('table-4'), 12)))->toBeTrue()
+            ->and($id->equals(BillId::forBillRequest(new CoverRef('table-4'), 13)))->toBeFalse()
+            ->and($id->equals(BillId::forBillRequest(new CoverRef('table-7'), 12)))->toBeFalse();
+    });
+});

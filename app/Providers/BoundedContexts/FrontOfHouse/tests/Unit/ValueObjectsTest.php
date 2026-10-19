@@ -3,6 +3,7 @@
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\DishName;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableId;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableLabel;
+use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableOrderId;
 use App\Providers\Modules\SharedKernel\Domain\InvalidValue;
 
 describe('a dish name', function (): void {
@@ -43,5 +44,21 @@ describe('a table label', function (): void {
 describe('a table id', function (): void {
     it('follows the identifier rules', function (): void {
         expect(fn () => new TableId('table 4'))->toThrow(InvalidValue::class);
+    });
+});
+
+describe('a table order id', function (): void {
+    it('is derived from the table and an idempotency key', function (): void {
+        $first = TableOrderId::derivedFrom(new TableId('table-4'), 'key-1');
+
+        expect((string) $first)->toMatch('/^[0-9a-f]{8}-[0-9a-f]{4}-5[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/')
+            ->and($first->equals(TableOrderId::derivedFrom(new TableId('table-4'), 'key-1')))->toBeTrue();
+    });
+
+    it('differs for another key or another table', function (): void {
+        $id = TableOrderId::derivedFrom(new TableId('table-4'), 'key-1');
+
+        expect($id->equals(TableOrderId::derivedFrom(new TableId('table-4'), 'key-2')))->toBeFalse()
+            ->and($id->equals(TableOrderId::derivedFrom(new TableId('table-7'), 'key-1')))->toBeFalse();
     });
 });

@@ -4,14 +4,17 @@ declare(strict_types=1);
 
 namespace App\Providers\Modules\SharedKernel\Infrastructure\Console;
 
+use App\Providers\Modules\SharedKernel\Application\EventConsumer;
 use App\Providers\Modules\SharedKernel\Infrastructure\Bus\ContextDiscovery;
 use App\Providers\Modules\SharedKernel\Infrastructure\Eventing\ConsumerWorker;
 use App\Providers\Modules\SharedKernel\Infrastructure\Eventing\EventConsumers;
+use App\Providers\Modules\SharedKernel\Infrastructure\Eventing\ExclusiveConsumer;
 use Illuminate\Cache\ArrayStore;
 use Illuminate\Cache\NullStore;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Cache;
 use ReflectionClass;
+use Throwable;
 
 /**
  * Subscribes to the event log for one context: consumes what is new, then waits for more until it is stopped.
@@ -76,6 +79,13 @@ abstract class ConsumeEvents extends Command
                 stopWhenEmpty: (bool) $this->option('stop-when-empty'),
                 maxTime: (int) $this->option('max-time'),
                 afterPass: fn () => $lock->refresh(),
+                onHandled: fn (EventConsumer $consumer, int $handled) => $this->components->twoColumnDetail(
+                    now()->format('H:i:s').' '.$this->nameOf($consumer),
+                    "{$handled} event(s)",
+                ),
+                onFailure: fn (EventConsumer $consumer, Throwable $failure) => $this->components->error(
+                    $this->nameOf($consumer).' failed and will be retried: '.$failure->getMessage(),
+                ),
             );
         } finally {
             $lock->release();
@@ -84,6 +94,11 @@ abstract class ConsumeEvents extends Command
         $this->components->info("Consumed {$handled} event(s).");
 
         return self::SUCCESS;
+    }
+
+    private function nameOf(EventConsumer $consumer): string
+    {
+        return class_basename($consumer instanceof ExclusiveConsumer ? $consumer->consumerName() : $consumer::class);
     }
 
     /**

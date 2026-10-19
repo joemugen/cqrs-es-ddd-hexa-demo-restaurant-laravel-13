@@ -125,4 +125,43 @@ describe('the consumer worker', function (): void {
 
         expect(DB::table(Tables::TABLES)->where('id', 'ghost-table')->exists())->toBeFalse();
     });
+
+    it('tells what each consumer handled, and only when it handled something', function (): void {
+        $told = [];
+        $busy = new ScriptedConsumer([2, 0]);
+        $idle = new ScriptedConsumer([0, 0]);
+
+        $this->worker->work(
+            [$busy, $idle],
+            stopWhenEmpty: true,
+            onHandled: function (EventConsumer $consumer, int $handled) use (&$told): void {
+                $told[] = [$consumer::class, $handled];
+            },
+        );
+
+        expect($told)->toBe([[ScriptedConsumer::class, 2]]);
+    });
+
+    it('tells which consumer failed and why, and still reports the failure', function (): void {
+        Exceptions::fake();
+        $told = [];
+        $failing = new class implements EventConsumer
+        {
+            public function consume(): int
+            {
+                throw new RuntimeException('poison event');
+            }
+        };
+
+        $this->worker->work(
+            [$failing],
+            stopWhenEmpty: true,
+            onFailure: function (EventConsumer $consumer, Throwable $failure) use (&$told): void {
+                $told[] = $failure->getMessage();
+            },
+        );
+
+        expect($told)->toBe(['poison event']);
+        Exceptions::assertReported(RuntimeException::class);
+    });
 });
