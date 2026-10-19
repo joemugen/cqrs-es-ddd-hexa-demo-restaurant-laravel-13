@@ -45,15 +45,15 @@
         ],
         "dev": [
             "Composer\\Config::disableProcessTimeout",
-            "bash scripts/dev.sh worker"
+            "make dev"
         ],
         "dev:sync": [
             "Composer\\Config::disableProcessTimeout",
-            "bash scripts/dev.sh sync"
+            "make dev-sync"
         ],
         "workers": [
             "Composer\\Config::disableProcessTimeout",
-            "bash scripts/dev.sh workers"
+            "make workers"
         ],
         "post-autoload-dump": [
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",

@@ -121,17 +121,19 @@ Two processes must never consume the same events, so there are two locks, both c
 
 ## Run the stack
 
-One terminal, one prefixed log stream per process, Ctrl+C stops everything:
+One terminal, one prefixed log stream per process, Ctrl+C stops everything. The composer scripts call the `Makefile`, and `make` alone lists its targets.
 
 ```bash
-composer dev        # worker mode: the API and one worker per context
-composer dev:sync   # sync mode: the API and the queue worker, consumers run in the request
-composer workers    # worker mode: the workers only, when the API runs elsewhere
+composer dev        # make dev:      the API and one worker per context (worker mode)
+composer dev:sync   # make dev-sync: the API and the queue worker, consumers run in the request
+composer workers    # make workers:  the workers only, when the API runs elsewhere
+make logs           # php artisan pail, in a second terminal
+make consume-kitchen  # one worker, for one context
 ```
 
-`composer dev` starts `php artisan serve` (port 8000, change it with `PORT`), a `*:consume` worker for every bounded context, and `php artisan pail` when it is installed. It sets `EVENT_CONSUMPTION=worker` for all of them, so the API and the workers agree on who consumes events. `composer dev:sync` starts the API and `queue:listen` instead, and consumers run in the request. The workers are the `*:consume` commands that `artisan list` shows: a new context needs no change in the script.
+`make dev` runs `php artisan serve` (`HOST` and `PORT` change 127.0.0.1:8000) and a `*:consume` worker for every bounded context, as `make -j` targets. It sets `EVENT_CONSUMPTION=worker` for all of them, so the API and the workers agree on who consumes events. `make dev-sync` starts the API and `queue:listen` instead, and consumers run in the request. The workers are the `*:consume` commands that `artisan list` shows: a new context needs no change in the Makefile.
 
-The script creates `.env` and the SQLite file if they are missing and runs the migrations first. If one process stops, a worker refused by its lock for instance, the others are stopped too and the script exits with its status. It needs bash 4.3 or newer. `bash scripts/dev.sh worker --dry-run` prints what it would start.
+Each target first creates `.env` and the SQLite file if they are missing and runs the migrations. A process that stops, a worker refused by its lock for instance, does not stop the others: read its error in its stream and press Ctrl+C. `make -n dev` prints what would run. `PHP` picks the php binary, which composer sets for you.
 
 ## Install
 

@@ -19,20 +19,23 @@ function composerScripts(): array
     return composerJson()['scripts'];
 }
 
-function devStack(string ...$arguments): ProcessResult
+/**
+ * What `make <target>` would run, without running it.
+ */
+function plan(string $target): ProcessResult
 {
     return Process::path(dirname(__DIR__, 2))
         ->env(['PHP_BINARY' => PHP_BINARY])
-        ->run(['bash', 'scripts/dev.sh', ...$arguments]);
+        ->run(['make', '-n', $target]);
 }
 
 describe('the dev stack', function (): void {
     describe('composer scripts', function (): void {
-        it('declares a script per mode', function (string $script, string $mode): void {
-            expect(composerScripts()[$script] ?? [])->toContain("bash scripts/dev.sh {$mode}");
+        it('declares a script per make target', function (string $script, string $target): void {
+            expect(composerScripts()[$script] ?? [])->toContain("make {$target}");
         })->with([
-            'workers and the API' => ['dev', 'worker'],
-            'sync consumption and the queue' => ['dev:sync', 'sync'],
+            'workers and the API' => ['dev', 'dev'],
+            'sync consumption and the queue' => ['dev:sync', 'dev-sync'],
             'only the workers' => ['workers', 'workers'],
         ]);
 
@@ -45,9 +48,9 @@ describe('the dev stack', function (): void {
         })->with(['dev', 'dev:sync', 'workers']);
     });
 
-    describe('scripts/dev.sh', function (): void {
+    describe('the Makefile', function (): void {
         it('plans the API and one worker per context in worker mode', function (): void {
-            $plan = devStack('worker', '--dry-run');
+            $plan = plan('dev');
 
             expect($plan->successful())->toBeTrue($plan->errorOutput())
                 ->and($plan->output())->toContain('EVENT_CONSUMPTION=worker')
@@ -60,7 +63,7 @@ describe('the dev stack', function (): void {
         });
 
         it('plans the API and the queue in sync mode, with no worker', function (): void {
-            $plan = devStack('sync', '--dry-run');
+            $plan = plan('dev-sync');
 
             expect($plan->successful())->toBeTrue($plan->errorOutput())
                 ->and($plan->output())->toContain('EVENT_CONSUMPTION=sync')
@@ -70,18 +73,24 @@ describe('the dev stack', function (): void {
         });
 
         it('plans only the workers when asked for them', function (): void {
-            $plan = devStack('workers', '--dry-run');
+            $plan = plan('workers');
 
             expect($plan->successful())->toBeTrue($plan->errorOutput())
                 ->and($plan->output())->toContain('artisan kitchen:consume')
                 ->not->toContain('artisan serve');
         });
 
-        it('refuses an unknown mode before touching anything', function (): void {
-            $plan = devStack('bogus');
+        it('lists its targets by default', function (): void {
+            $help = Process::path(dirname(__DIR__, 2))->run(['make']);
 
-            expect($plan->exitCode())->toBe(2)
-                ->and($plan->errorOutput())->toContain('Usage');
+            expect($help->successful())->toBeTrue($help->errorOutput())
+                ->and($help->output())->toContain('make dev ')
+                ->toContain('make dev-sync')
+                ->toContain('make workers');
+        });
+
+        it('has no rule for an unknown target', function (): void {
+            expect(plan('bogus')->exitCode())->toBe(2);
         });
     });
 });
