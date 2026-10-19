@@ -123,6 +123,11 @@ describe('the correlation id', function (): void {
             Correlation::begin('outer');
             $consumer = new ExclusiveConsumer(new class implements EventConsumer
             {
+                public function hasWork(): bool
+                {
+                    return true;
+                }
+
                 public function consume(): int
                 {
                     Correlation::resume('inner');
@@ -140,6 +145,11 @@ describe('the correlation id', function (): void {
             Context::forget('correlation_id');
             $consumer = new ExclusiveConsumer(new class implements EventConsumer
             {
+                public function hasWork(): bool
+                {
+                    return true;
+                }
+
                 public function consume(): int
                 {
                     Correlation::resume('inner');

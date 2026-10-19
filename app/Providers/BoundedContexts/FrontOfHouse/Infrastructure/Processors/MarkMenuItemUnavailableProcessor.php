@@ -25,6 +25,11 @@ final class MarkMenuItemUnavailableProcessor implements Processor
         private MenuRepository $menus,
     ) {}
 
+    public function hasWork(): bool
+    {
+        return $this->events->hasEventsAfter($this->checkpoints->get(self::CHECKPOINT));
+    }
+
     public function consume(): int
     {
         $handled = 0;

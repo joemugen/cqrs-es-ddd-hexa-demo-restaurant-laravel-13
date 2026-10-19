@@ -13,6 +13,11 @@ final class CountingConsumer implements EventConsumer
 
     public function __construct(private int $handles = 1, private ?Closure $during = null, private bool $fails = false) {}
 
+    public function hasWork(): bool
+    {
+        return true;
+    }
+
     public function consume(): int
     {
         $this->calls++;

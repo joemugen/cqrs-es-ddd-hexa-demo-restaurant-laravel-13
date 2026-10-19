@@ -25,6 +25,11 @@ final class ToServeProjector implements Projector
         private CheckpointStore $checkpoints,
     ) {}
 
+    public function hasWork(): bool
+    {
+        return $this->events->hasEventsAfter($this->checkpoints->get(self::CHECKPOINT));
+    }
+
     public function consume(): int
     {
         $applied = 0;

@@ -17,6 +17,11 @@ interface EventStore
     public function append(StreamId $streamId, int $expectedVersion, DomainEvents $events): void;
 
     /**
+     * Whether any event sits past $position. A read that does not load the events.
+     */
+    public function hasEventsAfter(int $position): bool;
+
+    /**
      * @return list<StoredEvent>
      */
     public function readStream(StreamId $streamId): array;

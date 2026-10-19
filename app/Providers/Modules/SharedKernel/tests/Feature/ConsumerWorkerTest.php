@@ -16,6 +16,11 @@ final class ScriptedConsumer implements EventConsumer
     /** @param list<int> $script */
     public function __construct(private array $script, private ?Closure $onCall = null) {}
 
+    public function hasWork(): bool
+    {
+        return true;
+    }
+
     public function consume(): int
     {
         $this->calls++;
@@ -96,6 +101,11 @@ describe('the consumer worker', function (): void {
         Exceptions::fake();
         $failing = new class implements EventConsumer
         {
+            public function hasWork(): bool
+            {
+                return true;
+            }
+
             public function consume(): int
             {
                 throw new RuntimeException('poison event');
@@ -113,6 +123,11 @@ describe('the consumer worker', function (): void {
         Exceptions::fake();
         $failing = new class implements EventConsumer
         {
+            public function hasWork(): bool
+            {
+                return true;
+            }
+
             public function consume(): int
             {
                 DB::table(Tables::TABLES)->insert(['id' => 'ghost-table', 'label' => 'Ghost', 'guest_count' => 0]);
@@ -147,6 +162,11 @@ describe('the consumer worker', function (): void {
         $told = [];
         $failing = new class implements EventConsumer
         {
+            public function hasWork(): bool
+            {
+                return true;
+            }
+
             public function consume(): int
             {
                 throw new RuntimeException('poison event');

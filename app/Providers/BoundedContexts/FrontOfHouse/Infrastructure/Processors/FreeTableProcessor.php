@@ -26,6 +26,11 @@ final class FreeTableProcessor implements Processor
         private FrontOfHouseCommandBus $bus,
     ) {}
 
+    public function hasWork(): bool
+    {
+        return $this->events->hasEventsAfter($this->checkpoints->get(self::CHECKPOINT));
+    }
+
     public function consume(): int
     {
         $handled = 0;

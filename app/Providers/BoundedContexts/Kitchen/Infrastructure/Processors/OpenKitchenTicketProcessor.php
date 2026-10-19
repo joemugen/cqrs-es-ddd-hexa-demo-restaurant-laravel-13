@@ -33,6 +33,11 @@ final class OpenKitchenTicketProcessor implements Processor
         private KitchenCommandBus $bus,
     ) {}
 
+    public function hasWork(): bool
+    {
+        return $this->events->hasEventsAfter($this->checkpoints->get(self::CHECKPOINT));
+    }
+
     public function consume(): int
     {
         $handled = 0;

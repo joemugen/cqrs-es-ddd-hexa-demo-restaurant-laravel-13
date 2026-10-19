@@ -88,6 +88,10 @@ final class ConsumerWorker
     private function consumeIsolated(EventConsumer $consumer, ?Closure $onHandled, ?Closure $onFailure): int
     {
         try {
+            if (! $consumer->hasWork()) {
+                return 0;
+            }
+
             $handled = DB::transaction(fn (): int => $consumer->consume());
         } catch (Throwable $failure) {
             report($failure);

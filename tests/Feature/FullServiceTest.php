@@ -34,7 +34,7 @@ test('a service runs from the welcome to the departure', function () {
     $this->postJson("/api/kitchen/tickets/{$first['ticketId']}/lines/{$lines['Green salad']['lineId']}/ready")->assertOk();
 
     $this->getJson('/api/front-of-house/to-serve')->assertExactJson([]);
-    $this->artisan('queue:work', ['--stop-when-empty' => true, '--max-jobs' => 20])->assertSuccessful();
+    $this->artisan('queue:work', ['--stop-when-empty' => true, '--max-jobs' => 20, '--memory' => 2048])->assertSuccessful();
 
     $pass = $this->getJson('/api/front-of-house/to-serve')->json();
     expect($pass)->toHaveCount(1)->and($pass[0]['dishName'])->toBe('Green salad');
@@ -46,7 +46,7 @@ test('a service runs from the welcome to the departure', function () {
     $this->postJson("/api/kitchen/tickets/{$first['ticketId']}/lines/{$lines['House red']['lineId']}/ready")->assertOk();
     expect($this->getJson('/api/kitchen/screen')->json()[0]['done'])->toBeTrue();
 
-    $this->artisan('queue:work', ['--stop-when-empty' => true, '--max-jobs' => 20])->assertSuccessful();
+    $this->artisan('queue:work', ['--stop-when-empty' => true, '--max-jobs' => 20, '--memory' => 2048])->assertSuccessful();
     foreach ($this->getJson('/api/front-of-house/to-serve')->json() as $dish) {
         $this->postJson("/api/front-of-house/to-serve/{$dish['id']}/serve")->assertOk();
     }
@@ -62,7 +62,7 @@ test('a service runs from the welcome to the departure', function () {
     $dessert = $screen[1];
     $this->postJson("/api/kitchen/tickets/{$dessert['ticketId']}/fire", ['course' => 'dessert'])->assertOk();
     $this->postJson("/api/kitchen/tickets/{$dessert['ticketId']}/lines/{$dessert['lines'][0]['lineId']}/ready")->assertOk();
-    $this->artisan('queue:work', ['--stop-when-empty' => true, '--max-jobs' => 20])->assertSuccessful();
+    $this->artisan('queue:work', ['--stop-when-empty' => true, '--max-jobs' => 20, '--memory' => 2048])->assertSuccessful();
     foreach ($this->getJson('/api/front-of-house/to-serve')->json() as $dish) {
         $this->postJson("/api/front-of-house/to-serve/{$dish['id']}/serve")->assertOk();
     }

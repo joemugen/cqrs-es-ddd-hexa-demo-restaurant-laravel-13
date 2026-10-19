@@ -31,7 +31,7 @@ describe('the pass', function () {
 
         $this->getJson('/api/front-of-house/to-serve')->assertExactJson([]);
 
-        $this->artisan('queue:work', ['--stop-when-empty' => true])->assertSuccessful();
+        $this->artisan('queue:work', ['--stop-when-empty' => true, '--memory' => 2048])->assertSuccessful();
 
         $waiting = $this->getJson('/api/front-of-house/to-serve')->assertOk()->json();
         expect($waiting)->toHaveCount(1)

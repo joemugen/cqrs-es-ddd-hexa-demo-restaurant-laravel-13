@@ -54,7 +54,8 @@ abstract class ConsumeEvents extends Command
         }
 
         $sleep = (float) $this->option('sleep');
-        $lock = Cache::lock('event-worker:'.$this->contextName(), max((int) config('consumption.lock_seconds'), (int) ceil($sleep) * 2));
+        $lifetime = max((int) config('consumption.lock_seconds'), (int) ceil($sleep) * 2);
+        $lock = Cache::lock('event-worker:'.$this->contextName(), $lifetime);
 
         if (! $lock->get()) {
             $this->components->error('Another '.$this->contextName().' worker is already running.');
@@ -72,13 +73,20 @@ abstract class ConsumeEvents extends Command
 
         $this->components->info('Consuming events for '.$this->contextName().' ('.count($consumers).' consumers). Stop with Ctrl+C.');
 
+        $renewedAt = microtime(true);
+
         try {
             $handled = $worker->work(
                 $consumers,
                 sleep: $sleep,
                 stopWhenEmpty: (bool) $this->option('stop-when-empty'),
                 maxTime: (int) $this->option('max-time'),
-                afterPass: fn () => $lock->refresh(),
+                afterPass: function () use ($lock, $lifetime, &$renewedAt): void {
+                    if (microtime(true) - $renewedAt >= $lifetime / 3) {
+                        $lock->refresh();
+                        $renewedAt = microtime(true);
+                    }
+                },
                 onHandled: fn (EventConsumer $consumer, int $handled) => $this->components->twoColumnDetail(
                     now()->format('H:i:s').' '.$this->nameOf($consumer),
                     "{$handled} event(s)",

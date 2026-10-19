@@ -65,6 +65,11 @@ final class DatabaseEventStore implements EventStore
         });
     }
 
+    public function hasEventsAfter(int $position): bool
+    {
+        return DB::table((string) config('event_store.events_table'))->where('position', '>', $position)->exists();
+    }
+
     public function readStream(StreamId $streamId): array
     {
         $rows = DB::table((string) config('event_store.events_table'))
