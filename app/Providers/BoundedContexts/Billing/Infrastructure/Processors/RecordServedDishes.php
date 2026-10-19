@@ -12,6 +12,7 @@ use App\Providers\BoundedContexts\Billing\Infrastructure\ConsumedEvents;
 use App\Providers\Modules\EventStore\Domain\CheckpointStore;
 use App\Providers\Modules\EventStore\Domain\EventStore;
 use App\Providers\Modules\SharedKernel\Application\Processor;
+use App\Providers\Modules\SharedKernel\Infrastructure\Correlation;
 
 /**
  * Copies a served dish onto the till. It is not replayed: a charge is taken once.
@@ -34,6 +35,7 @@ final class RecordServedDishes implements Processor
         foreach ($this->events->readAllFrom($position) as $event) {
             if ($event->type->is(ConsumedEvents::FRONT_OF_HOUSE_DISH_SERVED)) {
                 $handled++;
+                Correlation::resume($event->correlationId);
                 $payload = $event->payload;
                 $this->served->record(new CoverRef((string) $payload['tableId']), new ServedDish(
                     sourceKey: new SourceKey((string) $payload['sourceKey']),

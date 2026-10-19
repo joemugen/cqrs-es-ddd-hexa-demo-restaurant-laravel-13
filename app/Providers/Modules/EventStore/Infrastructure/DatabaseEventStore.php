@@ -11,6 +11,7 @@ use App\Providers\Modules\EventStore\Domain\StoredEvent;
 use App\Providers\Modules\SharedKernel\Domain\DomainEvents;
 use App\Providers\Modules\SharedKernel\Domain\EventType;
 use App\Providers\Modules\SharedKernel\Domain\StreamId;
+use App\Providers\Modules\SharedKernel\Infrastructure\Correlation;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 
@@ -45,6 +46,7 @@ final class DatabaseEventStore implements EventStore
                         'type' => (string) $event->type,
                         'payload' => json_encode($event->payload, JSON_THROW_ON_ERROR),
                         'occurred_at' => $event->occurredAt->format('Y-m-d H:i:s'),
+                        'correlation_id' => Correlation::current(),
                     ]);
                 } catch (UniqueConstraintViolationException) {
                     throw new OptimisticConcurrencyException(
@@ -104,6 +106,7 @@ final class DatabaseEventStore implements EventStore
             type: new EventType((string) $row->type),
             payload: is_array($payload) ? $payload : [],
             occurredAt: (string) $row->occurred_at,
+            correlationId: $row->correlation_id !== null ? (string) $row->correlation_id : null,
         );
     }
 }

@@ -19,5 +19,6 @@ final readonly class StoredEvent
         public EventType $type,
         public array $payload,
         public string $occurredAt,
+        public ?string $correlationId = null,
     ) {}
 }

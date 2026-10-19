@@ -11,6 +11,7 @@ use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\ConsumedEvents;
 use App\Providers\Modules\EventStore\Domain\CheckpointStore;
 use App\Providers\Modules\EventStore\Domain\EventStore;
 use App\Providers\Modules\SharedKernel\Application\Processor;
+use App\Providers\Modules\SharedKernel\Infrastructure\Correlation;
 
 /**
  * The dining room hears that the bill is paid and clears the table. Once.
@@ -33,6 +34,7 @@ final class FreeTableProcessor implements Processor
         foreach ($this->events->readAllFrom($position) as $event) {
             if ($event->type->is(ConsumedEvents::BILLING_BILL_PAID)) {
                 $handled++;
+                Correlation::resume($event->correlationId);
                 $this->bus->dispatch(new FreeTable(new TableId((string) $event->payload['coverRef'])));
             }
 

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Providers\Modules\SharedKernel\Infrastructure\Eventing;
 
 use App\Providers\Modules\SharedKernel\Application\EventConsumer;
+use App\Providers\Modules\SharedKernel\Infrastructure\Correlation;
 use Illuminate\Support\Facades\Cache;
 
 /**
@@ -28,7 +29,7 @@ final readonly class ExclusiveConsumer implements EventConsumer
     public function consume(): int
     {
         $handled = Cache::lock('event-consumer:'.$this->consumer::class, $this->lockSeconds)
-            ->get(fn (): int => $this->consumer->consume());
+            ->get(fn (): int => Correlation::within(fn (): int => $this->consumer->consume()));
 
         return $handled === false ? 0 : $handled;
     }

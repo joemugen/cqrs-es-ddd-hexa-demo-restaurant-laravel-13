@@ -8,10 +8,9 @@ use App\Providers\Modules\SharedKernel\Application\Bus\CommandMiddleware;
 use App\Providers\Modules\SharedKernel\Application\Command;
 use App\Providers\Modules\SharedKernel\Application\CommandResponse;
 use App\Providers\Modules\SharedKernel\Domain\DomainException;
+use App\Providers\Modules\SharedKernel\Infrastructure\Correlation;
 use Closure;
-use Illuminate\Support\Facades\Context;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
 use Throwable;
 
 /**
@@ -21,7 +20,7 @@ final class LoggingCommandMiddleware implements CommandMiddleware
 {
     public function handle(Command $command, Closure $next): ?CommandResponse
     {
-        Context::addIf('correlation_id', (string) Str::uuid());
+        Correlation::ensure();
         $start = hrtime(true);
 
         try {

@@ -12,6 +12,7 @@ use App\Providers\BoundedContexts\Billing\Infrastructure\ConsumedEvents;
 use App\Providers\Modules\EventStore\Domain\CheckpointStore;
 use App\Providers\Modules\EventStore\Domain\EventStore;
 use App\Providers\Modules\SharedKernel\Application\Processor;
+use App\Providers\Modules\SharedKernel\Infrastructure\Correlation;
 
 /**
  * Opens one bill from the dishes that have already left the pass.
@@ -34,6 +35,7 @@ final class PrepareBillProcessor implements Processor
         foreach ($this->events->readAllFrom($position) as $event) {
             if ($event->type->is(ConsumedEvents::FRONT_OF_HOUSE_BILL_REQUESTED)) {
                 $handled++;
+                Correlation::resume($event->correlationId);
                 $this->bus->dispatch(new PrepareBill(
                     billId: BillId::forBillRequest(new CoverRef((string) $event->payload['tableId']), $event->position),
                     coverRef: new CoverRef((string) $event->payload['tableId']),

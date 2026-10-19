@@ -123,6 +123,22 @@ Two processes must never consume the same events, so there are two locks, both c
 
 `EVENT_CONSUMER_LOCK_SECONDS` (120 by default) is how long a lock lives without being renewed or released. Keep it longer than the longest pass of a consumer. The cache store must be shared by every process: `database` (the default in `.env.example`) or `redis`. With `array` or `null` the command warns that locks cannot protect anything. `php artisan cache:clear` frees a lock by hand.
 
+## Tracing a request
+
+Every request carries a correlation id. `CorrelationIdMiddleware`, first in the `api` group (see `bootstrap/app.php`), reads `X-Correlation-Id` (or `X-Request-Id`) when it is a short token of letters, digits, dots, dashes and underscores, makes a UUID otherwise, and returns it in the `X-Correlation-Id` header of the response, a refusal included. Quote it when something goes wrong.
+
+The id lives in the Laravel Context, so it follows the work after the request:
+
+- every log line carries it, and the bus logging middleware starts one when work begins outside a request;
+- every event appended is stored with it (`events.correlation_id`);
+- a worker resumes the id of the event it reacts to before it dispatches a command, so what it appends carries the id of the request that started the chain, and two requests handled in one pass stay apart;
+- a queued job gets it from the Context, and a consumer puts the previous id back when it ends.
+
+```bash
+curl -i -H 'X-Correlation-Id: checkout-42' -X POST localhost:8000/api/front-of-house/tables/table-4/orders ...
+sqlite3 database/database.sqlite "select position, type, correlation_id from events where correlation_id = 'checkout-42'"
+```
+
 ## Run the stack
 
 One terminal, one prefixed log stream per process, Ctrl+C stops everything. The composer scripts call the `Makefile`, and `make` alone lists its targets.
@@ -182,13 +198,13 @@ The kitchen screen catches up after the order's transaction commits, before the 
 | Step | Lines |
 | --- | --- |
 | 1. Seat guests and the floor plan | `app/Providers/BoundedContexts/FrontOfHouse/Application/Command/SeatGuestsHandler.php#L27-L35` |
-| 2. Place a table order | `app/Providers/BoundedContexts/FrontOfHouse/Application/Command/PlaceTableOrderHandler.php#L33-L51` |
-| 3. Open a kitchen ticket | `app/Providers/BoundedContexts/Kitchen/Infrastructure/Processors/OpenKitchenTicketProcessor.php#L35-L57`, `app/Providers/BoundedContexts/Kitchen/Domain/KitchenTicket.php#L40-L55` |
-| 4. Fire, ready, kitchen screen | `app/Providers/BoundedContexts/Kitchen/Domain/KitchenTicket.php#L71-L126`, `app/Providers/BoundedContexts/Kitchen/Infrastructure/Projection/KitchenScreenProjector.php#L57-L105` |
+| 2. Place a table order | `app/Providers/BoundedContexts/FrontOfHouse/Application/Command/PlaceTableOrderHandler.php#L33-L55` |
+| 3. Open a kitchen ticket | `app/Providers/BoundedContexts/Kitchen/Infrastructure/Processors/OpenKitchenTicketProcessor.php#L36-L59`, `app/Providers/BoundedContexts/Kitchen/Domain/KitchenTicket.php#L40-L55` |
+| 4. Fire, ready, kitchen screen | `app/Providers/BoundedContexts/Kitchen/Domain/KitchenTicket.php#L71-L126`, `app/Providers/BoundedContexts/Kitchen/Infrastructure/Projection/KitchenScreenProjector.php#L58-L107` |
 | 5. Queued pass, then serve | `app/Providers/BoundedContexts/FrontOfHouse/Infrastructure/Projection/ToServeProjector.php#L28-L52`, `app/Providers/BoundedContexts/FrontOfHouse/Infrastructure/Projection/ProjectToServeList.php#L11-L19`, `app/Providers/BoundedContexts/FrontOfHouse/Application/Command/ServeDishHandler.php#L28-L44` |
 | 6. Second order | `tests/Feature/FullServiceTest.php#L53-L68` |
-| 7. 86 the menu | `app/Providers/BoundedContexts/Kitchen/Domain/Dish.php#L29-L36`, `app/Providers/BoundedContexts/Kitchen/Application/Command/DeclareDishEightySixedHandler.php#L26-L36`, `app/Providers/BoundedContexts/FrontOfHouse/Infrastructure/Processors/MarkMenuItemUnavailableProcessor.php#L27-L46` |
-| 8. Bill, pay, free the table | `app/Providers/BoundedContexts/FrontOfHouse/Application/Command/RequestBillHandler.php#L27-L40`, `app/Providers/BoundedContexts/Billing/Infrastructure/Processors/RecordServedDishes.php#L29-L53`, `app/Providers/BoundedContexts/Billing/Application/Command/PrepareBillHandler.php#L27-L49`, `app/Providers/BoundedContexts/Billing/Domain/Bill.php#L44-L67`, `app/Providers/BoundedContexts/Billing/Application/Command/PayBillHandler.php#L26-L40`, `app/Providers/BoundedContexts/FrontOfHouse/Application/Command/FreeTableHandler.php#L27-L35` |
+| 7. 86 the menu | `app/Providers/BoundedContexts/Kitchen/Domain/Dish.php#L29-L36`, `app/Providers/BoundedContexts/Kitchen/Application/Command/DeclareDishEightySixedHandler.php#L26-L36`, `app/Providers/BoundedContexts/FrontOfHouse/Infrastructure/Processors/MarkMenuItemUnavailableProcessor.php#L28-L48` |
+| 8. Bill, pay, free the table | `app/Providers/BoundedContexts/FrontOfHouse/Application/Command/RequestBillHandler.php#L27-L40`, `app/Providers/BoundedContexts/Billing/Infrastructure/Processors/RecordServedDishes.php#L30-L55`, `app/Providers/BoundedContexts/Billing/Application/Command/PrepareBillHandler.php#L27-L49`, `app/Providers/BoundedContexts/Billing/Domain/Bill.php#L44-L67`, `app/Providers/BoundedContexts/Billing/Application/Command/PayBillHandler.php#L26-L40`, `app/Providers/BoundedContexts/FrontOfHouse/Application/Command/FreeTableHandler.php#L27-L35` |
 | Level 1 | `SeatGuestsHandler.php#L27-L35` and `FreeTableHandler.php#L27-L35` |
 | Level 2 | `ToServeProjector.php#L28-L52` and `ProjectToServeList.php#L11-L19` |
-| Level 3 | `app/Providers/Modules/EventStore/Infrastructure/DatabaseEventStore.php#L21-L64`, `app/Providers/BoundedContexts/Kitchen/Infrastructure/EventStoreKitchenTicketRepository.php#L48-L65`, `app/Providers/Modules/EventStore/Infrastructure/InProcessAfterAppend.php#L53-L60` |
+| Level 3 | `app/Providers/Modules/EventStore/Infrastructure/DatabaseEventStore.php#L22-L66`, `app/Providers/BoundedContexts/Kitchen/Infrastructure/EventStoreKitchenTicketRepository.php#L48-L65`, `app/Providers/Modules/EventStore/Infrastructure/InProcessAfterAppend.php#L53-L60` |

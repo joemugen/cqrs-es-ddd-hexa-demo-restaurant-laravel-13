@@ -8,10 +8,9 @@ use App\Providers\Modules\SharedKernel\Application\Bus\QueryMiddleware;
 use App\Providers\Modules\SharedKernel\Application\Query;
 use App\Providers\Modules\SharedKernel\Application\QueryResponse;
 use App\Providers\Modules\SharedKernel\Domain\DomainException;
+use App\Providers\Modules\SharedKernel\Infrastructure\Correlation;
 use Closure;
-use Illuminate\Support\Facades\Context;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
 use Throwable;
 
 /**
@@ -21,7 +20,7 @@ final class LoggingQueryMiddleware implements QueryMiddleware
 {
     public function handle(Query $query, Closure $next): QueryResponse
     {
-        Context::addIf('correlation_id', (string) Str::uuid());
+        Correlation::ensure();
         $start = hrtime(true);
 
         try {

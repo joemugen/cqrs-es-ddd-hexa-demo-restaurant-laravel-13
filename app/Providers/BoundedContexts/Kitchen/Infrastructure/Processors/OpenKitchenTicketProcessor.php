@@ -17,6 +17,7 @@ use App\Providers\BoundedContexts\Kitchen\Infrastructure\ConsumedEvents;
 use App\Providers\Modules\EventStore\Domain\CheckpointStore;
 use App\Providers\Modules\EventStore\Domain\EventStore;
 use App\Providers\Modules\SharedKernel\Application\Processor;
+use App\Providers\Modules\SharedKernel\Infrastructure\Correlation;
 
 /**
  * A processor reacts once. It is not a projection: replaying it would open tickets again.
@@ -40,6 +41,7 @@ final class OpenKitchenTicketProcessor implements Processor
         foreach ($this->events->readAllFrom($position) as $event) {
             if ($event->type->is(ConsumedEvents::FRONT_OF_HOUSE_TABLE_ORDER_PLACED)) {
                 $handled++;
+                Correlation::resume($event->correlationId);
                 $this->bus->dispatch(new OpenKitchenTicket(
                     ticketId: new KitchenTicketId((string) $event->payload['tableOrderId']),
                     partyRef: new PartyRef((string) $event->payload['tableId']),

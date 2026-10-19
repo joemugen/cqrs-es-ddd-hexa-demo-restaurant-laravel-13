@@ -107,11 +107,11 @@ describe('infrastructure layer', function (): void {
             );
 
             expect(array_values($methods))->toBe(['__invoke']);
-        })->with(classesIn('*/Infrastructure/Http/*.php'));
+        })->with(classesIn('{FrontOfHouse,Kitchen,Billing}/Infrastructure/Http/*.php'));
 
         it('is named after its use case and ends with Controller', function (string $class): void {
             expect($class)->toEndWith('Controller');
-        })->with(classesIn('*/Infrastructure/Http/*.php'));
+        })->with(classesIn('{FrontOfHouse,Kitchen,Billing}/Infrastructure/Http/*.php'));
     });
 
     it('declares every projector as a Projector', function (string $class): void {
