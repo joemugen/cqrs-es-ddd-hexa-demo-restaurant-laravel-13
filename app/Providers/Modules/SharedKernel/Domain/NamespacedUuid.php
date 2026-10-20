@@ -13,8 +13,8 @@ namespace App\Providers\Modules\SharedKernel\Domain;
  */
 final class NamespacedUuid
 {
-    /** uuid v5 of the DNS namespace and "cqrs-restaurant-post-demo-laravel.joemugen" */
-    public const APPLICATION = '0205e551-9867-586f-a677-c64d877c60a3';
+    /** uuid v5 of the DNS namespace and "cqrs-es-ddd-hexa-demo-restaurant-laravel-13.joemugen" */
+    public const APPLICATION = 'c781d1a7-d2df-5e0e-b5fc-2c9fee3bbc51';
 
     public static function generate(string $aggregate, string $name): string
     {

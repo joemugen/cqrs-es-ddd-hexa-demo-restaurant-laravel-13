@@ -28,7 +28,7 @@ describe('a namespaced UUID', function (): void {
 
     it('derives the namespace of an aggregate from the application namespace', function (): void {
         expect(NamespacedUuid::APPLICATION)
-            ->toBe(NamespacedUuid::v5(DNS_NAMESPACE, 'cqrs-restaurant-post-demo-laravel.joemugen'));
+            ->toBe(NamespacedUuid::v5(DNS_NAMESPACE, 'cqrs-es-ddd-hexa-demo-restaurant-laravel-13.joemugen'));
     });
 
     it('is accepted as an identifier', function (): void {
