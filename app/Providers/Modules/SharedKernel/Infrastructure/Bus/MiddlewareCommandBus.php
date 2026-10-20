@@ -12,6 +12,7 @@ use App\Providers\Modules\SharedKernel\Application\CommandResponse;
 use App\Providers\Modules\SharedKernel\Infrastructure\Bus\Middleware\AuthorizationCommandMiddleware;
 use App\Providers\Modules\SharedKernel\Infrastructure\Bus\Middleware\IdempotencyMiddleware;
 use App\Providers\Modules\SharedKernel\Infrastructure\Bus\Middleware\LoggingCommandMiddleware;
+use App\Providers\Modules\SharedKernel\Infrastructure\Bus\Middleware\MetricsCommandMiddleware;
 use App\Providers\Modules\SharedKernel\Infrastructure\Bus\Middleware\TransactionMiddleware;
 use Closure;
 use Illuminate\Contracts\Container\Container;
@@ -57,7 +58,7 @@ abstract class MiddlewareCommandBus implements CommandBus
     }
 
     /**
-     * The shared stack, outermost first: log, authorize, whatever the context puts outside the transaction, then the transaction and, inside it, the idempotency of keyed commands.
+     * The shared stack, outermost first: log, measure, authorize, whatever the context puts outside the transaction, then the transaction and, inside it, the idempotency of keyed commands.
      *
      * @return list<class-string<CommandMiddleware>>
      */
@@ -65,6 +66,7 @@ abstract class MiddlewareCommandBus implements CommandBus
     {
         return [
             LoggingCommandMiddleware::class,
+            MetricsCommandMiddleware::class,
             AuthorizationCommandMiddleware::class,
             ...$this->outsideTransaction(),
             TransactionMiddleware::class,

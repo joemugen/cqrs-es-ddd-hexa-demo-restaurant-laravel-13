@@ -11,6 +11,7 @@ use App\Providers\Modules\SharedKernel\Application\Query;
 use App\Providers\Modules\SharedKernel\Application\QueryResponse;
 use App\Providers\Modules\SharedKernel\Infrastructure\Bus\Middleware\AuthorizationQueryMiddleware;
 use App\Providers\Modules\SharedKernel\Infrastructure\Bus\Middleware\LoggingQueryMiddleware;
+use App\Providers\Modules\SharedKernel\Infrastructure\Bus\Middleware\MetricsQueryMiddleware;
 use Closure;
 use Illuminate\Contracts\Container\Container;
 use ReflectionClass;
@@ -61,7 +62,7 @@ abstract class MiddlewareQueryBus implements QueryBus
      */
     protected function middleware(): array
     {
-        return [LoggingQueryMiddleware::class, AuthorizationQueryMiddleware::class];
+        return [LoggingQueryMiddleware::class, MetricsQueryMiddleware::class, AuthorizationQueryMiddleware::class];
     }
 
     /**

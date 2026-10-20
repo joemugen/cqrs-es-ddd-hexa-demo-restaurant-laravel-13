@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace App\Providers\Modules\SharedKernel;
 
+use App\Providers\Modules\SharedKernel\Application\Metrics\MetricsRecorder;
 use App\Providers\Modules\SharedKernel\Domain\DomainException;
 use App\Providers\Modules\SharedKernel\Infrastructure\Bus\ContextDiscovery;
 use App\Providers\Modules\SharedKernel\Infrastructure\Console\CacheContexts;
 use App\Providers\Modules\SharedKernel\Infrastructure\Console\ClearContexts;
+use App\Providers\Modules\SharedKernel\Infrastructure\Metrics\DatabaseMetricsRecorder;
 use Illuminate\Contracts\Debug\ExceptionHandler;
 use Illuminate\Foundation\Exceptions\Handler;
 use Illuminate\Support\ServiceProvider;
@@ -18,6 +20,8 @@ final class SharedKernelServiceProvider extends ServiceProvider
     {
         $this->mergeConfigFrom(__DIR__.'/config/consumption.php', 'consumption');
 
+        $this->app->singleton(MetricsRecorder::class, DatabaseMetricsRecorder::class);
+
         $this->app->singleton(
             ContextDiscovery::class,
             fn ($app): ContextDiscovery => new ContextDiscovery($app->bootstrapPath('cache/contexts.php')),
@@ -27,6 +31,7 @@ final class SharedKernelServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->loadMigrationsFrom(__DIR__.'/database/migrations');
+
         $this->commands([CacheContexts::class, ClearContexts::class]);
         $this->optimizes(optimize: 'contexts:cache', clear: 'contexts:clear', key: 'contexts');
 
