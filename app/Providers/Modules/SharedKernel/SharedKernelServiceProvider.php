@@ -26,6 +26,7 @@ final class SharedKernelServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        $this->loadMigrationsFrom(__DIR__.'/database/migrations');
         $this->commands([CacheContexts::class, ClearContexts::class]);
         $this->optimizes(optimize: 'contexts:cache', clear: 'contexts:clear', key: 'contexts');
 

@@ -97,11 +97,11 @@ Middleware wraps the handler, outermost first:
 
 | Stack | Middleware |
 | --- | --- |
-| Commands | `LoggingCommandMiddleware`, `AuthorizationCommandMiddleware`, what the context puts outside the transaction, `TransactionMiddleware` |
+| Commands | `LoggingCommandMiddleware`, `AuthorizationCommandMiddleware`, what the context puts outside the transaction, `TransactionMiddleware`, `IdempotencyMiddleware` |
 | Queries | `LoggingQueryMiddleware`, `AuthorizationQueryMiddleware` |
 | Kitchen commands | adds `RetryOnConflict` outside the transaction, so a ticket changed by someone else is read and decided again, three attempts, then a 409 |
 
-`#[Authorize('ability')]` on a command or a query is checked against the Gate before the handler runs. A message without it is not guarded. A context adds middleware by overriding `outsideTransaction()` (commands) or `middleware()`.
+`#[Authorize('ability')]` on a command or a query is checked against the Gate before the handler runs. A message without it is not guarded. A command that implements `IdempotentCommand` carries an `IdempotencyKey` (the `Idempotency-Key` header). `IdempotencyMiddleware` runs inside the transaction: the first request claims the key in `idempotency_keys`, runs the handler and stores the response, so the claim, the writes and the response commit together. The same key with the same payload returns the stored response (as a `ReplayedResponse`, the handler is not run); with another payload it is refused with a 422. A concurrent request waits for the claim, then replays it. A command without a key is not guarded. A context adds middleware by overriding `outsideTransaction()` (commands) or `middleware()`.
 
 ## Consuming events
 
