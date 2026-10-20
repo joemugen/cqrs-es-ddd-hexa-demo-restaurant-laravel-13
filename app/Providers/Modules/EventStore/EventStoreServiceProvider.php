@@ -9,9 +9,11 @@ use App\Providers\Modules\EventStore\Application\IntegrationBus;
 use App\Providers\Modules\EventStore\Domain\CheckpointStore;
 use App\Providers\Modules\EventStore\Domain\EventStore;
 use App\Providers\Modules\EventStore\Infrastructure\DatabaseCheckpointStore;
+use App\Providers\Modules\EventStore\Infrastructure\DatabaseConsumerLag;
 use App\Providers\Modules\EventStore\Infrastructure\DatabaseEventStore;
 use App\Providers\Modules\EventStore\Infrastructure\DatabaseIntegrationBus;
 use App\Providers\Modules\EventStore\Infrastructure\InProcessAfterAppend;
+use App\Providers\Modules\SharedKernel\Application\Metrics\ConsumerLag;
 use Illuminate\Support\ServiceProvider;
 
 final class EventStoreServiceProvider extends ServiceProvider
@@ -23,6 +25,7 @@ final class EventStoreServiceProvider extends ServiceProvider
         $this->app->singleton(AfterAppend::class, InProcessAfterAppend::class);
         $this->app->singleton(EventStore::class, DatabaseEventStore::class);
         $this->app->singleton(CheckpointStore::class, DatabaseCheckpointStore::class);
+        $this->app->singleton(ConsumerLag::class, DatabaseConsumerLag::class);
         $this->app->singleton(IntegrationBus::class, DatabaseIntegrationBus::class);
     }
 

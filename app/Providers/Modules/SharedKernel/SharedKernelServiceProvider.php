@@ -9,6 +9,7 @@ use App\Providers\Modules\SharedKernel\Domain\DomainException;
 use App\Providers\Modules\SharedKernel\Infrastructure\Bus\ContextDiscovery;
 use App\Providers\Modules\SharedKernel\Infrastructure\Console\CacheContexts;
 use App\Providers\Modules\SharedKernel\Infrastructure\Console\ClearContexts;
+use App\Providers\Modules\SharedKernel\Infrastructure\Console\ShowMetrics;
 use App\Providers\Modules\SharedKernel\Infrastructure\Metrics\DatabaseMetricsRecorder;
 use Illuminate\Contracts\Debug\ExceptionHandler;
 use Illuminate\Foundation\Exceptions\Handler;
@@ -31,8 +32,9 @@ final class SharedKernelServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->loadMigrationsFrom(__DIR__.'/database/migrations');
+        $this->loadRoutesFrom(__DIR__.'/routes/web.php');
 
-        $this->commands([CacheContexts::class, ClearContexts::class]);
+        $this->commands([CacheContexts::class, ClearContexts::class, ShowMetrics::class]);
         $this->optimizes(optimize: 'contexts:cache', clear: 'contexts:clear', key: 'contexts');
 
         $handler = $this->app->make(ExceptionHandler::class);
