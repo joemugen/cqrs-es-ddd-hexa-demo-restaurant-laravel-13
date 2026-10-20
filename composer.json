@@ -1,8 +1,8 @@
 {
     "$schema": "https://getcomposer.org/schema.json",
-    "name": "joemugen/cqrs-restaurant-post-demo-laravel",
+    "name": "joemugen/cqrs-es-ddd-hexa-demo-restaurant-laravel-13",
     "type": "project",
-    "description": "Companion code for the CQRS in Laravel blog post.",
+    "description": "One restaurant as the example of several posts: CQRS, Event Sourcing, DDD and hexagonal architecture in Laravel 13.",
     "keywords": ["laravel", "framework"],
     "license": "MIT",
     "require": {
