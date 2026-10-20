@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Providers\Modules\SharedKernel\Infrastructure\Eventing;
 
 use App\Providers\Modules\SharedKernel\Application\EventConsumer;
+use App\Providers\Modules\SharedKernel\Infrastructure\Causation;
 use App\Providers\Modules\SharedKernel\Infrastructure\Correlation;
 use Closure;
 use Illuminate\Support\Facades\DB;
@@ -93,7 +94,7 @@ final class ConsumerWorker
                 return 0;
             }
 
-            $handled = Correlation::within(fn (): int => DB::transaction(fn (): int => $consumer->consume()));
+            $handled = Correlation::within(fn (): int => Causation::within(fn (): int => DB::transaction(fn (): int => $consumer->consume())));
         } catch (Throwable $failure) {
             report($failure);
 

@@ -12,6 +12,7 @@ use App\Providers\BoundedContexts\Billing\Infrastructure\ConsumedEvents;
 use App\Providers\Modules\EventStore\Domain\CheckpointStore;
 use App\Providers\Modules\EventStore\Domain\EventStore;
 use App\Providers\Modules\SharedKernel\Application\Processor;
+use App\Providers\Modules\SharedKernel\Infrastructure\Causation;
 use App\Providers\Modules\SharedKernel\Infrastructure\Correlation;
 
 /**
@@ -41,6 +42,7 @@ final class RecordServedDishes implements Processor
             if ($event->type->is(ConsumedEvents::FRONT_OF_HOUSE_DISH_SERVED)) {
                 $handled++;
                 Correlation::resume($event->correlationId);
+                Causation::resume($event->position);
                 $payload = $event->payload;
                 $this->served->record(new CoverRef((string) $payload['tableId']), new ServedDish(
                     sourceKey: new SourceKey((string) $payload['sourceKey']),

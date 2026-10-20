@@ -20,5 +20,6 @@ final readonly class StoredEvent
         public array $payload,
         public string $occurredAt,
         public ?string $correlationId = null,
+        public ?string $causationId = null,
     ) {}
 }

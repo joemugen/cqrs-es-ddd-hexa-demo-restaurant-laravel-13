@@ -167,9 +167,11 @@ The id lives in the Laravel Context, so it follows the work after the request:
 - a worker resumes the id of the event it reacts to before it dispatches a command, so what it appends carries the id of the request that started the chain, and two requests handled in one pass stay apart;
 - a queued job gets it from the Context, and a consumer puts the previous id back when it ends.
 
+The correlation id names the whole chain. The causation id (`events.causation_id`, `StoredEvent::$causationId`) names the parent link: the message that directly caused an event. `LoggingCommandMiddleware` gives each command an id, logged as `command_id` with `caused_by`, the id of what caused the command. An event a handler appends points to its command. A command a processor dispatches points to the position of the event it reacts to, so the chain order placed, ticket opened, order confirmed can be walked link by link. A fact appended outside any message has no cause.
+
 ```bash
 curl -i -H 'X-Correlation-Id: checkout-42' -X POST localhost:8000/api/front-of-house/tables/table-4/orders ...
-sqlite3 database/database.sqlite "select position, type, correlation_id from events where correlation_id = 'checkout-42'"
+sqlite3 database/database.sqlite "select position, type, causation_id from events where correlation_id = 'checkout-42'"
 ```
 
 ## Run the stack

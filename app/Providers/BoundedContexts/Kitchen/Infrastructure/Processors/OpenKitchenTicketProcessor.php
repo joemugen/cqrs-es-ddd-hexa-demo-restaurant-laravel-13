@@ -20,6 +20,7 @@ use App\Providers\Modules\EventStore\Domain\CheckpointStore;
 use App\Providers\Modules\EventStore\Domain\EventStore;
 use App\Providers\Modules\EventStore\Domain\StoredEvent;
 use App\Providers\Modules\SharedKernel\Application\Processor;
+use App\Providers\Modules\SharedKernel\Infrastructure\Causation;
 use App\Providers\Modules\SharedKernel\Infrastructure\Correlation;
 
 /**
@@ -50,6 +51,7 @@ final class OpenKitchenTicketProcessor implements Processor
             if ($event->type->is(ConsumedEvents::FRONT_OF_HOUSE_TABLE_ORDER_PLACED)) {
                 $handled++;
                 Correlation::resume($event->correlationId);
+                Causation::resume($event->position);
                 $this->openOrRefuse($event);
             }
 

@@ -10,6 +10,7 @@ use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\ConsumedEvents;
 use App\Providers\Modules\EventStore\Domain\CheckpointStore;
 use App\Providers\Modules\EventStore\Domain\EventStore;
 use App\Providers\Modules\SharedKernel\Application\Processor;
+use App\Providers\Modules\SharedKernel\Infrastructure\Causation;
 use App\Providers\Modules\SharedKernel\Infrastructure\Correlation;
 
 /**
@@ -39,6 +40,7 @@ final class MarkMenuItemUnavailableProcessor implements Processor
             if ($event->type->is(ConsumedEvents::KITCHEN_DISH_EIGHTY_SIXED)) {
                 $handled++;
                 Correlation::resume($event->correlationId);
+                Causation::resume($event->position);
                 $item = $this->menus->findByName(new DishName((string) $event->payload['dishName']));
                 $item->markUnavailable();
                 $this->menus->save($item);
