@@ -19,6 +19,7 @@ final readonly class KitchenScreenTicket implements JsonSerializable
         public PartyRef $partyRef,
         public TableLabel $tableLabel,
         public bool $done,
+        public int $version,
         public array $lines,
     ) {}
 
@@ -32,6 +33,7 @@ final readonly class KitchenScreenTicket implements JsonSerializable
             'partyRef' => (string) $this->partyRef,
             'tableLabel' => (string) $this->tableLabel,
             'done' => $this->done,
+            'version' => $this->version,
             'lines' => $this->lines,
         ];
     }

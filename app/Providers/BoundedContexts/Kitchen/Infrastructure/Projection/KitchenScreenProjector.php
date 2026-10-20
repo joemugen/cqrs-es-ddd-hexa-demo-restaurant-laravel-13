@@ -35,7 +35,7 @@ final class KitchenScreenProjector implements RebuildableProjector
         $position = $this->checkpoints->get(self::CHECKPOINT);
 
         foreach ($this->events->readAllFrom($position) as $event) {
-            if ($this->when($event->type, $event->payload, $event->position)) {
+            if ($this->when($event->type, $event->payload, $event->position, $event->version)) {
                 $applied++;
             }
 
@@ -58,9 +58,10 @@ final class KitchenScreenProjector implements RebuildableProjector
     /**
      * @param  array<string, mixed>  $payload
      * @param  int  $position  where the event sits in the log, which is what orders the tickets on the screen
+     * @param  int  $version  where it sits in the stream of its ticket: the version a client sends back as If-Match
      * @return bool whether the event changed the screen
      */
-    public function when(EventType $type, array $payload, int $position): bool
+    public function when(EventType $type, array $payload, int $position, int $version): bool
     {
         if ($type->is(KitchenEvent::TICKET_OPENED)) {
             DB::table(Tables::SCREEN_TICKETS)->insert([
@@ -69,6 +70,7 @@ final class KitchenScreenProjector implements RebuildableProjector
                 'table_label' => $payload['tableLabel'],
                 'done' => false,
                 'opened_position' => $position,
+                'version' => $version,
             ]);
 
             foreach ($payload['lines'] as $line) {
@@ -90,12 +92,14 @@ final class KitchenScreenProjector implements RebuildableProjector
 
         if ($type->is(KitchenEvent::DISH_FIRED)) {
             $this->status((string) $payload['ticketId'], (string) $payload['lineId'], LineStatus::FIRED);
+            $this->versionOf((string) $payload['ticketId'], $version);
 
             return true;
         }
 
         if ($type->is(KitchenEvent::DISH_READY)) {
             $this->status((string) $payload['ticketId'], (string) $payload['lineId'], LineStatus::READY);
+            $this->versionOf((string) $payload['ticketId'], $version);
 
             return true;
         }
@@ -103,12 +107,17 @@ final class KitchenScreenProjector implements RebuildableProjector
         if ($type->is(KitchenEvent::TICKET_COMPLETED)) {
             DB::table(Tables::SCREEN_TICKETS)
                 ->where('ticket_id', $payload['ticketId'])
-                ->update(['done' => true]);
+                ->update(['done' => true, 'version' => $version]);
 
             return true;
         }
 
         return false;
+    }
+
+    private function versionOf(string $ticketId, int $version): void
+    {
+        DB::table(Tables::SCREEN_TICKETS)->where('ticket_id', $ticketId)->update(['version' => $version]);
     }
 
     private function status(string $ticketId, string $lineId, string $status): void

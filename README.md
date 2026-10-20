@@ -145,6 +145,10 @@ In `sync` mode the process that appended the fact consumes it, one at a time: fi
 - **At least once.** After a failure a consumer may see an event twice, so each one is idempotent.
 - **No order between consumers.** A consumer that needs another to be up to date says so in code, as `PrepareBillProcessor` does for the ledger of served dishes.
 
+## Stale commands
+
+Each ticket on the kitchen screen has a `version`: the number of facts in its stream. A client sends it back as `If-Match` on `fire` and `ready`, and the response carries the new version as an `ETag`. If the ticket moved on, the command is refused with a 412 and nothing changes, so the client reads again and decides again. The header is optional, and a refusal is never replayed by the bus, unlike a write conflict between two writers.
+
 ## Tracing a request
 
 Every request carries a correlation id. `CorrelationIdMiddleware`, first in the `api` group (see `bootstrap/app.php`), reads `X-Correlation-Id` (or `X-Request-Id`) when it is a short token of letters, digits, dots, dashes and underscores, makes a UUID otherwise, and returns it in the `X-Correlation-Id` header of the response, a refusal included. Quote it when something goes wrong.
@@ -222,7 +226,7 @@ The kitchen screen catches up after the order's transaction commits, before the 
 | 1. Seat guests and the floor plan | `app/Providers/BoundedContexts/FrontOfHouse/Application/Command/SeatGuestsHandler.php#L27-L35` |
 | 2. Place a table order | `app/Providers/BoundedContexts/FrontOfHouse/Application/Command/PlaceTableOrderHandler.php#L33-L55` |
 | 3. Open a kitchen ticket | `app/Providers/BoundedContexts/Kitchen/Infrastructure/Processors/OpenKitchenTicketProcessor.php#L44-L62`, `app/Providers/BoundedContexts/Kitchen/Domain/KitchenTicket.php#L40-L55` |
-| 4. Fire, ready, kitchen screen | `app/Providers/BoundedContexts/Kitchen/Domain/KitchenTicket.php#L71-L126`, `app/Providers/BoundedContexts/Kitchen/Infrastructure/Projection/KitchenScreenProjector.php#L63-L112` |
+| 4. Fire, ready, kitchen screen | `app/Providers/BoundedContexts/Kitchen/Domain/KitchenTicket.php#L71-L126`, `app/Providers/BoundedContexts/Kitchen/Infrastructure/Projection/KitchenScreenProjector.php#L64-L116` |
 | 5. Queued pass, then serve | `app/Providers/BoundedContexts/FrontOfHouse/Infrastructure/Projection/ToServeProjector.php#L33-L57`, `app/Providers/BoundedContexts/FrontOfHouse/Infrastructure/Projection/ProjectToServeList.php#L10-L18`, `app/Providers/BoundedContexts/FrontOfHouse/Application/Command/ServeDishHandler.php#L28-L44` |
 | 6. Second order | `tests/Feature/FullServiceTest.php#L53-L68` |
 | 7. 86 the menu | `app/Providers/BoundedContexts/Kitchen/Domain/Dish.php#L29-L36`, `app/Providers/BoundedContexts/Kitchen/Application/Command/DeclareDishEightySixedHandler.php#L26-L37`, `app/Providers/BoundedContexts/FrontOfHouse/Infrastructure/Processors/MarkMenuItemUnavailableProcessor.php#L33-L53` |

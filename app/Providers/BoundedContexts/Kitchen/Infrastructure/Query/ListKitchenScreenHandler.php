@@ -37,6 +37,7 @@ final class ListKitchenScreenHandler implements QueryHandler
                 new PartyRef((string) $ticket->party_ref),
                 new TableLabel((string) $ticket->table_label),
                 (bool) $ticket->done,
+                (int) $ticket->version,
                 $lines->get($ticket->ticket_id, collect())
                     ->map(fn (object $line): KitchenScreenLine => $this->line($line))
                     ->values()

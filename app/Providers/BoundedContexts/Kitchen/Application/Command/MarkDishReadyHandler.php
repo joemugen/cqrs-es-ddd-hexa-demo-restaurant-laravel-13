@@ -20,9 +20,10 @@ final readonly class MarkDishReadyHandler implements CommandHandler
     public function __invoke(MarkDishReady $command): DishMarkedReady
     {
         $ticket = $this->tickets->get($command->ticketId);
+        $command->expectedVersion?->ensureMatches($ticket->expectedVersion());
         $ticket->markReady($command->lineId);
         $this->tickets->save($ticket);
 
-        return new DishMarkedReady($command->ticketId);
+        return new DishMarkedReady($command->ticketId, $ticket->expectedVersion());
     }
 }

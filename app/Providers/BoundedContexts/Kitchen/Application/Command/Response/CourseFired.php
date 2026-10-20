@@ -9,7 +9,10 @@ use App\Providers\Modules\SharedKernel\Application\CommandResponse;
 
 final readonly class CourseFired implements CommandResponse
 {
-    public function __construct(public KitchenTicketId $ticketId) {}
+    /**
+     * @param  int  $version  of the ticket after the command, sent back to the client as an ETag, not in the body
+     */
+    public function __construct(public KitchenTicketId $ticketId, public int $version) {}
 
     public function jsonSerialize(): array
     {

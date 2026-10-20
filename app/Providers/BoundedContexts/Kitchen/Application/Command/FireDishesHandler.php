@@ -20,9 +20,10 @@ final readonly class FireDishesHandler implements CommandHandler
     public function __invoke(FireDishes $command): CourseFired
     {
         $ticket = $this->tickets->get($command->ticketId);
+        $command->expectedVersion?->ensureMatches($ticket->expectedVersion());
         $ticket->fireCourse($command->course);
         $this->tickets->save($ticket);
 
-        return new CourseFired($command->ticketId);
+        return new CourseFired($command->ticketId, $ticket->expectedVersion());
     }
 }
