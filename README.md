@@ -1,8 +1,15 @@
-# CQRS in Laravel
+# CQRS, Event Sourcing, DDD and hexagonal architecture in Laravel
 
-Companion code for a follow-up to [CQRS, separating the command from the query](https://joemugen.medium.com/cqrs-separating-the-command-from-the-query-2868b1fe373b).
+One restaurant, used as the example of several posts. Each post isolates one idea; the code keeps all of them together.
 
-Laravel post: coming soon
+## Posts based on this repository
+
+| Post | Subject | Why this repository |
+| --- | --- | --- |
+| [CQRS, separating the command from the query](https://joemugen.medium.com/cqrs-separating-the-command-from-the-query-2868b1fe373b) | CQRS | The base post. This code is its Laravel follow-up: the three levels below, with a menu, a kitchen ticket and a bill that share no class. |
+| Laravel post: coming soon | CQRS in Laravel | Buses, middleware, projections and workers in a real framework. |
+
+A post that needs its own variation gets its own branch.
 
 The metaphor stays the same. The menu is not the kitchen ticket. A guest reads a name, a price, and a list of allergens. The kitchen cooks a dish at a station for a number of minutes, and never sees the price. The till charges what actually left the pass. Same evening, three models, no shared class.
 
