@@ -7,6 +7,7 @@ use App\Providers\BoundedContexts\FrontOfHouse\Domain\MenuItem;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\FrontOfHouseSeeder;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Tables;
 use App\Providers\Modules\EventStore\Domain\EventStore;
+use App\Providers\Modules\SharedKernel\Infrastructure\Tables as SharedKernelTables;
 use Illuminate\Support\Facades\DB;
 
 describe('placing a table order', function () {
@@ -148,6 +149,29 @@ describe('placing a table order', function () {
             $second = $this->postJson('/api/front-of-house/tables/table-4/orders', $this->order, ['Idempotency-Key' => 'b'])->json('tableOrderId');
 
             expect($second)->not->toBe($first);
+        });
+
+        test('replays the stored response when the same Idempotency-Key comes back', function () {
+            $headers = ['Idempotency-Key' => 'checkout-42'];
+
+            $first = $this->postJson('/api/front-of-house/tables/table-4/orders', $this->order, $headers)->assertOk();
+            $second = $this->postJson('/api/front-of-house/tables/table-4/orders', $this->order, $headers)->assertOk();
+
+            expect($second->json())->toBe($first->json())
+                ->and(DB::table(SharedKernelTables::IDEMPOTENCY_KEYS)->count())->toBe(1);
+        });
+
+        test('refuses an Idempotency-Key reused with another order', function () {
+            $headers = ['Idempotency-Key' => 'checkout-42'];
+            $this->postJson('/api/front-of-house/tables/table-4/orders', $this->order, $headers)->assertOk();
+
+            $this->postJson('/api/front-of-house/tables/table-4/orders', [
+                'lines' => [['menuItemId' => 'house-red', 'quantity' => 3, 'course' => 'drink']],
+            ], $headers)->assertUnprocessable()->assertJson([
+                'message' => 'This Idempotency-Key was already used with another request.',
+            ]);
+
+            expect(DB::table(Tables::TABLE_ORDERS)->count())->toBe(1);
         });
     });
 });

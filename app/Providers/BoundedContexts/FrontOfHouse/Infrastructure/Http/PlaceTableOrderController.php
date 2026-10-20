@@ -10,6 +10,7 @@ use App\Providers\BoundedContexts\FrontOfHouse\Domain\RequestedLine;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableId;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableOrderId;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Bus\FrontOfHouseCommandBus;
+use App\Providers\Modules\SharedKernel\Infrastructure\Http\IdempotencyHeader;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -34,10 +35,11 @@ final class PlaceTableOrderController
         return response()->json($bus->dispatch(new PlaceTableOrder(
             tableOrderId: TableOrderId::derivedFrom(
                 new TableId($tableId),
-                $request->header('Idempotency-Key') ?: (string) Str::uuid(),
+                (string) (IdempotencyHeader::keyOf($request) ?? Str::uuid()),
             ),
             tableId: new TableId($tableId),
             lines: $lines,
+            idempotencyKey: IdempotencyHeader::keyOf($request),
         )));
     }
 }
