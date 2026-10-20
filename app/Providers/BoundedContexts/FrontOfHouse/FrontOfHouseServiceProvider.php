@@ -6,6 +6,7 @@ namespace App\Providers\BoundedContexts\FrontOfHouse;
 
 use App\Providers\BoundedContexts\FrontOfHouse\Application\FloorPlan;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\MenuRepository;
+use App\Providers\BoundedContexts\FrontOfHouse\Application\OrderFulfilmentRepository;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\PassRepository;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\TableOrderRepository;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\TableRepository;
@@ -15,6 +16,7 @@ use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Console\ConsumeFro
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Console\RunProjections;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\DatabaseFloorPlan;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\DatabaseMenuRepository;
+use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\DatabaseOrderFulfilmentRepository;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\DatabasePassRepository;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\DatabaseTableOrderRepository;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\DatabaseTableRepository;
@@ -33,6 +35,7 @@ final class FrontOfHouseServiceProvider extends ServiceProvider
         $this->app->bind(TableOrderRepository::class, DatabaseTableOrderRepository::class);
         $this->app->bind(FloorPlan::class, DatabaseFloorPlan::class);
         $this->app->bind(PassRepository::class, DatabasePassRepository::class);
+        $this->app->bind(OrderFulfilmentRepository::class, DatabaseOrderFulfilmentRepository::class);
 
         $this->app->singleton(FrontOfHouseCommandBus::class);
         $this->app->singleton(FrontOfHouseQueryBus::class);

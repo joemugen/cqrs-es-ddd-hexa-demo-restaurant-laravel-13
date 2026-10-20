@@ -18,4 +18,6 @@ final class KitchenEvent
     public const TICKET_COMPLETED = 'kitchen.ticket_completed';
 
     public const DISH_EIGHTY_SIXED = 'kitchen.dish_eighty_sixed';
+
+    public const ORDER_REFUSED = 'kitchen.order_refused';
 }

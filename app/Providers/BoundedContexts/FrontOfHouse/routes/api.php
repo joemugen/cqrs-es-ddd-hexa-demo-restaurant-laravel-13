@@ -7,6 +7,7 @@ use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Http\PlaceTableOrd
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Http\RequestBillController;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Http\SeatGuestsController;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Http\ServeDishController;
+use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Http\ShowOrderFulfilmentController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/tables/{tableId}/guests', SeatGuestsController::class)
@@ -29,3 +30,6 @@ Route::post('/to-serve/{toServeId}/serve', ServeDishController::class)
 
 Route::post('/tables/{tableId}/bill', RequestBillController::class)
     ->name('front-of-house.bills.store');
+
+Route::get('/orders/{tableOrderId}', ShowOrderFulfilmentController::class)
+    ->name('front-of-house.orders.show');

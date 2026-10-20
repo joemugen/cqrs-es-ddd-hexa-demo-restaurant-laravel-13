@@ -14,4 +14,6 @@ final class FrontOfHouseEvent
     public const BILL_REQUESTED = 'front_of_house.bill_requested';
 
     public const DISH_SERVED = 'front_of_house.dish_served';
+
+    public const TABLE_ORDER_CANCELLED = 'front_of_house.table_order_cancelled';
 }

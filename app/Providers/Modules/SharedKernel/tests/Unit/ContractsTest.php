@@ -24,6 +24,7 @@ function aggregates(): array
         $ns.'Billing\\Domain\\Bill',
         $ns.'FrontOfHouse\\Domain\\DishAtThePass',
         $ns.'FrontOfHouse\\Domain\\MenuItem',
+        $ns.'FrontOfHouse\\Domain\\OrderFulfilment',
         $ns.'FrontOfHouse\\Domain\\Table',
         $ns.'FrontOfHouse\\Domain\\TableOrder',
         $ns.'Kitchen\\Domain\\Dish',

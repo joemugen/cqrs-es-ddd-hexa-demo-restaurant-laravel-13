@@ -20,4 +20,6 @@ final class Tables
     public const TABLE_ORDER_LINES = 'foh_table_order_lines';
 
     public const TO_SERVE = 'foh_to_serve';
+
+    public const ORDER_FULFILMENTS = 'foh_order_fulfilments';
 }

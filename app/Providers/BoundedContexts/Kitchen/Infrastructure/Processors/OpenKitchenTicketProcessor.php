@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace App\Providers\BoundedContexts\Kitchen\Infrastructure\Processors;
 
 use App\Providers\BoundedContexts\Kitchen\Application\Command\OpenKitchenTicket;
+use App\Providers\BoundedContexts\Kitchen\Application\Command\RefuseOrder;
 use App\Providers\BoundedContexts\Kitchen\Application\DishCatalog;
 use App\Providers\BoundedContexts\Kitchen\Domain\DishName;
+use App\Providers\BoundedContexts\Kitchen\Domain\KitchenException;
 use App\Providers\BoundedContexts\Kitchen\Domain\KitchenTicketId;
 use App\Providers\BoundedContexts\Kitchen\Domain\LineId;
 use App\Providers\BoundedContexts\Kitchen\Domain\OrderedLine;
@@ -16,6 +18,7 @@ use App\Providers\BoundedContexts\Kitchen\Infrastructure\Bus\KitchenCommandBus;
 use App\Providers\BoundedContexts\Kitchen\Infrastructure\ConsumedEvents;
 use App\Providers\Modules\EventStore\Domain\CheckpointStore;
 use App\Providers\Modules\EventStore\Domain\EventStore;
+use App\Providers\Modules\EventStore\Domain\StoredEvent;
 use App\Providers\Modules\SharedKernel\Application\Processor;
 use App\Providers\Modules\SharedKernel\Infrastructure\Correlation;
 
@@ -47,12 +50,7 @@ final class OpenKitchenTicketProcessor implements Processor
             if ($event->type->is(ConsumedEvents::FRONT_OF_HOUSE_TABLE_ORDER_PLACED)) {
                 $handled++;
                 Correlation::resume($event->correlationId);
-                $this->bus->dispatch(new OpenKitchenTicket(
-                    ticketId: new KitchenTicketId((string) $event->payload['tableOrderId']),
-                    partyRef: new PartyRef((string) $event->payload['tableId']),
-                    tableLabel: new TableLabel((string) $event->payload['tableLabel']),
-                    lines: $this->dishes->linesFor($this->orderedLines($event->payload['lines']), $event->position),
-                ));
+                $this->openOrRefuse($event);
             }
 
             $position = $event->position;
@@ -76,5 +74,30 @@ final class OpenKitchenTicketProcessor implements Processor
             (string) $line['course'],
             array_values($line['allergens']),
         ), $lines);
+    }
+
+    /**
+     * An order the kitchen cannot cook is not a failure to retry: it is a business outcome, so it becomes a fact
+     * the dining room can compensate for, and the orders behind it go on.
+     */
+    private function openOrRefuse(StoredEvent $event): void
+    {
+        $ticketId = new KitchenTicketId((string) $event->payload['tableOrderId']);
+        $partyRef = new PartyRef((string) $event->payload['tableId']);
+
+        try {
+            $lines = $this->dishes->linesFor($this->orderedLines($event->payload['lines']), $event->position);
+        } catch (KitchenException $refusal) {
+            $this->bus->dispatch(new RefuseOrder($ticketId, $partyRef, $refusal->getMessage()));
+
+            return;
+        }
+
+        $this->bus->dispatch(new OpenKitchenTicket(
+            ticketId: $ticketId,
+            partyRef: $partyRef,
+            tableLabel: new TableLabel((string) $event->payload['tableLabel']),
+            lines: $lines,
+        ));
     }
 }

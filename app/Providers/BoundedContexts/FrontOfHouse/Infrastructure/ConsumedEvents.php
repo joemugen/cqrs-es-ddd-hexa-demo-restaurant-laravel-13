@@ -13,5 +13,9 @@ final class ConsumedEvents
 
     public const KITCHEN_DISH_EIGHTY_SIXED = 'kitchen.dish_eighty_sixed';
 
+    public const KITCHEN_TICKET_OPENED = 'kitchen.ticket_opened';
+
+    public const KITCHEN_ORDER_REFUSED = 'kitchen.order_refused';
+
     public const BILLING_BILL_PAID = 'billing.bill_paid';
 }

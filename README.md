@@ -126,7 +126,11 @@ With a worker, a consumer may read a fact long after it was appended, so it must
 
 The kitchen records the log position of the 86 (`kitchen_dishes.eighty_sixed_position`, which `IntegrationBus::publish()` and `EventStore::append()` now return), and `DishCatalog::linesFor()` takes the position of the order. A dish is refused only when it was declared 86 at a position before the order's. The log position is the clock all consumers share.
 
-Not covered yet: an order placed *after* the 86 but accepted by the dining room because its menu had not caught up. The kitchen then refuses it, and the consumer keeps failing on that event (see the poison events item of the roadmap).
+### A refused order is compensated, not retried
+
+The dining room accepts an order from its own menu, which can be a moment behind the kitchen. When the kitchen cannot cook it, that is a business outcome and not an error to retry. `OpenKitchenTicketProcessor` publishes `kitchen.order_refused` with the reason and goes on with the orders behind it.
+
+The dining room runs a choreographed saga for each order: `OrderFulfilmentProcessor` keeps an `OrderFulfilment` (`awaiting-kitchen`, then `confirmed` when the kitchen opens a ticket, or `cancelled` when it refuses). Cancelling is the compensation: it records the reason and publishes `front_of_house.table_order_cancelled`. Follow an order with `GET /api/front-of-house/orders/{tableOrderId}`. Nothing is billed for a cancelled order, since only served dishes are.
 
 ### One worker per stream
 
@@ -217,7 +221,7 @@ The kitchen screen catches up after the order's transaction commits, before the 
 | --- | --- |
 | 1. Seat guests and the floor plan | `app/Providers/BoundedContexts/FrontOfHouse/Application/Command/SeatGuestsHandler.php#L27-L35` |
 | 2. Place a table order | `app/Providers/BoundedContexts/FrontOfHouse/Application/Command/PlaceTableOrderHandler.php#L33-L55` |
-| 3. Open a kitchen ticket | `app/Providers/BoundedContexts/Kitchen/Infrastructure/Processors/OpenKitchenTicketProcessor.php#L41-L64`, `app/Providers/BoundedContexts/Kitchen/Domain/KitchenTicket.php#L40-L55` |
+| 3. Open a kitchen ticket | `app/Providers/BoundedContexts/Kitchen/Infrastructure/Processors/OpenKitchenTicketProcessor.php#L44-L62`, `app/Providers/BoundedContexts/Kitchen/Domain/KitchenTicket.php#L40-L55` |
 | 4. Fire, ready, kitchen screen | `app/Providers/BoundedContexts/Kitchen/Domain/KitchenTicket.php#L71-L126`, `app/Providers/BoundedContexts/Kitchen/Infrastructure/Projection/KitchenScreenProjector.php#L63-L112` |
 | 5. Queued pass, then serve | `app/Providers/BoundedContexts/FrontOfHouse/Infrastructure/Projection/ToServeProjector.php#L33-L57`, `app/Providers/BoundedContexts/FrontOfHouse/Infrastructure/Projection/ProjectToServeList.php#L10-L18`, `app/Providers/BoundedContexts/FrontOfHouse/Application/Command/ServeDishHandler.php#L28-L44` |
 | 6. Second order | `tests/Feature/FullServiceTest.php#L53-L68` |
