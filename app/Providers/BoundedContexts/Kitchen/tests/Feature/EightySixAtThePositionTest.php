@@ -3,7 +3,6 @@
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\FrontOfHouseSeeder;
 use App\Providers\BoundedContexts\Kitchen\Application\DishCatalog;
 use App\Providers\BoundedContexts\Kitchen\Domain\DishName;
-use App\Providers\BoundedContexts\Kitchen\Domain\KitchenException;
 use App\Providers\BoundedContexts\Kitchen\Domain\LineId;
 use App\Providers\BoundedContexts\Kitchen\Domain\OrderedLine;
 use App\Providers\BoundedContexts\Kitchen\Infrastructure\KitchenSeeder;
@@ -38,22 +37,35 @@ describe('a dish declared 86', function () {
 
             $lines = app(DishCatalog::class)->linesFor([steakOrderedAs('order-1')], 9);
 
-            expect($lines)->toHaveCount(1)
-                ->and((string) $lines[0]->dishName)->toBe('Steak frites');
+            expect($lines->unavailable)->toBe([])
+                ->and($lines->available)->toHaveCount(1)
+                ->and((string) $lines->available[0]->dishName)->toBe('Steak frites');
         });
 
-        test('an order placed after the 86 is refused', function () {
+        test('an order placed after the 86 gets it as unavailable, with the reason', function () {
             DB::table(Tables::DISHES)->where('id', 'dish-steak')->update(['in_stock' => false, 'eighty_sixed_position' => 10]);
 
-            expect(fn () => app(DishCatalog::class)->linesFor([steakOrderedAs('order-1')], 11))
-                ->toThrow(KitchenException::class, 'Steak frites is 86.');
+            $lines = app(DishCatalog::class)->linesFor([steakOrderedAs('order-1')], 11);
+
+            expect($lines->available)->toBe([])
+                ->and($lines->unavailable)->toHaveCount(1)
+                ->and((string) $lines->unavailable[0]->lineId)->toBe('order-1')
+                ->and((string) $lines->unavailable[0]->dishName)->toBe('Steak frites')
+                ->and($lines->unavailable[0]->reason)->toBe('Steak frites is 86.');
         });
 
-        test('a dish out of stock with no recorded position stays refused', function () {
+        test('a dish out of stock with no recorded position stays unavailable', function () {
             DB::table(Tables::DISHES)->where('id', 'dish-steak')->update(['in_stock' => false]);
 
-            expect(fn () => app(DishCatalog::class)->linesFor([steakOrderedAs('order-1')], 1))
-                ->toThrow(KitchenException::class, 'Steak frites is 86.');
+            expect(app(DishCatalog::class)->linesFor([steakOrderedAs('order-1')], 1)->unavailable)->toHaveCount(1);
+        });
+
+        test('a dish the kitchen does not know is unavailable too, and does not hide the others', function () {
+            $unknown = new OrderedLine(new LineId('order-2'), new DishName('Dragon steak'), 1, 'main', []);
+            $lines = app(DishCatalog::class)->linesFor([steakOrderedAs('order-1'), $unknown], 1);
+
+            expect($lines->available)->toHaveCount(1)
+                ->and($lines->unavailable[0]->reason)->toBe('The kitchen has no dish called Dragon steak.');
         });
     });
 

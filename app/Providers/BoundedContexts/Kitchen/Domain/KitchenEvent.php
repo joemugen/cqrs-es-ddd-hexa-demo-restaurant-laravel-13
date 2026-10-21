@@ -21,5 +21,5 @@ final class KitchenEvent
 
     public const DISH_EIGHTY_SIXED = 'kitchen.dish_eighty_sixed';
 
-    public const ORDER_REFUSED = 'kitchen.order_refused';
+    public const LINES_UNAVAILABLE = 'kitchen.lines_unavailable';
 }

@@ -7,7 +7,7 @@ namespace App\Providers\BoundedContexts\Kitchen\Application\Command\Response;
 use App\Providers\BoundedContexts\Kitchen\Domain\KitchenTicketId;
 use App\Providers\Modules\SharedKernel\Application\CommandResponse;
 
-final readonly class OrderRefused implements CommandResponse
+final readonly class LinesDeclaredUnavailable implements CommandResponse
 {
     public function __construct(public KitchenTicketId $ticketId) {}
 

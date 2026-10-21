@@ -4,13 +4,14 @@ declare(strict_types=1);
 
 namespace App\Providers\BoundedContexts\Kitchen\Infrastructure\Processors;
 
+use App\Providers\BoundedContexts\Kitchen\Application\Command\AddDishesToTicket;
+use App\Providers\BoundedContexts\Kitchen\Application\Command\DeclareLinesUnavailable;
 use App\Providers\BoundedContexts\Kitchen\Application\Command\OpenKitchenTicket;
-use App\Providers\BoundedContexts\Kitchen\Application\Command\RefuseOrder;
 use App\Providers\BoundedContexts\Kitchen\Application\DishCatalog;
 use App\Providers\BoundedContexts\Kitchen\Domain\DishName;
-use App\Providers\BoundedContexts\Kitchen\Domain\KitchenException;
 use App\Providers\BoundedContexts\Kitchen\Domain\KitchenTicketId;
 use App\Providers\BoundedContexts\Kitchen\Domain\LineId;
+use App\Providers\BoundedContexts\Kitchen\Domain\LinesAvailability;
 use App\Providers\BoundedContexts\Kitchen\Domain\OrderedLine;
 use App\Providers\BoundedContexts\Kitchen\Domain\PartyRef;
 use App\Providers\BoundedContexts\Kitchen\Domain\TableLabel;
@@ -24,7 +25,8 @@ use App\Providers\Modules\SharedKernel\Infrastructure\Causation;
 use App\Providers\Modules\SharedKernel\Infrastructure\Correlation;
 
 /**
- * A processor reacts once. It is not a projection: replaying it would open tickets again.
+ * A processor reacts once. It is not a projection, but replaying it is harmless: the kitchen opens a ticket and adds a
+ * line only when they are not there yet.
  */
 final class OpenKitchenTicketProcessor implements Processor
 {
@@ -48,11 +50,11 @@ final class OpenKitchenTicketProcessor implements Processor
         $position = $this->checkpoints->get(self::CHECKPOINT);
 
         foreach ($this->events->readAllFrom($position) as $event) {
-            if ($event->type->is(ConsumedEvents::FRONT_OF_HOUSE_TABLE_ORDER_PLACED)) {
+            if ($this->isAnOrderToCook($event)) {
                 $handled++;
                 Correlation::resume($event->correlationId);
                 Causation::resume($event->position);
-                $this->openOrRefuse($event);
+                $this->cookWhatIsAvailable($event);
             }
 
             $position = $event->position;
@@ -79,27 +81,35 @@ final class OpenKitchenTicketProcessor implements Processor
     }
 
     /**
-     * An order the kitchen cannot cook is not a failure to retry: it is a business outcome, so it becomes a fact
-     * the dining room can compensate for, and the orders behind it go on.
+     * What the kitchen can cook goes to the ticket at once. What it cannot is not a failure to retry: it becomes a fact
+     * the dining room answers, and the orders behind go on. The position of the event, not the stock of the moment,
+     * says what was available.
      */
-    private function openOrRefuse(StoredEvent $event): void
+    private function cookWhatIsAvailable(StoredEvent $event): void
     {
         $ticketId = new KitchenTicketId((string) $event->payload['tableOrderId']);
         $partyRef = new PartyRef((string) $event->payload['tableId']);
+        $lines = $this->dishes->linesFor($this->orderedLines($event->payload['lines']), $event->position);
 
-        try {
-            $lines = $this->dishes->linesFor($this->orderedLines($event->payload['lines']), $event->position);
-        } catch (KitchenException $refusal) {
-            $this->bus->dispatch(new RefuseOrder($ticketId, $partyRef, $refusal->getMessage()));
-
-            return;
+        if ($lines->available !== []) {
+            $this->bus->dispatch($this->ticketCommand($event, $ticketId, $partyRef, $lines));
         }
 
-        $this->bus->dispatch(new OpenKitchenTicket(
-            ticketId: $ticketId,
-            partyRef: $partyRef,
-            tableLabel: new TableLabel((string) $event->payload['tableLabel']),
-            lines: $lines,
-        ));
+        if ($lines->unavailable !== []) {
+            $this->bus->dispatch(new DeclareLinesUnavailable($ticketId, $partyRef, $event->position, $lines->unavailable));
+        }
+    }
+
+    private function ticketCommand(StoredEvent $event, KitchenTicketId $ticketId, PartyRef $partyRef, LinesAvailability $lines): OpenKitchenTicket|AddDishesToTicket
+    {
+        return $event->type->is(ConsumedEvents::FRONT_OF_HOUSE_TABLE_ORDER_PLACED)
+            ? new OpenKitchenTicket($ticketId, $partyRef, new TableLabel((string) $event->payload['tableLabel']), $lines->available)
+            : new AddDishesToTicket($ticketId, $partyRef, new TableLabel((string) $event->payload['tableLabel']), $lines->available);
+    }
+
+    private function isAnOrderToCook(StoredEvent $event): bool
+    {
+        return $event->type->is(ConsumedEvents::FRONT_OF_HOUSE_TABLE_ORDER_PLACED)
+            || $event->type->is(ConsumedEvents::FRONT_OF_HOUSE_TABLE_ORDER_REVISED);
     }
 }
