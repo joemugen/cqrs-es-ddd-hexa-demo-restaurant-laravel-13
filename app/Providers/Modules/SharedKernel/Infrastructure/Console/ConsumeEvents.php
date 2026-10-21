@@ -12,7 +12,6 @@ use Illuminate\Cache\NullStore;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Container\Container;
 use Illuminate\Support\Facades\Cache;
-use ReflectionClass;
 use Throwable;
 
 /**
@@ -43,7 +42,7 @@ abstract class ConsumeEvents extends Command
     {
         $consumers = array_map(
             fn (string $consumer) => $container->make($consumer),
-            $discovery->eventConsumers($this->contextRoot()),
+            $discovery->eventConsumers($discovery->contextOf(static::class)),
         );
 
         if ($consumers === []) {
@@ -111,13 +110,5 @@ abstract class ConsumeEvents extends Command
     private function nameOf(EventConsumer $consumer): string
     {
         return class_basename($consumer::class);
-    }
-
-    /**
-     * The command sits in <context>/Infrastructure/Console.
-     */
-    private function contextRoot(): string
-    {
-        return dirname((string) (new ReflectionClass($this))->getFileName(), 3);
     }
 }

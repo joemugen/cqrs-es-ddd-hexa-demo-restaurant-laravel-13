@@ -5,14 +5,14 @@ use App\Providers\BoundedContexts\Billing\Infrastructure\Bus\BillingCommandBus;
 use App\Providers\Modules\SharedKernel\Infrastructure\Bus\ContextDiscovery;
 use Illuminate\Support\ServiceProvider;
 
-function contextsRoot(): string
+function contextNamed(string $context): string
 {
-    return app_path('Providers/BoundedContexts');
+    return config('contexts.namespace').'\\'.$context;
 }
 
 function discoveryWithCacheAt(string $path): ContextDiscovery
 {
-    app()->instance(ContextDiscovery::class, $discovery = new ContextDiscovery($path));
+    app()->instance(ContextDiscovery::class, $discovery = new ContextDiscovery($path, config('contexts')));
 
     return $discovery;
 }
@@ -26,15 +26,33 @@ afterEach(function (): void {
 });
 
 describe('context discovery', function (): void {
+    describe('by namespace, from the configuration', function (): void {
+        it('knows the contexts as namespaces', function (): void {
+            expect(discoveryWithCacheAt($this->cachePath)->contexts())
+                ->toBe([contextNamed('Billing'), contextNamed('FrontOfHouse'), contextNamed('Kitchen')]);
+        });
+
+        it('tells the context of a class, whatever its layer', function (): void {
+            expect(discoveryWithCacheAt($this->cachePath)->contextOf(PayBillHandler::class))->toBe(contextNamed('Billing'));
+        });
+
+        it('looks where the configuration says, not at a fixed place', function (): void {
+            $configuration = config('contexts');
+            $configuration['layout']['commands'] = 'Infrastructure\\Http';
+
+            expect((new ContextDiscovery($this->cachePath, $configuration))->commandHandlers(contextNamed('Billing')))->toBe([]);
+        });
+    });
+
     describe('without a cache', function (): void {
         it('finds the command handlers of a context', function (string $context): void {
-            $found = discoveryWithCacheAt($this->cachePath)->commandHandlers(contextsRoot().'/'.$context);
+            $found = discoveryWithCacheAt($this->cachePath)->commandHandlers(contextNamed($context));
 
             expect($found)->toEqualCanonicalizing(classesIn($context.'/Application/Command/*Handler.php'));
         })->with(['FrontOfHouse', 'Kitchen', 'Billing']);
 
         it('finds the query handlers of a context', function (string $context): void {
-            $found = discoveryWithCacheAt($this->cachePath)->queryHandlers(contextsRoot().'/'.$context);
+            $found = discoveryWithCacheAt($this->cachePath)->queryHandlers(contextNamed($context));
 
             expect($found)->toEqualCanonicalizing(classesIn($context.'/Infrastructure/Query/*Handler.php'));
         })->with(['FrontOfHouse', 'Kitchen', 'Billing']);
@@ -42,8 +60,8 @@ describe('context discovery', function (): void {
         it('finds nothing in a context without handlers', function (): void {
             $discovery = discoveryWithCacheAt($this->cachePath);
 
-            expect($discovery->commandHandlers(app_path('Providers/Modules/EventStore')))->toBe([])
-                ->and($discovery->queryHandlers(app_path('Providers/Modules/EventStore')))->toBe([]);
+            expect($discovery->commandHandlers('App\\Providers\\Modules\\EventStore'))->toBe([])
+                ->and($discovery->queryHandlers('App\\Providers\\Modules\\EventStore'))->toBe([]);
         });
     });
 
@@ -51,28 +69,28 @@ describe('context discovery', function (): void {
         it('writes every context to a file and reads it back', function (): void {
             $discovery = discoveryWithCacheAt($this->cachePath);
 
-            $path = $discovery->cache(contextsRoot());
+            $path = $discovery->cache();
 
-            $cached = new ContextDiscovery($this->cachePath);
+            $cached = new ContextDiscovery($this->cachePath, config('contexts'));
 
             expect($path)->toBe($this->cachePath)
                 ->and(file_exists($this->cachePath))->toBeTrue()
-                ->and($cached->commandHandlers(contextsRoot().'/Billing'))
-                ->toEqualCanonicalizing($discovery->commandHandlers(contextsRoot().'/Billing'));
+                ->and($cached->commandHandlers(contextNamed('Billing')))
+                ->toEqualCanonicalizing($discovery->commandHandlers(contextNamed('Billing')));
         });
 
         it('serves what the file says instead of scanning', function (): void {
             file_put_contents($this->cachePath, '<?php return '.var_export([
-                'app/Providers/BoundedContexts/Billing' => ['commands' => [PayBillHandler::class], 'queries' => []],
+                contextNamed('Billing') => ['commands' => [PayBillHandler::class], 'queries' => []],
             ], true).';');
 
-            expect((new ContextDiscovery($this->cachePath))->commandHandlers(contextsRoot().'/Billing'))
+            expect((new ContextDiscovery($this->cachePath, config('contexts')))->commandHandlers(contextNamed('Billing')))
                 ->toBe([PayBillHandler::class]);
         });
 
         it('feeds the bus of the context', function (): void {
             file_put_contents($this->cachePath, '<?php return '.var_export([
-                'app/Providers/BoundedContexts/Billing' => ['commands' => [PayBillHandler::class], 'queries' => []],
+                contextNamed('Billing') => ['commands' => [PayBillHandler::class], 'queries' => []],
             ], true).';');
             discoveryWithCacheAt($this->cachePath);
 

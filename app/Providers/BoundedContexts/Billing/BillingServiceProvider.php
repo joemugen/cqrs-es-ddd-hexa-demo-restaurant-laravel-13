@@ -34,7 +34,7 @@ final class BillingServiceProvider extends ServiceProvider
 
         $this->commands([ConsumeBillingEvents::class]);
 
-        $this->app->make(EventConsumption::class)->subscribe(__DIR__);
+        $this->app->make(EventConsumption::class)->subscribe(__NAMESPACE__);
 
         Route::middleware('api')
             ->prefix((string) config('billing.route_prefix'))

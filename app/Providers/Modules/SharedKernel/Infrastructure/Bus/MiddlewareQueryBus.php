@@ -14,7 +14,6 @@ use App\Providers\Modules\SharedKernel\Infrastructure\Bus\Middleware\LoggingQuer
 use App\Providers\Modules\SharedKernel\Infrastructure\Bus\Middleware\MetricsQueryMiddleware;
 use Closure;
 use Illuminate\Contracts\Container\Container;
-use ReflectionClass;
 
 /**
  * The query bus every context builds on. A context extends it, lists its handlers and,
@@ -44,15 +43,12 @@ abstract class MiddlewareQueryBus implements QueryBus
      */
     protected function handlers(): array
     {
-        return $this->container->make(ContextDiscovery::class)->queryHandlers($this->contextRoot());
+        return $this->container->make(ContextDiscovery::class)->queryHandlers($this->context());
     }
 
-    /**
-     * The bus sits in <context>/Infrastructure/Bus.
-     */
-    private function contextRoot(): string
+    private function context(): string
     {
-        return dirname((string) (new ReflectionClass($this))->getFileName(), 3);
+        return $this->container->make(ContextDiscovery::class)->contextOf(static::class);
     }
 
     /**

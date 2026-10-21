@@ -47,7 +47,7 @@ final class FrontOfHouseServiceProvider extends ServiceProvider
 
         $this->commands([RunProjections::class, ConsumeFrontOfHouseEvents::class]);
 
-        $this->app->make(EventConsumption::class)->subscribe(__DIR__);
+        $this->app->make(EventConsumption::class)->subscribe(__NAMESPACE__);
 
         Route::middleware('api')
             ->prefix((string) config('front_of_house.route_prefix'))

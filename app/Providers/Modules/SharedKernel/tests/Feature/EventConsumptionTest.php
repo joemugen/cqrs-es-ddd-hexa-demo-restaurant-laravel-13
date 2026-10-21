@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Artisan;
 describe('event consumption', function (): void {
     describe('discovery', function (): void {
         it('finds the consumers of a context', function (string $context): void {
-            $found = app(ContextDiscovery::class)->eventConsumers(app_path('Providers/BoundedContexts/'.$context));
+            $found = app(ContextDiscovery::class)->eventConsumers(config('contexts.namespace').'\\'.$context);
 
             expect($found)->toEqualCanonicalizing(
                 array_values(array_filter(

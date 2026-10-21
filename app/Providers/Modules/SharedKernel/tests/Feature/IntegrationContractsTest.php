@@ -7,11 +7,6 @@ use App\Providers\Modules\SharedKernel\Domain\Internal;
 use App\Providers\Modules\SharedKernel\Domain\TypedDomainEvent;
 use App\Providers\Modules\SharedKernel\Infrastructure\Bus\ContextDiscovery;
 
-function contextsRootOfContracts(): string
-{
-    return app_path('Providers/BoundedContexts');
-}
-
 /**
  * @return list<class-string>
  */
@@ -67,11 +62,11 @@ describe('integration contracts', function (): void {
     describe('discovery', function (): void {
         it('finds the contracts of a context, with or without the cache', function (): void {
             $path = sys_get_temp_dir().'/contracts-'.bin2hex(random_bytes(4)).'.php';
-            $discovery = new ContextDiscovery($path);
-            $withoutCache = $discovery->contracts(contextsRootOfContracts().'/Kitchen');
+            $discovery = new ContextDiscovery($path, config('contexts'));
+            $withoutCache = $discovery->contracts(config('contexts.namespace').'\\Kitchen');
 
-            $discovery->cache(contextsRootOfContracts());
-            $withCache = (new ContextDiscovery($path))->contracts(contextsRootOfContracts().'/Kitchen');
+            $discovery->cache();
+            $withCache = (new ContextDiscovery($path, config('contexts')))->contracts(config('contexts.namespace').'\\Kitchen');
             @unlink($path);
 
             expect($withoutCache)->toEqualCanonicalizing(classesIn('Kitchen/Application/Integration/*.php'))

@@ -14,9 +14,10 @@ use ReflectionClass;
 
 /**
  * Finds what a context wires by convention: its handlers, so no bus lists them by hand, its event consumers and the
- * contracts it publishes (in Application/Integration).
+ * contracts it publishes. A context is a namespace, and what it holds sits in sub-namespaces named by the configuration
+ * (`config/contexts.php`): no path is spelled here.
  *
- * Command handlers live in Application/Command and query handlers in Infrastructure/Query. A class there is a handler
+ * A class in the namespace of the commands (or queries) is a handler
  * when it implements the contract or carries the attribute, so a handler that forgets one is reported by the HandlerMap
  * instead of being silently ignored. `php artisan contexts:cache` writes the result to a file that `optimize` refreshes.
  */
@@ -25,22 +26,52 @@ final class ContextDiscovery
     /** @var array<string, array{commands: list<class-string>, queries: list<class-string>, consumers: list<class-string>, contracts: list<class-string>}>|null */
     private ?array $cached = null;
 
-    public function __construct(private readonly string $cachePath) {}
+    /**
+     * @param  array{namespace: string, layout: array{commands: string, queries: string, processors: string, projectors: string, contracts: string}}  $configuration
+     */
+    public function __construct(
+        private readonly string $cachePath,
+        private readonly array $configuration,
+        private readonly ComposerNamespaces $namespaces = new ComposerNamespaces,
+    ) {}
 
     /**
-     * @return list<class-string>
+     * The bounded contexts, as namespaces.
+     *
+     * @return list<string>
      */
-    public function commandHandlers(string $contextRoot): array
+    public function contexts(): array
     {
-        return $this->cachedContext($contextRoot)['commands'] ?? $this->scan($contextRoot.'/Application/Command', CommandHandler::class, AsCommandHandler::class);
+        $contexts = $this->namespaces->namespacesUnder($this->configuration['namespace']);
+        sort($contexts);
+
+        return $contexts;
+    }
+
+    /**
+     * The context a class belongs to: the namespace under the contexts one, whatever the layer.
+     */
+    public function contextOf(string $class): string
+    {
+        $prefix = $this->configuration['namespace'].'\\';
+
+        return $this->configuration['namespace'].'\\'.explode('\\', substr($class, strlen($prefix)))[0];
     }
 
     /**
      * @return list<class-string>
      */
-    public function queryHandlers(string $contextRoot): array
+    public function commandHandlers(string $context): array
     {
-        return $this->cachedContext($contextRoot)['queries'] ?? $this->scan($contextRoot.'/Infrastructure/Query', QueryHandler::class, AsQueryHandler::class);
+        return $this->cachedContext($context)['commands'] ?? $this->scanCommands($context);
+    }
+
+    /**
+     * @return list<class-string>
+     */
+    public function queryHandlers(string $context): array
+    {
+        return $this->cachedContext($context)['queries'] ?? $this->scanQueries($context);
     }
 
     /**
@@ -48,9 +79,9 @@ final class ContextDiscovery
      *
      * @return list<class-string<EventConsumer>>
      */
-    public function eventConsumers(string $contextRoot): array
+    public function eventConsumers(string $context): array
     {
-        return $this->cachedContext($contextRoot)['consumers'] ?? $this->scanConsumers($contextRoot);
+        return $this->cachedContext($context)['consumers'] ?? $this->scanConsumers($context);
     }
 
     /**
@@ -58,28 +89,27 @@ final class ContextDiscovery
      *
      * @return list<class-string<IntegrationContract>>
      */
-    public function contracts(string $contextRoot): array
+    public function contracts(string $context): array
     {
-        return $this->cachedContext($contextRoot)['contracts'] ?? $this->scan($contextRoot.'/Application/Integration', IntegrationContract::class);
+        return $this->cachedContext($context)['contracts'] ?? $this->scanContracts($context);
     }
 
     /**
-     * Scans every context under $contextsRoot and writes the result to the cache file.
+     * Scans every context and writes the result to the cache file.
      */
-    public function cache(string $contextsRoot): string
+    public function cache(): string
     {
         $contexts = [];
 
-        foreach (glob($contextsRoot.'/*', GLOB_ONLYDIR) ?: [] as $contextRoot) {
-            $contexts[$this->key($contextRoot)] = [
-                'commands' => $this->scan($contextRoot.'/Application/Command', CommandHandler::class, AsCommandHandler::class),
-                'queries' => $this->scan($contextRoot.'/Infrastructure/Query', QueryHandler::class, AsQueryHandler::class),
-                'consumers' => $this->scanConsumers($contextRoot),
-                'contracts' => $this->scan($contextRoot.'/Application/Integration', IntegrationContract::class),
+        foreach ($this->contexts() as $context) {
+            $contexts[$context] = [
+                'commands' => $this->scanCommands($context),
+                'queries' => $this->scanQueries($context),
+                'consumers' => $this->scanConsumers($context),
+                'contracts' => $this->scanContracts($context),
             ];
         }
 
-        ksort($contexts);
         file_put_contents($this->cachePath, '<?php return '.var_export($contexts, true).';'.PHP_EOL);
         $this->cached = $contexts;
 
@@ -103,13 +133,48 @@ final class ContextDiscovery
     /**
      * @return array{commands: list<class-string>, queries: list<class-string>, consumers: list<class-string>, contracts: list<class-string>}|null
      */
-    private function cachedContext(string $contextRoot): ?array
+    private function cachedContext(string $context): ?array
     {
         if ($this->cached === null) {
             $this->cached = file_exists($this->cachePath) ? require $this->cachePath : [];
         }
 
-        return $this->cached[$this->key($contextRoot)] ?? null;
+        return $this->cached[$context] ?? null;
+    }
+
+    /**
+     * @return list<class-string>
+     */
+    private function scanCommands(string $context): array
+    {
+        return $this->scan($context, 'commands', CommandHandler::class, AsCommandHandler::class);
+    }
+
+    /**
+     * @return list<class-string>
+     */
+    private function scanQueries(string $context): array
+    {
+        return $this->scan($context, 'queries', QueryHandler::class, AsQueryHandler::class);
+    }
+
+    /**
+     * @return list<class-string<IntegrationContract>>
+     */
+    private function scanContracts(string $context): array
+    {
+        return $this->scan($context, 'contracts', IntegrationContract::class);
+    }
+
+    /**
+     * @return list<class-string<EventConsumer>>
+     */
+    private function scanConsumers(string $context): array
+    {
+        return [
+            ...$this->scan($context, 'processors', EventConsumer::class),
+            ...$this->scan($context, 'projectors', EventConsumer::class),
+        ];
     }
 
     /**
@@ -117,51 +182,15 @@ final class ContextDiscovery
      * @param  class-string|null  $attribute
      * @return list<class-string>
      */
-    private function scan(string $directory, string $contract, ?string $attribute = null): array
+    private function scan(string $context, string $layer, string $contract, ?string $attribute = null): array
     {
-        $classes = [];
-
-        foreach (glob($directory.'/*.php') ?: [] as $file) {
-            $class = $this->classOf($file);
-
-            if (
-                class_exists($class)
-                && (is_subclass_of($class, $contract) || ($attribute !== null && (new ReflectionClass($class))->getAttributes($attribute) !== []))
-            ) {
-                $classes[] = $class;
-            }
-        }
-
+        $classes = array_values(array_filter(
+            $this->namespaces->classesIn($context.'\\'.$this->configuration['layout'][$layer]),
+            fn (string $class): bool => is_subclass_of($class, $contract)
+                || ($attribute !== null && (new ReflectionClass($class))->getAttributes($attribute) !== []),
+        ));
         sort($classes);
 
         return $classes;
-    }
-
-    /**
-     * @return list<class-string<EventConsumer>>
-     */
-    private function scanConsumers(string $contextRoot): array
-    {
-        return [
-            ...$this->scan($contextRoot.'/Infrastructure/Processors', EventConsumer::class),
-            ...$this->scan($contextRoot.'/Infrastructure/Projection', EventConsumer::class),
-        ];
-    }
-
-    /**
-     * PSR-4: app/Providers/Foo/Bar.php is App\Providers\Foo\Bar.
-     *
-     * @return class-string
-     */
-    private function classOf(string $file): string
-    {
-        $relative = substr($file, strlen(app_path()) + 1);
-
-        return 'App\\'.str_replace(['/', '.php'], ['\\', ''], $relative);
-    }
-
-    private function key(string $contextRoot): string
-    {
-        return ltrim(substr($contextRoot, strlen(base_path())), '/');
     }
 }

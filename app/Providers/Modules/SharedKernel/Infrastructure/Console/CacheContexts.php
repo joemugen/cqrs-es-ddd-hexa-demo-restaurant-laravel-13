@@ -15,7 +15,7 @@ final class CacheContexts extends Command
 
     public function handle(ContextDiscovery $discovery): int
     {
-        $path = $discovery->cache(app_path('Providers/BoundedContexts'));
+        $path = $discovery->cache();
 
         $this->components->info('Contexts cached: '.$path);
 

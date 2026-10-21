@@ -64,8 +64,8 @@ final class ContractPublisher
 
         $this->contractsByEvent = [];
 
-        foreach (glob(app_path('Providers/BoundedContexts/*'), GLOB_ONLYDIR) ?: [] as $contextRoot) {
-            foreach ($this->discovery->contracts($contextRoot) as $contract) {
+        foreach ($this->discovery->contexts() as $context) {
+            foreach ($this->discovery->contracts($context) as $contract) {
                 $translated = (new ReflectionClass($contract))->getAttributes(Translates::class)[0]->newInstance()->event;
                 $this->contractsByEvent[$translated][] = $contract;
             }

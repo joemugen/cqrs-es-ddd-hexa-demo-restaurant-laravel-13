@@ -26,9 +26,9 @@ final readonly class EventConsumption
         private Container $container,
     ) {}
 
-    public function subscribe(string $contextRoot): void
+    public function subscribe(string $context): void
     {
-        foreach ($this->discovery->eventConsumers($contextRoot) as $consumer) {
+        foreach ($this->discovery->eventConsumers($context) as $consumer) {
             $this->afterAppend->listen(function () use ($consumer): void {
                 if (config('consumption.mode') !== 'sync') {
                     return;

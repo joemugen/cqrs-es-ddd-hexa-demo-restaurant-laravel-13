@@ -16,7 +16,6 @@ use App\Providers\Modules\SharedKernel\Infrastructure\Bus\Middleware\MetricsComm
 use App\Providers\Modules\SharedKernel\Infrastructure\Bus\Middleware\TransactionMiddleware;
 use Closure;
 use Illuminate\Contracts\Container\Container;
-use ReflectionClass;
 
 /**
  * The command bus every context builds on. A context extends it, lists its handlers and,
@@ -46,15 +45,12 @@ abstract class MiddlewareCommandBus implements CommandBus
      */
     protected function handlers(): array
     {
-        return $this->container->make(ContextDiscovery::class)->commandHandlers($this->contextRoot());
+        return $this->container->make(ContextDiscovery::class)->commandHandlers($this->context());
     }
 
-    /**
-     * The bus sits in <context>/Infrastructure/Bus.
-     */
-    private function contextRoot(): string
+    private function context(): string
     {
-        return dirname((string) (new ReflectionClass($this))->getFileName(), 3);
+        return $this->container->make(ContextDiscovery::class)->contextOf(static::class);
     }
 
     /**

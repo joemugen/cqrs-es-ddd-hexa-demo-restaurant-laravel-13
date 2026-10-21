@@ -37,7 +37,7 @@ final class KitchenServiceProvider extends ServiceProvider
 
         $this->commands([ConsumeKitchenEvents::class]);
 
-        $this->app->make(EventConsumption::class)->subscribe(__DIR__);
+        $this->app->make(EventConsumption::class)->subscribe(__NAMESPACE__);
 
         Route::middleware('api')
             ->prefix((string) config('kitchen.route_prefix'))

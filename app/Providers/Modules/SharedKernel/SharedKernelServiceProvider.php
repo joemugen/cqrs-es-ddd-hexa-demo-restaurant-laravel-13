@@ -21,12 +21,13 @@ final class SharedKernelServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->mergeConfigFrom(__DIR__.'/config/consumption.php', 'consumption');
+        $this->mergeConfigFrom(__DIR__.'/config/contexts.php', 'contexts');
 
         $this->app->singleton(MetricsRecorder::class, fn ($app): MetricsRecorder => new SafeMetricsRecorder($app->make(DatabaseMetricsRecorder::class)));
 
         $this->app->singleton(
             ContextDiscovery::class,
-            fn ($app): ContextDiscovery => new ContextDiscovery($app->bootstrapPath('cache/contexts.php')),
+            fn ($app): ContextDiscovery => new ContextDiscovery($app->bootstrapPath('cache/contexts.php'), $app['config']->get('contexts')),
         );
     }
 
