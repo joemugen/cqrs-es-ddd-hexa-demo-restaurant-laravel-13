@@ -18,6 +18,14 @@ final readonly class TableOrder implements AggregateRoot
     ) {}
 
     /**
+     * @param  list<OrderLine>  $lines
+     */
+    public static function restore(TableOrderId $id, TableId $tableId, array $lines): self
+    {
+        return new self($id, $tableId, $lines);
+    }
+
+    /**
      * @param  list<RequestedLine>  $requested
      */
     public static function place(TableOrderId $id, Table $table, Menu $menu, array $requested): self
@@ -30,36 +38,22 @@ final readonly class TableOrder implements AggregateRoot
             throw new FrontOfHouseException('An order needs at least one item.');
         }
 
-        $lines = [];
+        return new self($id, $table->id(), self::linesOf($id, 0, $menu, $requested));
+    }
 
-        foreach ($requested as $index => $line) {
-            if ($line->quantity < 1) {
-                throw new FrontOfHouseException('Each line needs a quantity of at least one.');
-            }
-
-            if (! in_array($line->course, Course::ALL, true)) {
-                throw new FrontOfHouseException('Each line needs a course: starter, main, dessert, or drink.');
-            }
-
-            $item = $menu->get($line->menuItemId);
-
-            if (! $item->isAvailable()) {
-                throw new FrontOfHouseException("{$item->name()} is unavailable.");
-            }
-
-            $lines[] = new OrderLine(
-                new LineId($id.'-'.($index + 1)),
-                $item->id(),
-                $item->name(),
-                $line->quantity,
-                $line->course,
-                $item->priceCents(),
-                $item->kind(),
-                $item->allergens(),
-            );
+    /**
+     * The lines a revision adds: the waiter replaces what is unavailable. They go on after the lines already placed.
+     *
+     * @param  list<RequestedLine>  $requested
+     * @return list<OrderLine>
+     */
+    public function revision(Menu $menu, array $requested): array
+    {
+        if ($requested === []) {
+            throw new FrontOfHouseException('A revision needs at least one item.');
         }
 
-        return new self($id, $table->id(), $lines);
+        return self::linesOf($this->id, count($this->lines), $menu, $requested);
     }
 
     public function id(): TableOrderId
@@ -88,5 +82,43 @@ final readonly class TableOrder implements AggregateRoot
     public function forTheKitchen(): array
     {
         return array_map(fn (OrderLine $line): array => $line->forTheKitchen(), $this->lines);
+    }
+
+    /**
+     * @param  list<RequestedLine>  $requested
+     * @return list<OrderLine>
+     */
+    private static function linesOf(TableOrderId $id, int $alreadyPlaced, Menu $menu, array $requested): array
+    {
+        $lines = [];
+
+        foreach ($requested as $index => $line) {
+            if ($line->quantity < 1) {
+                throw new FrontOfHouseException('Each line needs a quantity of at least one.');
+            }
+
+            if (! in_array($line->course, Course::ALL, true)) {
+                throw new FrontOfHouseException('Each line needs a course: starter, main, dessert, or drink.');
+            }
+
+            $item = $menu->get($line->menuItemId);
+
+            if (! $item->isAvailable()) {
+                throw new FrontOfHouseException("{$item->name()} is unavailable.");
+            }
+
+            $lines[] = new OrderLine(
+                new LineId($id.'-'.($alreadyPlaced + $index + 1)),
+                $item->id(),
+                $item->name(),
+                $line->quantity,
+                $line->course,
+                $item->priceCents(),
+                $item->kind(),
+                $item->allergens(),
+            );
+        }
+
+        return $lines;
     }
 }

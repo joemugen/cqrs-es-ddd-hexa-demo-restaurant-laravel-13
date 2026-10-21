@@ -8,6 +8,7 @@ use App\Providers\BoundedContexts\FrontOfHouse\Application\Command\Response\Orde
 use App\Providers\BoundedContexts\FrontOfHouse\Application\OrderFulfilmentRepository;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\FrontOfHouseEvent;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\FulfilmentStatus;
+use App\Providers\BoundedContexts\FrontOfHouse\Domain\UnavailableLine;
 use App\Providers\Modules\EventStore\Application\IntegrationBus;
 use App\Providers\Modules\EventStore\Domain\IntegrationEvent;
 use App\Providers\Modules\SharedKernel\Application\Bus\Attribute\AsCommandHandler;
@@ -36,12 +37,14 @@ final readonly class CancelOrderHandler implements CommandHandler
             return new OrderCancelled($command->tableOrderId);
         }
 
+        $abandoned = array_map(fn (UnavailableLine $line): string => (string) $line->lineId, $fulfilment->unavailableLines());
         $fulfilment->cancel($command->reason);
         $this->fulfilments->save($fulfilment);
         $this->bus->publish(IntegrationEvent::named(FrontOfHouseEvent::TABLE_ORDER_CANCELLED, [
             'tableOrderId' => (string) $fulfilment->id(),
             'tableId' => (string) $fulfilment->tableId(),
             'reason' => $command->reason,
+            'abandonedLines' => $abandoned,
         ]));
 
         return new OrderCancelled($command->tableOrderId);

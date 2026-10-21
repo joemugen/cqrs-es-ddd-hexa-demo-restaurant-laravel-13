@@ -1,10 +1,12 @@
 <?php
 
+use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Http\CancelOrderController;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Http\ListFloorPlanController;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Http\ListMenuController;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Http\ListToServeController;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Http\PlaceTableOrderController;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Http\RequestBillController;
+use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Http\ReviseOrderController;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Http\SeatGuestsController;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Http\ServeDishController;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Http\ShowOrderFulfilmentController;
@@ -33,3 +35,9 @@ Route::post('/tables/{tableId}/bill', RequestBillController::class)
 
 Route::get('/orders/{tableOrderId}', ShowOrderFulfilmentController::class)
     ->name('front-of-house.orders.show');
+
+Route::post('/orders/{tableOrderId}/revisions', ReviseOrderController::class)
+    ->name('front-of-house.orders.revise');
+
+Route::post('/orders/{tableOrderId}/cancel', CancelOrderController::class)
+    ->name('front-of-house.orders.cancel');

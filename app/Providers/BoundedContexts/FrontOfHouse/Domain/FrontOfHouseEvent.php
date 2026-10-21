@@ -15,5 +15,7 @@ final class FrontOfHouseEvent
 
     public const DISH_SERVED = 'front_of_house.dish_served';
 
+    public const TABLE_ORDER_REVISED = 'front_of_house.table_order_revised';
+
     public const TABLE_ORDER_CANCELLED = 'front_of_house.table_order_cancelled';
 }

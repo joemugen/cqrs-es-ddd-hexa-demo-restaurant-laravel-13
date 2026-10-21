@@ -71,4 +71,43 @@ describe('TableOrder', function () {
 
         expect($item->isAvailable())->toBeFalse();
     });
+
+    describe('when revised', function () {
+        function seatedOrder(): TableOrder
+        {
+            return TableOrder::place(
+                new TableOrderId('order-1'),
+                Table::restore(new TableId('table-4'), new TableLabel('Window 4'), 2),
+                sampleMenu(),
+                [
+                    new RequestedLine(new MenuItemId('green-salad'), 1, 'starter'),
+                    new RequestedLine(new MenuItemId('green-salad'), 2, 'starter'),
+                ],
+            );
+        }
+
+        test('the added lines go on after the lines already placed', function () {
+            $added = seatedOrder()->revision(sampleMenu(), [new RequestedLine(new MenuItemId('green-salad'), 1, 'main')]);
+
+            expect(array_map(fn ($line): array => $line->forTheKitchen(), $added))->toBe([
+                [
+                    'lineId' => 'order-1-3',
+                    'name' => 'Green salad',
+                    'quantity' => 1,
+                    'course' => 'main',
+                    'allergens' => [],
+                ],
+            ]);
+        });
+
+        test('an empty revision is refused', function () {
+            expect(fn () => seatedOrder()->revision(sampleMenu(), []))
+                ->toThrow(FrontOfHouseException::class, 'A revision needs at least one item.');
+        });
+
+        test('an unavailable item is refused, as it is for an order', function () {
+            expect(fn () => seatedOrder()->revision(sampleMenu(), [new RequestedLine(new MenuItemId('steak-frites'), 1, 'main')]))
+                ->toThrow(FrontOfHouseException::class, 'Steak frites is unavailable.');
+        });
+    });
 });

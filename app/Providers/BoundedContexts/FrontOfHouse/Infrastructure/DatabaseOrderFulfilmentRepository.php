@@ -6,9 +6,11 @@ namespace App\Providers\BoundedContexts\FrontOfHouse\Infrastructure;
 
 use App\Providers\BoundedContexts\FrontOfHouse\Application\OrderFulfilmentRepository;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\FrontOfHouseException;
+use App\Providers\BoundedContexts\FrontOfHouse\Domain\FulfilmentStatus;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\OrderFulfilment;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableId;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableOrderId;
+use App\Providers\BoundedContexts\FrontOfHouse\Domain\UnavailableLine;
 use Illuminate\Support\Facades\DB;
 
 final class DatabaseOrderFulfilmentRepository implements OrderFulfilmentRepository
@@ -26,12 +28,17 @@ final class DatabaseOrderFulfilmentRepository implements OrderFulfilmentReposito
             throw new FrontOfHouseException("Unknown order {$id}.", 404);
         }
 
-        return OrderFulfilment::restore(
-            new TableOrderId((string) $row->table_order_id),
-            new TableId((string) $row->table_id),
-            (string) $row->status,
-            $row->reason !== null ? (string) $row->reason : null,
-        );
+        return $this->fulfilment($row);
+    }
+
+    public function awaitingRevisionAt(TableId $tableId): array
+    {
+        return DB::table(Tables::ORDER_FULFILMENTS)
+            ->where('table_id', (string) $tableId)
+            ->where('status', FulfilmentStatus::AWAITING_REVISION)
+            ->get()
+            ->map(fn (object $row): OrderFulfilment => $this->fulfilment($row))
+            ->all();
     }
 
     public function save(OrderFulfilment $fulfilment): void
@@ -40,6 +47,26 @@ final class DatabaseOrderFulfilmentRepository implements OrderFulfilmentReposito
             'table_id' => (string) $fulfilment->tableId(),
             'status' => $fulfilment->status(),
             'reason' => $fulfilment->reason(),
+            'unavailable_lines' => json_encode(
+                array_map(fn (UnavailableLine $line): array => $line->toPayload(), $fulfilment->unavailableLines()),
+                JSON_THROW_ON_ERROR,
+            ),
+            'request_position' => $fulfilment->requestPosition(),
         ]);
+    }
+
+    private function fulfilment(object $row): OrderFulfilment
+    {
+        return OrderFulfilment::restore(
+            new TableOrderId((string) $row->table_order_id),
+            new TableId((string) $row->table_id),
+            (string) $row->status,
+            $row->reason !== null ? (string) $row->reason : null,
+            array_map(
+                UnavailableLine::fromPayload(...),
+                json_decode((string) ($row->unavailable_lines ?? '[]'), true, 512, JSON_THROW_ON_ERROR),
+            ),
+            (int) $row->request_position,
+        );
     }
 }

@@ -13,5 +13,9 @@ final class FulfilmentStatus
 
     public const CONFIRMED = 'confirmed';
 
+    public const AWAITING_REVISION = 'awaiting-revision';
+
     public const CANCELLED = 'cancelled';
+
+    public const CLOSED = 'closed';
 }

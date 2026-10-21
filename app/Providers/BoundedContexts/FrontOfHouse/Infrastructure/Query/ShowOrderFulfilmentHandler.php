@@ -9,6 +9,7 @@ use App\Providers\BoundedContexts\FrontOfHouse\Application\Query\ShowOrderFulfil
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\FrontOfHouseException;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableId;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableOrderId;
+use App\Providers\BoundedContexts\FrontOfHouse\Domain\UnavailableLine;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Tables;
 use App\Providers\Modules\SharedKernel\Application\Bus\Attribute\AsQueryHandler;
 use App\Providers\Modules\SharedKernel\Application\QueryHandler;
@@ -33,6 +34,10 @@ final class ShowOrderFulfilmentHandler implements QueryHandler
             new TableId((string) $row->table_id),
             (string) $row->status,
             $row->reason !== null ? (string) $row->reason : null,
+            array_map(
+                UnavailableLine::fromPayload(...),
+                json_decode((string) ($row->unavailable_lines ?? '[]'), true, 512, JSON_THROW_ON_ERROR),
+            ),
         );
     }
 }

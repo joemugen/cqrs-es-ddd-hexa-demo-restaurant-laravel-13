@@ -133,11 +133,27 @@ With a worker, a consumer may read a fact long after it was appended, so it must
 
 The kitchen records the log position of the 86 (`kitchen_dishes.eighty_sixed_position`, which `IntegrationBus::publish()` and `EventStore::append()` now return), and `DishCatalog::linesFor()` takes the position of the order. A dish is refused only when it was declared 86 at a position before the order's. The log position is the clock all consumers share.
 
-### A refused order is compensated, not retried
+### A partial order is revised, not cancelled
 
-The dining room accepts an order from its own menu, which can be a moment behind the kitchen. When the kitchen cannot cook it, that is a business outcome and not an error to retry. `OpenKitchenTicketProcessor` publishes `kitchen.order_refused` with the reason and goes on with the orders behind it.
+The dining room accepts an order from its own menu, which can be a moment behind the kitchen. When some dishes are 86, that is a business outcome and not an error to retry. `OpenKitchenTicketProcessor` opens a ticket with the lines it can cook at once, and publishes `kitchen.lines_unavailable` for the others: the lines, the reason, and `orderPosition`, the position in the log of the order it judged. With nothing available there is no ticket, only that fact.
 
-The dining room runs a choreographed saga for each order: `OrderFulfilmentProcessor` keeps an `OrderFulfilment` (`awaiting-kitchen`, then `confirmed` when the kitchen opens a ticket, or `cancelled` when it refuses). Cancelling is the compensation: it records the reason and publishes `front_of_house.table_order_cancelled`. Follow an order with `GET /api/front-of-house/orders/{tableOrderId}`. Nothing is billed for a cancelled order, since only served dishes are.
+`OrderFulfilmentProcessor` keeps an `OrderFulfilment` for each order. `GET /api/front-of-house/orders/{tableOrderId}` shows its status and its `unavailableLines`.
+
+```
+placed -> awaiting-kitchen --ticket opened / dishes added--> confirmed
+              ^                                                  |
+              | ReviseOrder                     lines_unavailable|
+              |                                                  v
+              +------------------------------------------ awaiting-revision --CancelOrder--> cancelled
+                                                                 |
+                                                       billing.bill_paid
+                                                                 v
+                                                              closed
+```
+
+The waiter asks the guests, then `POST /orders/{id}/revisions` adds replacement lines and abandons the unavailable ones. `front_of_house.table_order_revised` makes the kitchen add the cookable lines to the same ticket (`kitchen.dishes_added`, which moves the ticket version), or open it if there was none. A replacement can be 86 too, and the loop starts again. If the guests give up, `POST /orders/{id}/cancel` abandons only the lines still unavailable: what is on the ticket is still cooked.
+
+A bill is paid before a revision: `billing.bill_paid` closes the order, and `ReviseOrder` is refused with a 412 (`The revision of the order is obsolete: the guests already paid and left.`). The saga reads the payment instead of the state of the table, because a free table seats new guests: only a log position tells whose bill it was. The same position keeps a late answer of the kitchen from undoing a revision made since. The table is freed by `billing.bill_paid` alone, so nobody leaves without paying.
 
 ### One worker per stream
 
@@ -245,12 +261,13 @@ The kitchen screen catches up after the order's transaction commits, before the 
 | --- | --- |
 | 1. Seat guests and the floor plan | `app/Providers/BoundedContexts/FrontOfHouse/Application/Command/SeatGuestsHandler.php#L27-L35` |
 | 2. Place a table order | `app/Providers/BoundedContexts/FrontOfHouse/Application/Command/PlaceTableOrderHandler.php#L33-L55` |
-| 3. Open a kitchen ticket | `app/Providers/BoundedContexts/Kitchen/Infrastructure/Processors/OpenKitchenTicketProcessor.php#L44-L62`, `app/Providers/BoundedContexts/Kitchen/Domain/KitchenTicket.php#L40-L55` |
-| 4. Fire, ready, kitchen screen | `app/Providers/BoundedContexts/Kitchen/Domain/KitchenTicket.php#L71-L126`, `app/Providers/BoundedContexts/Kitchen/Infrastructure/Projection/KitchenScreenProjector.php#L64-L116` |
+| 3. Open a kitchen ticket | `app/Providers/BoundedContexts/Kitchen/Infrastructure/Processors/OpenKitchenTicketProcessor.php#L47-L101`, `app/Providers/BoundedContexts/Kitchen/Domain/KitchenTicket.php#L40-L55` |
+| 4. Fire, ready, kitchen screen | `app/Providers/BoundedContexts/Kitchen/Domain/KitchenTicket.php#L97-L152`, `app/Providers/BoundedContexts/Kitchen/Infrastructure/Projection/KitchenScreenProjector.php#L64-L113` |
 | 5. Queued pass, then serve | `app/Providers/BoundedContexts/FrontOfHouse/Infrastructure/Projection/ToServeProjector.php#L33-L57`, `app/Providers/BoundedContexts/FrontOfHouse/Infrastructure/Projection/ProjectToServeList.php#L10-L18`, `app/Providers/BoundedContexts/FrontOfHouse/Application/Command/ServeDishHandler.php#L28-L44` |
 | 6. Second order | `tests/Feature/FullServiceTest.php#L53-L68` |
 | 7. 86 the menu | `app/Providers/BoundedContexts/Kitchen/Domain/Dish.php#L29-L36`, `app/Providers/BoundedContexts/Kitchen/Application/Command/DeclareDishEightySixedHandler.php#L26-L37`, `app/Providers/BoundedContexts/FrontOfHouse/Infrastructure/Processors/MarkMenuItemUnavailableProcessor.php#L33-L53` |
 | 8. Bill, pay, free the table | `app/Providers/BoundedContexts/FrontOfHouse/Application/Command/RequestBillHandler.php#L27-L40`, `app/Providers/BoundedContexts/Billing/Infrastructure/Processors/RecordServedDishes.php#L35-L60`, `app/Providers/BoundedContexts/Billing/Application/Command/PrepareBillHandler.php#L27-L49`, `app/Providers/BoundedContexts/Billing/Domain/Bill.php#L44-L67`, `app/Providers/BoundedContexts/Billing/Application/Command/PayBillHandler.php#L26-L40`, `app/Providers/BoundedContexts/FrontOfHouse/Application/Command/FreeTableHandler.php#L27-L35` |
+| 9. Revise a partial order | `app/Providers/BoundedContexts/Kitchen/Infrastructure/Processors/OpenKitchenTicketProcessor.php#L88-L101`, `app/Providers/BoundedContexts/FrontOfHouse/Application/Command/ReviseOrderHandler.php#L39-L66`, `app/Providers/BoundedContexts/FrontOfHouse/Domain/OrderFulfilment.php#L62-L114`, `app/Providers/BoundedContexts/Kitchen/Domain/KitchenTicket.php#L76-L95` |
 | Level 1 | `SeatGuestsHandler.php#L27-L35` and `FreeTableHandler.php#L27-L35` |
 | Level 2 | `ToServeProjector.php#L33-L57` and `ProjectToServeList.php#L10-L18` |
 | Level 3 | `app/Providers/Modules/EventStore/Infrastructure/DatabaseEventStore.php#L22-L71`, `app/Providers/BoundedContexts/Kitchen/Infrastructure/EventStoreKitchenTicketRepository.php#L48-L65`, `app/Providers/Modules/EventStore/Infrastructure/InProcessAfterAppend.php#L53-L60` |

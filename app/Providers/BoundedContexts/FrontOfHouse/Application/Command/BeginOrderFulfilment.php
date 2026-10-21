@@ -16,5 +16,6 @@ final readonly class BeginOrderFulfilment implements Command
     public function __construct(
         public TableOrderId $tableOrderId,
         public TableId $tableId,
+        public int $requestPosition,
     ) {}
 }

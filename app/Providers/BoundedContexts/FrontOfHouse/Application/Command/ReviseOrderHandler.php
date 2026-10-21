@@ -1,0 +1,67 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Providers\BoundedContexts\FrontOfHouse\Application\Command;
+
+use App\Providers\BoundedContexts\FrontOfHouse\Application\Command\Response\OrderRevised;
+use App\Providers\BoundedContexts\FrontOfHouse\Application\MenuRepository;
+use App\Providers\BoundedContexts\FrontOfHouse\Application\OrderFulfilmentRepository;
+use App\Providers\BoundedContexts\FrontOfHouse\Application\TableOrderRepository;
+use App\Providers\BoundedContexts\FrontOfHouse\Application\TableRepository;
+use App\Providers\BoundedContexts\FrontOfHouse\Domain\FrontOfHouseEvent;
+use App\Providers\BoundedContexts\FrontOfHouse\Domain\MenuItemId;
+use App\Providers\BoundedContexts\FrontOfHouse\Domain\ObsoleteRevision;
+use App\Providers\BoundedContexts\FrontOfHouse\Domain\OrderLine;
+use App\Providers\BoundedContexts\FrontOfHouse\Domain\RequestedLine;
+use App\Providers\Modules\EventStore\Application\IntegrationBus;
+use App\Providers\Modules\EventStore\Domain\IntegrationEvent;
+use App\Providers\Modules\SharedKernel\Application\Bus\Attribute\AsCommandHandler;
+use App\Providers\Modules\SharedKernel\Application\CommandHandler;
+
+/**
+ * @implements CommandHandler<ReviseOrder, OrderRevised>
+ */
+#[AsCommandHandler(ReviseOrder::class)]
+final readonly class ReviseOrderHandler implements CommandHandler
+{
+    public function __construct(
+        private OrderFulfilmentRepository $fulfilments,
+        private TableOrderRepository $orders,
+        private TableRepository $tables,
+        private MenuRepository $menus,
+        private IntegrationBus $bus,
+    ) {}
+
+    /**
+     * The guests who left are not asked again, even before the dining room has heard that their bill is paid.
+     */
+    public function __invoke(ReviseOrder $command): OrderRevised
+    {
+        $fulfilment = $this->fulfilments->get($command->tableOrderId);
+        $fulfilment->ensureCanBeRevised();
+        $table = $this->tables->get($fulfilment->tableId());
+
+        if (! $table->hasGuests()) {
+            throw new ObsoleteRevision;
+        }
+
+        $order = $this->orders->get($command->tableOrderId);
+        $lines = $order->revision(
+            $this->menus->containing(array_map(fn (RequestedLine $line): MenuItemId => $line->menuItemId, $command->lines)),
+            $command->lines,
+        );
+
+        $position = $this->bus->publish(IntegrationEvent::named(FrontOfHouseEvent::TABLE_ORDER_REVISED, [
+            'tableOrderId' => (string) $order->id(),
+            'tableId' => (string) $table->id(),
+            'tableLabel' => (string) $table->label(),
+            'lines' => array_map(fn (OrderLine $line): array => $line->forTheKitchen(), $lines),
+        ]));
+        $fulfilment->revise($position);
+        $this->orders->append($order->id(), $lines);
+        $this->fulfilments->save($fulfilment);
+
+        return new OrderRevised($command->tableOrderId);
+    }
+}
