@@ -4,16 +4,21 @@ declare(strict_types=1);
 
 namespace App\Providers\BoundedContexts\FrontOfHouse\Domain;
 
+use App\Providers\BoundedContexts\FrontOfHouse\Domain\Event\TableOrderPlaced;
+use App\Providers\BoundedContexts\FrontOfHouse\Domain\Event\TableOrderRevised;
 use App\Providers\Modules\SharedKernel\Domain\AggregateRoot;
+use App\Providers\Modules\SharedKernel\Domain\RecordsEvents;
 
-final readonly class TableOrder implements AggregateRoot
+final class TableOrder implements AggregateRoot
 {
+    use RecordsEvents;
+
     /**
      * @param  list<OrderLine>  $lines
      */
     private function __construct(
-        private TableOrderId $id,
-        private TableId $tableId,
+        private readonly TableOrderId $id,
+        private readonly TableId $tableId,
         private array $lines,
     ) {}
 
@@ -38,22 +43,26 @@ final readonly class TableOrder implements AggregateRoot
             throw new FrontOfHouseException('An order needs at least one item.');
         }
 
-        return new self($id, $table->id(), self::linesOf($id, 0, $menu, $requested));
+        $order = new self($id, $table->id(), self::linesOf($id, 0, $menu, $requested));
+        $order->recordThat(new TableOrderPlaced($id, $table->id(), $table->label(), $order->lines));
+
+        return $order;
     }
 
     /**
-     * The lines a revision adds: the waiter replaces what is unavailable. They go on after the lines already placed.
+     * The waiter replaces what is unavailable: the new lines go on after the lines already placed.
      *
      * @param  list<RequestedLine>  $requested
-     * @return list<OrderLine>
      */
-    public function revision(Menu $menu, array $requested): array
+    public function revise(Table $table, Menu $menu, array $requested): void
     {
         if ($requested === []) {
             throw new FrontOfHouseException('A revision needs at least one item.');
         }
 
-        return self::linesOf($this->id, count($this->lines), $menu, $requested);
+        $added = self::linesOf($this->id, count($this->lines), $menu, $requested);
+        $this->lines = [...$this->lines, ...$added];
+        $this->recordThat(new TableOrderRevised($this->id, $this->tableId, $table->label(), $added));
     }
 
     public function id(): TableOrderId

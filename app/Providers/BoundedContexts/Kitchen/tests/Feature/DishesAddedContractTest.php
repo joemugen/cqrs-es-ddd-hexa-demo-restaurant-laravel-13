@@ -95,7 +95,8 @@ describe('the dishes added to a ticket', function () {
     test('are not announced for a fact that stays inside the ticket', function () {
         $this->postJson("/api/kitchen/tickets/{$this->order}/fire", ['course' => 'starter'])->assertOk();
 
-        expect(array_map(fn (StoredEvent $event): string => (string) $event->type, loggedAs('kitchen.dish_fired')))->toHaveCount(1);
+        expect(loggedAs('ticket.dish_fired'))->toHaveCount(1)
+            ->and(loggedAs('kitchen.dish_fired'))->toBe([]);
     });
 });
 

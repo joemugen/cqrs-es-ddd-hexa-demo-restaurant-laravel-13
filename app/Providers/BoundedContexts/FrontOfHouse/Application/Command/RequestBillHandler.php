@@ -6,10 +6,7 @@ namespace App\Providers\BoundedContexts\FrontOfHouse\Application\Command;
 
 use App\Providers\BoundedContexts\FrontOfHouse\Application\Command\Response\BillRequested;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\TableRepository;
-use App\Providers\BoundedContexts\FrontOfHouse\Domain\FrontOfHouseEvent;
-use App\Providers\BoundedContexts\FrontOfHouse\Domain\FrontOfHouseException;
-use App\Providers\Modules\EventStore\Application\IntegrationBus;
-use App\Providers\Modules\EventStore\Domain\IntegrationEvent;
+use App\Providers\Modules\EventStore\Application\ContractPublisher;
 use App\Providers\Modules\SharedKernel\Application\Bus\Attribute\AsCommandHandler;
 use App\Providers\Modules\SharedKernel\Application\CommandHandler;
 
@@ -21,20 +18,14 @@ final readonly class RequestBillHandler implements CommandHandler
 {
     public function __construct(
         private TableRepository $tables,
-        private IntegrationBus $bus,
+        private ContractPublisher $contracts,
     ) {}
 
     public function __invoke(RequestBill $command): BillRequested
     {
         $table = $this->tables->get($command->tableId);
-
-        if (! $table->hasGuests()) {
-            throw new FrontOfHouseException('This table has no guests to bill.');
-        }
-
-        $this->bus->publish(IntegrationEvent::named(FrontOfHouseEvent::BILL_REQUESTED, [
-            'tableId' => (string) $table->id(),
-        ]));
+        $table->requestBill();
+        $this->contracts->publish($table->releaseEvents());
 
         return new BillRequested($command->tableId);
     }

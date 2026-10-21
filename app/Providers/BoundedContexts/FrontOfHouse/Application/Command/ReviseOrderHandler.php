@@ -9,13 +9,10 @@ use App\Providers\BoundedContexts\FrontOfHouse\Application\MenuRepository;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\OrderFulfilmentRepository;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\TableOrderRepository;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\TableRepository;
-use App\Providers\BoundedContexts\FrontOfHouse\Domain\FrontOfHouseEvent;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\MenuItemId;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\ObsoleteRevision;
-use App\Providers\BoundedContexts\FrontOfHouse\Domain\OrderLine;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\RequestedLine;
-use App\Providers\Modules\EventStore\Application\IntegrationBus;
-use App\Providers\Modules\EventStore\Domain\IntegrationEvent;
+use App\Providers\Modules\EventStore\Application\ContractPublisher;
 use App\Providers\Modules\SharedKernel\Application\Bus\Attribute\AsCommandHandler;
 use App\Providers\Modules\SharedKernel\Application\CommandHandler;
 
@@ -30,7 +27,7 @@ final readonly class ReviseOrderHandler implements CommandHandler
         private TableOrderRepository $orders,
         private TableRepository $tables,
         private MenuRepository $menus,
-        private IntegrationBus $bus,
+        private ContractPublisher $contracts,
     ) {}
 
     /**
@@ -47,19 +44,14 @@ final readonly class ReviseOrderHandler implements CommandHandler
         }
 
         $order = $this->orders->get($command->tableOrderId);
-        $lines = $order->revision(
+        $order->revise(
+            $table,
             $this->menus->containing(array_map(fn (RequestedLine $line): MenuItemId => $line->menuItemId, $command->lines)),
             $command->lines,
         );
+        $this->orders->save($order);
 
-        $position = $this->bus->publish(IntegrationEvent::named(FrontOfHouseEvent::TABLE_ORDER_REVISED, [
-            'tableOrderId' => (string) $order->id(),
-            'tableId' => (string) $table->id(),
-            'tableLabel' => (string) $table->label(),
-            'lines' => array_map(fn (OrderLine $line): array => $line->forTheKitchen(), $lines),
-        ]));
-        $fulfilment->revise($position);
-        $this->orders->append($order->id(), $lines);
+        $fulfilment->revise(array_last($this->contracts->publish($order->releaseEvents())));
         $this->fulfilments->save($fulfilment);
 
         return new OrderRevised($command->tableOrderId);

@@ -8,14 +8,15 @@ use App\Providers\BoundedContexts\Kitchen\Application\KitchenTicketRepository;
 use App\Providers\BoundedContexts\Kitchen\Domain\KitchenException;
 use App\Providers\BoundedContexts\Kitchen\Domain\KitchenTicket;
 use App\Providers\BoundedContexts\Kitchen\Domain\KitchenTicketId;
+use App\Providers\Modules\EventStore\Application\ContractPublisher;
 use App\Providers\Modules\EventStore\Domain\EventStore;
 use App\Providers\Modules\EventStore\Domain\OptimisticConcurrencyException;
 use App\Providers\Modules\EventStore\Domain\StoredEvent;
-use App\Providers\Modules\EventStore\Infrastructure\ContractPublisher;
 use App\Providers\Modules\SharedKernel\Domain\ConcurrencyConflict;
 use App\Providers\Modules\SharedKernel\Domain\DomainEvent;
 use App\Providers\Modules\SharedKernel\Domain\DomainEvents;
 use App\Providers\Modules\SharedKernel\Domain\StreamId;
+use App\Providers\Modules\SharedKernel\Domain\TypedDomainEvent;
 use DateTimeImmutable;
 use DateTimeZone;
 
@@ -65,8 +66,19 @@ final class EventStoreKitchenTicketRepository implements KitchenTicketRepository
             throw new ConcurrencyConflict($exception->getMessage());
         }
 
-        $this->contracts->publish($pending);
+        $this->contracts->publish($this->factsOf($pending));
         $ticket->commit($expected + count($pending));
+    }
+
+    /**
+     * @return list<TypedDomainEvent>
+     */
+    private function factsOf(DomainEvents $events): array
+    {
+        return array_values(array_filter(array_map(
+            fn (DomainEvent $event): ?TypedDomainEvent => $event->fact,
+            iterator_to_array($events),
+        )));
     }
 
     private function stream(KitchenTicketId $id): StreamId

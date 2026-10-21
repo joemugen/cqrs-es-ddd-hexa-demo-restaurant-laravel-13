@@ -5,7 +5,10 @@ declare(strict_types=1);
 namespace App\Providers\BoundedContexts\Kitchen\Infrastructure\Projection;
 
 use App\Providers\BoundedContexts\Kitchen\Domain\Event\DishesAdded;
-use App\Providers\BoundedContexts\Kitchen\Domain\KitchenEvent;
+use App\Providers\BoundedContexts\Kitchen\Domain\Event\DishFired;
+use App\Providers\BoundedContexts\Kitchen\Domain\Event\DishReady;
+use App\Providers\BoundedContexts\Kitchen\Domain\Event\TicketCompleted;
+use App\Providers\BoundedContexts\Kitchen\Domain\Event\TicketOpened;
 use App\Providers\BoundedContexts\Kitchen\Infrastructure\Tables;
 use App\Providers\Modules\EventStore\Domain\CheckpointStore;
 use App\Providers\Modules\EventStore\Domain\EventStore;
@@ -64,7 +67,7 @@ final class KitchenScreenProjector implements RebuildableProjector
      */
     public function when(EventType $type, array $payload, int $position, int $version): bool
     {
-        if ($type->is(KitchenEvent::TICKET_OPENED)) {
+        if ($type->is(TicketOpened::STORED_AS)) {
             DB::table(Tables::SCREEN_TICKETS)->insert([
                 'ticket_id' => $payload['ticketId'],
                 'party_ref' => $payload['partyRef'],
@@ -88,21 +91,21 @@ final class KitchenScreenProjector implements RebuildableProjector
             return true;
         }
 
-        if ($type->is(KitchenEvent::DISH_FIRED)) {
+        if ($type->is(DishFired::STORED_AS)) {
             $this->status((string) $payload['ticketId'], (string) $payload['lineId'], LineStatus::FIRED);
             $this->versionOf((string) $payload['ticketId'], $version);
 
             return true;
         }
 
-        if ($type->is(KitchenEvent::DISH_READY)) {
+        if ($type->is(DishReady::STORED_AS)) {
             $this->status((string) $payload['ticketId'], (string) $payload['lineId'], LineStatus::READY);
             $this->versionOf((string) $payload['ticketId'], $version);
 
             return true;
         }
 
-        if ($type->is(KitchenEvent::TICKET_COMPLETED)) {
+        if ($type->is(TicketCompleted::STORED_AS)) {
             DB::table(Tables::SCREEN_TICKETS)
                 ->where('ticket_id', $payload['ticketId'])
                 ->update(['done' => true, 'version' => $version]);

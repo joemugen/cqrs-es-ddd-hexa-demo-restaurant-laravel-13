@@ -4,10 +4,14 @@ declare(strict_types=1);
 
 namespace App\Providers\BoundedContexts\Kitchen\Domain;
 
+use App\Providers\BoundedContexts\Kitchen\Domain\Event\DishEightySixed;
 use App\Providers\Modules\SharedKernel\Domain\AggregateRoot;
+use App\Providers\Modules\SharedKernel\Domain\RecordsEvents;
 
 final class Dish implements AggregateRoot
 {
+    use RecordsEvents;
+
     private function __construct(
         private readonly DishId $id,
         private readonly DishName $name,
@@ -33,6 +37,7 @@ final class Dish implements AggregateRoot
         }
 
         $this->inStock = false;
+        $this->recordThat(new DishEightySixed($this->id, $this->name));
     }
 
     public function isInStock(): bool

@@ -4,10 +4,14 @@ declare(strict_types=1);
 
 namespace App\Providers\BoundedContexts\FrontOfHouse\Domain;
 
+use App\Providers\BoundedContexts\FrontOfHouse\Domain\Event\DishServed;
 use App\Providers\Modules\SharedKernel\Domain\AggregateRoot;
+use App\Providers\Modules\SharedKernel\Domain\RecordsEvents;
 
 final class DishAtThePass implements AggregateRoot
 {
+    use RecordsEvents;
+
     public function __construct(
         private readonly DishAtThePassId $id,
         private readonly TableId $tableId,
@@ -18,13 +22,22 @@ final class DishAtThePass implements AggregateRoot
         private bool $served,
     ) {}
 
-    public function serve(): void
+    public function serve(MenuItem $item): void
     {
         if ($this->served) {
             throw new FrontOfHouseException('That dish has already left the pass.');
         }
 
         $this->served = true;
+        $this->recordThat(new DishServed(
+            $this->tableId,
+            $this->dishName,
+            $this->quantity,
+            $item->priceCents(),
+            $item->kind(),
+            $this->ticketId,
+            $this->lineId,
+        ));
     }
 
     public function id(): DishAtThePassId

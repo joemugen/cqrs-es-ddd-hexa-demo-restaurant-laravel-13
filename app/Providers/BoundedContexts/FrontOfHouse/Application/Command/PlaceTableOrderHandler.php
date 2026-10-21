@@ -8,12 +8,10 @@ use App\Providers\BoundedContexts\FrontOfHouse\Application\Command\Response\Tabl
 use App\Providers\BoundedContexts\FrontOfHouse\Application\MenuRepository;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\TableOrderRepository;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\TableRepository;
-use App\Providers\BoundedContexts\FrontOfHouse\Domain\FrontOfHouseEvent;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\MenuItemId;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\RequestedLine;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableOrder;
-use App\Providers\Modules\EventStore\Application\IntegrationBus;
-use App\Providers\Modules\EventStore\Domain\IntegrationEvent;
+use App\Providers\Modules\EventStore\Application\ContractPublisher;
 use App\Providers\Modules\SharedKernel\Application\Bus\Attribute\AsCommandHandler;
 use App\Providers\Modules\SharedKernel\Application\CommandHandler;
 
@@ -27,7 +25,7 @@ final readonly class PlaceTableOrderHandler implements CommandHandler
         private TableRepository $tables,
         private MenuRepository $menus,
         private TableOrderRepository $orders,
-        private IntegrationBus $bus,
+        private ContractPublisher $contracts,
     ) {}
 
     public function __invoke(PlaceTableOrder $command): TableOrderPlaced
@@ -44,12 +42,7 @@ final readonly class PlaceTableOrderHandler implements CommandHandler
         $order = TableOrder::place($command->tableOrderId, $table, $menu, $command->lines);
 
         $this->orders->save($order);
-        $this->bus->publish(IntegrationEvent::named(FrontOfHouseEvent::TABLE_ORDER_PLACED, [
-            'tableOrderId' => (string) $order->id(),
-            'tableId' => (string) $table->id(),
-            'tableLabel' => (string) $table->label(),
-            'lines' => $order->forTheKitchen(),
-        ]));
+        $this->contracts->publish($order->releaseEvents());
 
         return new TableOrderPlaced($command->tableOrderId);
     }

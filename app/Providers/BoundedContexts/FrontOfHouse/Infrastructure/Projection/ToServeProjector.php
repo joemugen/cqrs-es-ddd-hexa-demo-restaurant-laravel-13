@@ -38,9 +38,9 @@ final class ToServeProjector implements Projector
         foreach ($this->events->readAllFrom($position) as $event) {
             if ($event->type->is(ConsumedEvents::KITCHEN_DISH_READY)) {
                 DB::table(Tables::TO_SERVE)->insertOrIgnore([
-                    'ticket_id' => $event->payload['ticketId'],
+                    'ticket_id' => $event->payload['tableOrderId'],
                     'line_id' => $event->payload['lineId'],
-                    'table_id' => $event->payload['partyRef'],
+                    'table_id' => $event->payload['tableId'],
                     'table_label' => $event->payload['tableLabel'],
                     'dish_name' => $event->payload['dishName'],
                     'quantity' => $event->payload['quantity'],

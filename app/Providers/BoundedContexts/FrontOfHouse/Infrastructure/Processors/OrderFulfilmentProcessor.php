@@ -67,9 +67,7 @@ final class OrderFulfilmentProcessor implements Processor
                 new TableId((string) $event->payload['tableId']),
                 $event->position,
             ),
-            $event->type->is(ConsumedEvents::KITCHEN_TICKET_OPENED) => new ConfirmOrder(
-                new TableOrderId((string) $event->payload['ticketId']),
-            ),
+            $event->type->is(ConsumedEvents::KITCHEN_TICKET_OPENED),
             $event->type->is(ConsumedEvents::KITCHEN_DISHES_ADDED) => new ConfirmOrder(
                 new TableOrderId((string) $event->payload['tableOrderId']),
             ),

@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Providers\BoundedContexts\FrontOfHouse\Domain;
 
+use App\Providers\BoundedContexts\FrontOfHouse\Domain\Event\TableOrderCancelled;
 use App\Providers\Modules\SharedKernel\Domain\AggregateRoot;
+use App\Providers\Modules\SharedKernel\Domain\RecordsEvents;
 
 /**
  * The state of the saga that follows an order after the dining room placed it. The kitchen cooks what it can; for the
@@ -16,6 +18,8 @@ use App\Providers\Modules\SharedKernel\Domain\AggregateRoot;
  */
 final class OrderFulfilment implements AggregateRoot
 {
+    use RecordsEvents;
+
     /**
      * @param  list<UnavailableLine>  $unavailableLines
      * @param  int  $requestPosition  where the order, or its last revision, sits in the log
@@ -101,6 +105,12 @@ final class OrderFulfilment implements AggregateRoot
 
         $this->status = FulfilmentStatus::CANCELLED;
         $this->reason = $reason;
+        $this->recordThat(new TableOrderCancelled(
+            $this->id,
+            $this->tableId,
+            $reason,
+            array_map(fn (UnavailableLine $line): LineId => $line->lineId, $this->unavailableLines),
+        ));
     }
 
     /**

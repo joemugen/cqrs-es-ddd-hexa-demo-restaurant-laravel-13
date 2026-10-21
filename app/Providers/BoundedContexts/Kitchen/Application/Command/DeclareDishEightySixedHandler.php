@@ -6,9 +6,7 @@ namespace App\Providers\BoundedContexts\Kitchen\Application\Command;
 
 use App\Providers\BoundedContexts\Kitchen\Application\Command\Response\DishEightySixed;
 use App\Providers\BoundedContexts\Kitchen\Application\DishRepository;
-use App\Providers\BoundedContexts\Kitchen\Domain\KitchenEvent;
-use App\Providers\Modules\EventStore\Application\IntegrationBus;
-use App\Providers\Modules\EventStore\Domain\IntegrationEvent;
+use App\Providers\Modules\EventStore\Application\ContractPublisher;
 use App\Providers\Modules\SharedKernel\Application\Bus\Attribute\AsCommandHandler;
 use App\Providers\Modules\SharedKernel\Application\CommandHandler;
 
@@ -20,7 +18,7 @@ final readonly class DeclareDishEightySixedHandler implements CommandHandler
 {
     public function __construct(
         private DishRepository $dishes,
-        private IntegrationBus $bus,
+        private ContractPublisher $contracts,
     ) {}
 
     public function __invoke(DeclareDishEightySixed $command): DishEightySixed
@@ -28,10 +26,7 @@ final readonly class DeclareDishEightySixedHandler implements CommandHandler
         $dish = $this->dishes->get($command->dishId);
         $dish->eightySix();
         $this->dishes->save($dish);
-        $position = $this->bus->publish(IntegrationEvent::named(KitchenEvent::DISH_EIGHTY_SIXED, [
-            'dishName' => (string) $dish->name(),
-        ]));
-        $this->dishes->recordEightySixedAt($dish->id(), $position);
+        $this->dishes->recordEightySixedAt($dish->id(), array_last($this->contracts->publish($dish->releaseEvents())));
 
         return new DishEightySixed($command->dishId);
     }

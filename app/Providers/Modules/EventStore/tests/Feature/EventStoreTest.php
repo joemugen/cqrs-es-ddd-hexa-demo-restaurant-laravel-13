@@ -5,6 +5,8 @@ use App\Providers\Modules\EventStore\Domain\CheckpointStore;
 use App\Providers\Modules\EventStore\Domain\EventStore;
 use App\Providers\Modules\EventStore\Domain\IntegrationEvent;
 use App\Providers\Modules\EventStore\Domain\OptimisticConcurrencyException;
+use App\Providers\Modules\SharedKernel\Application\Publication\IntegrationContract;
+use App\Providers\Modules\SharedKernel\Application\Publication\PublishedAs;
 use App\Providers\Modules\SharedKernel\Domain\DomainEvent;
 use App\Providers\Modules\SharedKernel\Domain\DomainEvents;
 use App\Providers\Modules\SharedKernel\Domain\EventType;
@@ -13,6 +15,27 @@ use App\Providers\Modules\SharedKernel\Domain\StreamId;
 function eventStoreMessage(string $type, array $payload = []): DomainEvent
 {
     return DomainEvent::now($type, $payload);
+}
+
+/**
+ * @param  array<string, mixed>  $payload
+ */
+function pingContract(array $payload = []): IntegrationContract
+{
+    return new #[PublishedAs('tests.ping', version: 3)] class($payload) implements IntegrationContract
+    {
+        public function __construct(private readonly array $payload) {}
+
+        public function toPayload(): array
+        {
+            return $this->payload;
+        }
+
+        public static function fromPayload(array $payload): static
+        {
+            return new self($payload);
+        }
+    };
 }
 
 describe('the event store', function () {
@@ -75,21 +98,22 @@ describe('the event store', function () {
             ->and($checkpoints->get('kitchen.screen'))->toBe(0);
     });
 
-    test('an integration event is an append-only fact other contexts can read', function () {
+    test('a contract is told as an append-only fact other contexts can read, under the name and version it declares', function () {
         $bus = app(IntegrationBus::class);
         $seen = [];
         $bus->listen(new EventType('tests.ping'), function (IntegrationEvent $event) use (&$seen): void {
             $seen[] = $event->payload;
         });
 
-        $bus->publish(IntegrationEvent::named('tests.ping', ['tableOrderId' => 'order-1']));
+        $bus->publish(pingContract(['tableOrderId' => 'order-1']));
 
         $events = app(EventStore::class)->readAllFrom(0);
 
         expect($seen)->toBe([['tableOrderId' => 'order-1']])
             ->and($events)->toHaveCount(1)
             ->and($events[0]->type->is('tests.ping'))->toBeTrue()
-            ->and($events[0]->payload)->toBe(['tableOrderId' => 'order-1']);
+            ->and($events[0]->payload)->toBe(['tableOrderId' => 'order-1'])
+            ->and($events[0]->contractVersion)->toBe(3);
     });
 
     test('append and publish return the position of the last fact they wrote', function () {
@@ -97,7 +121,7 @@ describe('the event store', function () {
 
         $first = $store->append(new StreamId('stream-a'), 0, DomainEvents::of(eventStoreMessage('one')));
         $last = $store->append(new StreamId('stream-b'), 0, DomainEvents::of(eventStoreMessage('two'), eventStoreMessage('three')));
-        $published = app(IntegrationBus::class)->publish(IntegrationEvent::named('tests.ping', []));
+        $published = app(IntegrationBus::class)->publish(pingContract());
 
         $positions = array_map(fn ($event) => $event->position, $store->readAllFrom(0));
 

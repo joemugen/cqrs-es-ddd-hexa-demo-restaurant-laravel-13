@@ -6,11 +6,8 @@ namespace App\Providers\BoundedContexts\FrontOfHouse\Application\Command;
 
 use App\Providers\BoundedContexts\FrontOfHouse\Application\Command\Response\OrderCancelled;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\OrderFulfilmentRepository;
-use App\Providers\BoundedContexts\FrontOfHouse\Domain\FrontOfHouseEvent;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\FulfilmentStatus;
-use App\Providers\BoundedContexts\FrontOfHouse\Domain\UnavailableLine;
-use App\Providers\Modules\EventStore\Application\IntegrationBus;
-use App\Providers\Modules\EventStore\Domain\IntegrationEvent;
+use App\Providers\Modules\EventStore\Application\ContractPublisher;
 use App\Providers\Modules\SharedKernel\Application\Bus\Attribute\AsCommandHandler;
 use App\Providers\Modules\SharedKernel\Application\CommandHandler;
 
@@ -22,7 +19,7 @@ final readonly class CancelOrderHandler implements CommandHandler
 {
     public function __construct(
         private OrderFulfilmentRepository $fulfilments,
-        private IntegrationBus $bus,
+        private ContractPublisher $contracts,
     ) {}
 
     public function __invoke(CancelOrder $command): OrderCancelled
@@ -37,15 +34,9 @@ final readonly class CancelOrderHandler implements CommandHandler
             return new OrderCancelled($command->tableOrderId);
         }
 
-        $abandoned = array_map(fn (UnavailableLine $line): string => (string) $line->lineId, $fulfilment->unavailableLines());
         $fulfilment->cancel($command->reason);
         $this->fulfilments->save($fulfilment);
-        $this->bus->publish(IntegrationEvent::named(FrontOfHouseEvent::TABLE_ORDER_CANCELLED, [
-            'tableOrderId' => (string) $fulfilment->id(),
-            'tableId' => (string) $fulfilment->tableId(),
-            'reason' => $command->reason,
-            'abandonedLines' => $abandoned,
-        ]));
+        $this->contracts->publish($fulfilment->releaseEvents());
 
         return new OrderCancelled($command->tableOrderId);
     }

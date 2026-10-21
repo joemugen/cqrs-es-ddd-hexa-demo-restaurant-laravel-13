@@ -1,6 +1,8 @@
 <?php
 
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\DishName;
+use App\Providers\BoundedContexts\FrontOfHouse\Domain\Event\TableOrderPlaced;
+use App\Providers\BoundedContexts\FrontOfHouse\Domain\Event\TableOrderRevised;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\FrontOfHouseException;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\Menu;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\MenuItem;
@@ -21,6 +23,19 @@ function sampleMenu(): Menu
         (string) $salad->id() => $salad,
         (string) $steak->id() => $steak,
     ]);
+}
+
+function seatedOrder(): TableOrder
+{
+    return TableOrder::place(
+        new TableOrderId('order-1'),
+        Table::restore(new TableId('table-4'), new TableLabel('Window 4'), 2),
+        sampleMenu(),
+        [
+            new RequestedLine(new MenuItemId('green-salad'), 1, 'starter'),
+            new RequestedLine(new MenuItemId('green-salad'), 2, 'starter'),
+        ],
+    );
 }
 
 describe('TableOrder', function () {
@@ -72,42 +87,60 @@ describe('TableOrder', function () {
         expect($item->isAvailable())->toBeFalse();
     });
 
+    test('records that it was placed, with its lines and the table it is for', function () {
+        $order = seatedOrder();
+
+        $placed = $order->releaseEvents();
+
+        expect($placed)->toHaveCount(1)
+            ->and($placed[0])->toBeInstanceOf(TableOrderPlaced::class)
+            ->and((string) $placed[0]->tableOrderId)->toBe('order-1')
+            ->and((string) $placed[0]->tableId)->toBe('table-4')
+            ->and((string) $placed[0]->tableLabel)->toBe('Window 4')
+            ->and($placed[0]->lines)->toHaveCount(2);
+    });
+
     describe('when revised', function () {
-        function seatedOrder(): TableOrder
+        function windowTable(): Table
         {
-            return TableOrder::place(
-                new TableOrderId('order-1'),
-                Table::restore(new TableId('table-4'), new TableLabel('Window 4'), 2),
-                sampleMenu(),
-                [
-                    new RequestedLine(new MenuItemId('green-salad'), 1, 'starter'),
-                    new RequestedLine(new MenuItemId('green-salad'), 2, 'starter'),
-                ],
-            );
+            return Table::restore(new TableId('table-4'), new TableLabel('Window 4'), 2);
         }
 
-        test('the added lines go on after the lines already placed', function () {
-            $added = seatedOrder()->revision(sampleMenu(), [new RequestedLine(new MenuItemId('green-salad'), 1, 'main')]);
+        test('the added lines go on after the lines already placed, and are recorded', function () {
+            $order = seatedOrder();
+            $order->releaseEvents();
 
-            expect(array_map(fn ($line): array => $line->forTheKitchen(), $added))->toBe([
-                [
-                    'lineId' => 'order-1-3',
-                    'name' => 'Green salad',
-                    'quantity' => 1,
-                    'course' => 'main',
-                    'allergens' => [],
-                ],
-            ]);
+            $order->revise(windowTable(), sampleMenu(), [new RequestedLine(new MenuItemId('green-salad'), 1, 'main')]);
+
+            $revised = $order->releaseEvents();
+
+            expect($revised)->toHaveCount(1)
+                ->and($revised[0])->toBeInstanceOf(TableOrderRevised::class)
+                ->and(array_map(fn ($line): array => $line->forTheKitchen(), $revised[0]->addedLines))->toBe([
+                    [
+                        'lineId' => 'order-1-3',
+                        'name' => 'Green salad',
+                        'quantity' => 1,
+                        'course' => 'main',
+                        'allergens' => [],
+                    ],
+                ])
+                ->and($order->lines())->toHaveCount(3);
         });
 
         test('an empty revision is refused', function () {
-            expect(fn () => seatedOrder()->revision(sampleMenu(), []))
+            expect(fn () => seatedOrder()->revise(windowTable(), sampleMenu(), []))
                 ->toThrow(FrontOfHouseException::class, 'A revision needs at least one item.');
         });
 
-        test('an unavailable item is refused, as it is for an order', function () {
-            expect(fn () => seatedOrder()->revision(sampleMenu(), [new RequestedLine(new MenuItemId('steak-frites'), 1, 'main')]))
-                ->toThrow(FrontOfHouseException::class, 'Steak frites is unavailable.');
+        test('an unavailable item is refused, as it is for an order, and nothing is recorded', function () {
+            $order = seatedOrder();
+            $order->releaseEvents();
+
+            expect(fn () => $order->revise(windowTable(), sampleMenu(), [new RequestedLine(new MenuItemId('steak-frites'), 1, 'main')]))
+                ->toThrow(FrontOfHouseException::class, 'Steak frites is unavailable.')
+                ->and($order->releaseEvents())->toBe([])
+                ->and($order->lines())->toHaveCount(2);
         });
     });
 });

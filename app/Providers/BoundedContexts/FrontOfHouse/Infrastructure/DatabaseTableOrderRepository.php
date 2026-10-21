@@ -39,22 +39,20 @@ final class DatabaseTableOrderRepository implements TableOrderRepository
         );
     }
 
+    /**
+     * An order is saved with all its lines: the ones it already has are left as they are.
+     */
     public function save(TableOrder $order): void
     {
-        DB::table(Tables::TABLE_ORDERS)->insert([
+        DB::table(Tables::TABLE_ORDERS)->insertOrIgnore([
             'id' => (string) $order->id(),
             'table_id' => (string) $order->tableId(),
         ]);
 
-        $this->append($order->id(), $order->lines());
-    }
-
-    public function append(TableOrderId $id, array $lines): void
-    {
-        foreach ($lines as $line) {
-            DB::table(Tables::TABLE_ORDER_LINES)->insert([
+        foreach ($order->lines() as $line) {
+            DB::table(Tables::TABLE_ORDER_LINES)->insertOrIgnore([
                 'id' => (string) $line->lineId,
-                'table_order_id' => (string) $id,
+                'table_order_id' => (string) $order->id(),
                 'menu_item_id' => (string) $line->menuItemId,
                 'name' => (string) $line->name,
                 'quantity' => $line->quantity,

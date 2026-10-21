@@ -6,12 +6,12 @@ namespace App\Providers\BoundedContexts\Kitchen\Domain\Event;
 
 use App\Providers\BoundedContexts\Kitchen\Domain\KitchenTicketId;
 use App\Providers\BoundedContexts\Kitchen\Domain\TicketLine;
-use App\Providers\Modules\SharedKernel\Domain\TypedDomainEvent;
+use App\Providers\Modules\SharedKernel\Domain\StreamedDomainEvent;
 
 /**
  * Dishes joined a ticket that was already open. This is the fact of the ticket: other contexts read its contract.
  */
-final readonly class DishesAdded implements TypedDomainEvent
+final readonly class DishesAdded implements StreamedDomainEvent
 {
     public const STORED_AS = 'ticket.dishes_added';
 

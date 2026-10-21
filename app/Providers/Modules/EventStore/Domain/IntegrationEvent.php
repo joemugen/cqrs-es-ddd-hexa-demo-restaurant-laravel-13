@@ -19,12 +19,4 @@ final readonly class IntegrationEvent
         public array $payload,
         public ?int $version = null,
     ) {}
-
-    /**
-     * @param  array<string, mixed>  $payload
-     */
-    public static function named(string $type, array $payload): self
-    {
-        return new self(new EventType($type), $payload);
-    }
 }

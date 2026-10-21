@@ -4,10 +4,14 @@ declare(strict_types=1);
 
 namespace App\Providers\BoundedContexts\FrontOfHouse\Domain;
 
+use App\Providers\BoundedContexts\FrontOfHouse\Domain\Event\BillRequested;
 use App\Providers\Modules\SharedKernel\Domain\AggregateRoot;
+use App\Providers\Modules\SharedKernel\Domain\RecordsEvents;
 
 final class Table implements AggregateRoot
 {
+    use RecordsEvents;
+
     private function __construct(
         private readonly TableId $id,
         private readonly TableLabel $label,
@@ -30,6 +34,15 @@ final class Table implements AggregateRoot
         }
 
         $this->guestCount = $guestCount;
+    }
+
+    public function requestBill(): void
+    {
+        if (! $this->hasGuests()) {
+            throw new FrontOfHouseException('This table has no guests to bill.');
+        }
+
+        $this->recordThat(new BillRequested($this->id));
     }
 
     public function free(): void

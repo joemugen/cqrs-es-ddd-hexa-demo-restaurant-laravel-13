@@ -4,10 +4,14 @@ declare(strict_types=1);
 
 namespace App\Providers\BoundedContexts\Billing\Domain;
 
+use App\Providers\BoundedContexts\Billing\Domain\Event\BillPaid;
 use App\Providers\Modules\SharedKernel\Domain\AggregateRoot;
+use App\Providers\Modules\SharedKernel\Domain\RecordsEvents;
 
 final class Bill implements AggregateRoot
 {
+    use RecordsEvents;
+
     /**
      * @param  list<ServedDish>  $lines
      * @param  list<Payment>  $payments
@@ -63,6 +67,7 @@ final class Bill implements AggregateRoot
 
         if ($this->balanceCents() === 0) {
             $this->paid = true;
+            $this->recordThat(new BillPaid($this->id, $this->coverRef));
         }
     }
 

@@ -32,7 +32,7 @@ final readonly class DomainEvent
         return new self(new EventType($type), $payload, new DateTimeImmutable('now', new DateTimeZone('UTC')), $contractVersion);
     }
 
-    public static function recording(TypedDomainEvent $fact): self
+    public static function recording(StreamedDomainEvent $fact): self
     {
         return new self(
             new EventType($fact->storedAs()),

@@ -4,6 +4,7 @@ use App\Providers\BoundedContexts\Billing\Domain\Bill;
 use App\Providers\BoundedContexts\Billing\Domain\BillId;
 use App\Providers\BoundedContexts\Billing\Domain\BillingException;
 use App\Providers\BoundedContexts\Billing\Domain\CoverRef;
+use App\Providers\BoundedContexts\Billing\Domain\Event\BillPaid;
 use App\Providers\BoundedContexts\Billing\Domain\ServedDish;
 use App\Providers\BoundedContexts\Billing\Domain\SourceKey;
 use App\Providers\BoundedContexts\Billing\Domain\Vat;
@@ -75,5 +76,22 @@ describe('Bill', function () {
 
         expect(fn () => $bill->pay(1, 0))
             ->toThrow(BillingException::class, 'A paid bill cannot be changed.');
+    });
+
+    describe('when paid', function () {
+        function aBillOf1100(): Bill
+        {
+            return Bill::prepare(new BillId('bill-1'), new CoverRef('table-4'), [servedDish('Green salad', 1100, 1, 'food')]);
+        }
+
+        test('records that it is paid once the balance reaches zero, and not before', function () {
+            $bill = aBillOf1100();
+
+            $bill->pay(600, 0);
+            expect($bill->releaseEvents())->toBe([]);
+
+            $bill->pay(500, 0);
+            expect($bill->releaseEvents())->toEqual([new BillPaid(new BillId('bill-1'), new CoverRef('table-4'))]);
+        });
     });
 });

@@ -59,6 +59,16 @@ describe('integration contracts', function (): void {
         })->with(classesIn('*/Domain/Event/*.php'));
     });
 
+    it('is told through the ContractPublisher: no context builds an integration event or holds the bus itself', function (): void {
+        $files = glob(app_path('Providers/BoundedContexts/*/{Application,Domain,Infrastructure}/{,*/,*/*/}*.php'), GLOB_BRACE);
+        $offenders = array_values(array_filter(
+            $files,
+            fn (string $file): bool => preg_match('/\\b(IntegrationEvent|IntegrationBus)\\b/', (string) file_get_contents($file)) === 1,
+        ));
+
+        expect(array_map('basename', $offenders))->toBe([]);
+    });
+
     describe('discovery', function (): void {
         it('finds the contracts of a context, with or without the cache', function (): void {
             $path = sys_get_temp_dir().'/contracts-'.bin2hex(random_bytes(4)).'.php';

@@ -5,25 +5,9 @@ declare(strict_types=1);
 namespace App\Providers\Modules\SharedKernel\Domain;
 
 /**
- * A fact of the domain, with a shape. It is stored in the stream of its aggregate in a format the domain owns and may
- * change; what other contexts read is a contract that translates it, never the fact itself.
+ * A fact of the domain, with a shape: a class, value objects, no array. It belongs to its context. What other contexts
+ * read is a contract that translates it, or nothing at all when the fact is `#[Internal]`.
  *
- * `DomainEvent` is the envelope the event store keeps; this is the fact it carries.
+ * `DomainEvent` is the envelope the event store keeps; this is the fact it may carry.
  */
-interface TypedDomainEvent
-{
-    /**
-     * The name of the fact in the stream of its aggregate. It is internal: no other context should know it.
-     */
-    public function storedAs(): string;
-
-    /**
-     * @return array<string, mixed>
-     */
-    public function toStored(): array;
-
-    /**
-     * @param  array<string, mixed>  $stored
-     */
-    public static function fromStored(array $stored): static;
-}
+interface TypedDomainEvent {}

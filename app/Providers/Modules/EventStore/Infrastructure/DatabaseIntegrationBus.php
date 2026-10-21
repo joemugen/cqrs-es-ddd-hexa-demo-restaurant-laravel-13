@@ -7,11 +7,14 @@ namespace App\Providers\Modules\EventStore\Infrastructure;
 use App\Providers\Modules\EventStore\Application\IntegrationBus;
 use App\Providers\Modules\EventStore\Domain\EventStore;
 use App\Providers\Modules\EventStore\Domain\IntegrationEvent;
+use App\Providers\Modules\SharedKernel\Application\Publication\IntegrationContract;
+use App\Providers\Modules\SharedKernel\Application\Publication\PublishedAs;
 use App\Providers\Modules\SharedKernel\Domain\DomainEvent;
 use App\Providers\Modules\SharedKernel\Domain\DomainEvents;
 use App\Providers\Modules\SharedKernel\Domain\EventType;
 use App\Providers\Modules\SharedKernel\Domain\StreamId;
 use Closure;
+use ReflectionClass;
 
 final class DatabaseIntegrationBus implements IntegrationBus
 {
@@ -20,8 +23,11 @@ final class DatabaseIntegrationBus implements IntegrationBus
 
     public function __construct(private EventStore $events) {}
 
-    public function publish(IntegrationEvent $event): int
+    public function publish(IntegrationContract $contract): int
     {
+        $published = (new ReflectionClass($contract))->getAttributes(PublishedAs::class)[0]->newInstance();
+        $event = new IntegrationEvent(new EventType($published->type), $contract->toPayload(), $published->version);
+
         $position = $this->events->append(
             new StreamId('integration-'.bin2hex(random_bytes(8))),
             0,

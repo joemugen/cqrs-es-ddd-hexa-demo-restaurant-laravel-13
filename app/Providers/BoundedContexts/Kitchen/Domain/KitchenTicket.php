@@ -5,16 +5,29 @@ declare(strict_types=1);
 namespace App\Providers\BoundedContexts\Kitchen\Domain;
 
 use App\Providers\BoundedContexts\Kitchen\Domain\Event\DishesAdded;
+use App\Providers\BoundedContexts\Kitchen\Domain\Event\DishFired;
+use App\Providers\BoundedContexts\Kitchen\Domain\Event\DishReady;
+use App\Providers\BoundedContexts\Kitchen\Domain\Event\TicketCompleted;
+use App\Providers\BoundedContexts\Kitchen\Domain\Event\TicketOpened;
 use App\Providers\Modules\SharedKernel\Domain\AggregateId;
 use App\Providers\Modules\SharedKernel\Domain\DomainEvent;
 use App\Providers\Modules\SharedKernel\Domain\DomainEvents;
 use App\Providers\Modules\SharedKernel\Domain\EventSourcedAggregate;
+use App\Providers\Modules\SharedKernel\Domain\StreamedDomainEvent;
 use App\Providers\Modules\SharedKernel\Domain\StreamId;
-use App\Providers\Modules\SharedKernel\Domain\TypedDomainEvent;
 
 final class KitchenTicket implements EventSourcedAggregate
 {
     private const STREAM_PREFIX = 'kitchen-ticket-';
+
+    /** @var array<string, class-string<StreamedDomainEvent>> the facts of the stream, by the name they are stored under */
+    private const FACTS = [
+        TicketOpened::STORED_AS => TicketOpened::class,
+        DishesAdded::STORED_AS => DishesAdded::class,
+        DishFired::STORED_AS => DishFired::class,
+        DishReady::STORED_AS => DishReady::class,
+        TicketCompleted::STORED_AS => TicketCompleted::class,
+    ];
 
     private DomainEvents $pending;
 
@@ -46,12 +59,7 @@ final class KitchenTicket implements EventSourcedAggregate
         }
 
         $ticket = new self($id);
-        $ticket->record(KitchenEvent::TICKET_OPENED, [
-            'ticketId' => (string) $id,
-            'partyRef' => (string) $partyRef,
-            'tableLabel' => (string) $tableLabel,
-            'lines' => array_map(fn (TicketLine $line): array => $line->toPayload(), $lines),
-        ]);
+        $ticket->recordFact(new TicketOpened($id, $partyRef, $tableLabel, $lines));
 
         return $ticket;
     }
@@ -104,11 +112,7 @@ final class KitchenTicket implements EventSourcedAggregate
             }
 
             $fired = true;
-            $this->record(KitchenEvent::DISH_FIRED, [
-                'ticketId' => (string) $this->id,
-                'lineId' => $lineId,
-                'course' => $course,
-            ]);
+            $this->recordFact(new DishFired($this->id, new LineId((string) $lineId), $course));
         }
 
         if (! $fired) {
@@ -134,19 +138,17 @@ final class KitchenTicket implements EventSourcedAggregate
         }
 
         $line = $this->lines[$key];
-        $this->record(KitchenEvent::DISH_READY, [
-            'ticketId' => (string) $this->id,
-            'lineId' => $key,
-            'dishName' => $line['dishName'],
-            'partyRef' => (string) $this->partyRef,
-            'tableLabel' => (string) $this->tableLabel,
-            'quantity' => $line['quantity'],
-        ]);
+        $this->recordFact(new DishReady(
+            $this->id,
+            $lineId,
+            new DishName($line['dishName']),
+            $this->partyRef,
+            $this->tableLabel,
+            $line['quantity'],
+        ));
 
         if ($this->everyDishReady()) {
-            $this->record(KitchenEvent::TICKET_COMPLETED, [
-                'ticketId' => (string) $this->id,
-            ]);
+            $this->recordFact(new TicketCompleted($this->id));
         }
     }
 
@@ -204,18 +206,9 @@ final class KitchenTicket implements EventSourcedAggregate
         return $this->lines !== [];
     }
 
-    /**
-     * @param  array<string, mixed>  $payload
-     */
-    private function record(string $type, array $payload): void
+    private function recordFact(StreamedDomainEvent $fact): void
     {
-        $this->apply($type, $payload);
-        $this->pending = $this->pending->with(DomainEvent::now($type, $payload));
-    }
-
-    private function recordFact(TypedDomainEvent $fact): void
-    {
-        $this->apply($fact->storedAs(), $fact->toStored());
+        $this->when($fact);
         $this->pending = $this->pending->with(DomainEvent::recording($fact));
     }
 
@@ -224,51 +217,46 @@ final class KitchenTicket implements EventSourcedAggregate
      */
     private function apply(string $type, array $payload): void
     {
-        if ($type === KitchenEvent::TICKET_OPENED) {
-            $this->partyRef = new PartyRef((string) $payload['partyRef']);
-            $this->tableLabel = new TableLabel((string) $payload['tableLabel']);
-            $this->waitingFor($payload['lines']);
+        $this->when(self::FACTS[$type]::fromStored($payload));
+    }
 
-            return;
-        }
+    private function when(StreamedDomainEvent $fact): void
+    {
+        match (true) {
+            $fact instanceof TicketOpened => $this->whenOpened($fact),
+            $fact instanceof DishesAdded => $this->whenDishesAdded($fact),
+            $fact instanceof DishFired => $this->lines[(string) $fact->lineId]['fired'] = true,
+            $fact instanceof DishReady => $this->lines[(string) $fact->lineId]['ready'] = true,
+            $fact instanceof TicketCompleted => $this->completed = true,
+        };
+    }
 
-        if ($type === DishesAdded::STORED_AS) {
-            $this->waitingFor($payload['lines']);
-            $this->completed = false;
+    private function whenOpened(TicketOpened $fact): void
+    {
+        $this->partyRef = $fact->partyRef;
+        $this->tableLabel = $fact->tableLabel;
+        $this->waitingFor($fact->lines);
+    }
 
-            return;
-        }
-
-        if ($type === KitchenEvent::DISH_FIRED) {
-            $this->lines[(string) $payload['lineId']]['fired'] = true;
-
-            return;
-        }
-
-        if ($type === KitchenEvent::DISH_READY) {
-            $this->lines[(string) $payload['lineId']]['ready'] = true;
-
-            return;
-        }
-
-        if ($type === KitchenEvent::TICKET_COMPLETED) {
-            $this->completed = true;
-        }
+    private function whenDishesAdded(DishesAdded $fact): void
+    {
+        $this->waitingFor($fact->lines);
+        $this->completed = false;
     }
 
     /**
-     * @param  list<array{lineId: string, dishName: string, station: string, cookingMinutes: int, quantity: int, course: string, allergens: list<string>}>  $lines
+     * @param  list<TicketLine>  $lines
      */
     private function waitingFor(array $lines): void
     {
         foreach ($lines as $line) {
-            $this->lines[(string) $line['lineId']] = [
-                'dishName' => (string) $line['dishName'],
-                'station' => (string) $line['station'],
-                'cookingMinutes' => (int) $line['cookingMinutes'],
-                'quantity' => (int) $line['quantity'],
-                'course' => (string) $line['course'],
-                'allergens' => array_values($line['allergens']),
+            $this->lines[(string) $line->lineId] = [
+                'dishName' => (string) $line->dishName,
+                'station' => $line->station,
+                'cookingMinutes' => $line->cookingMinutes,
+                'quantity' => $line->quantity,
+                'course' => $line->course,
+                'allergens' => $line->allergens,
                 'fired' => false,
                 'ready' => false,
             ];

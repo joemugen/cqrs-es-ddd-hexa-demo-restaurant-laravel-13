@@ -2,11 +2,12 @@
 
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\FrontOfHouseSeeder;
 use App\Providers\BoundedContexts\Kitchen\Infrastructure\KitchenSeeder;
-use App\Providers\Modules\EventStore\Application\IntegrationBus;
 use App\Providers\Modules\EventStore\Domain\CheckpointStore;
 use App\Providers\Modules\EventStore\Domain\EventStore;
-use App\Providers\Modules\EventStore\Domain\IntegrationEvent;
 use App\Providers\Modules\EventStore\Domain\StoredEvent;
+use App\Providers\Modules\SharedKernel\Domain\DomainEvent;
+use App\Providers\Modules\SharedKernel\Domain\DomainEvents;
+use App\Providers\Modules\SharedKernel\Domain\StreamId;
 
 /**
  * @return list<StoredEvent>
@@ -24,14 +25,21 @@ function kitchenWorker(): void
     test()->artisan('kitchen:consume', ['--stop-when-empty' => true])->doesntExpectOutputToContain('failed')->assertSuccessful();
 }
 
+/**
+ * What the dining room tells the kitchen when the guests chose a replacement: a contract in the log, as the kitchen reads it.
+ */
 function reviseOrderWith(string $tableOrderId, string $menuItemName, string $lineId): int
 {
-    return app(IntegrationBus::class)->publish(IntegrationEvent::named('front_of_house.table_order_revised', [
-        'tableOrderId' => $tableOrderId,
-        'tableId' => 'table-4',
-        'tableLabel' => 'Window 4',
-        'lines' => [['lineId' => $lineId, 'name' => $menuItemName, 'quantity' => 1, 'course' => 'dessert', 'allergens' => []]],
-    ]));
+    return app(EventStore::class)->append(
+        new StreamId('integration-'.bin2hex(random_bytes(4))),
+        0,
+        DomainEvents::of(DomainEvent::now('front_of_house.table_order_revised', [
+            'tableOrderId' => $tableOrderId,
+            'tableId' => 'table-4',
+            'tableLabel' => 'Window 4',
+            'lines' => [['lineId' => $lineId, 'name' => $menuItemName, 'quantity' => 1, 'course' => 'dessert', 'allergens' => []]],
+        ], 1)),
+    );
 }
 
 describe('an order of which some dishes are 86', function () {

@@ -31,12 +31,12 @@ describe('KitchenTicket', function () {
 
         expect($ticket->isComplete())->toBeTrue()
             ->and(array_map(fn (DomainEvent $event): string => (string) $event->type, iterator_to_array($ticket->pendingEvents())))->toBe([
-                'kitchen.ticket_opened',
-                'kitchen.dish_fired',
-                'kitchen.dish_ready',
-                'kitchen.dish_fired',
-                'kitchen.dish_ready',
-                'kitchen.ticket_completed',
+                'ticket.opened',
+                'ticket.dish_fired',
+                'ticket.dish_ready',
+                'ticket.dish_fired',
+                'ticket.dish_ready',
+                'ticket.completed',
             ]);
     });
 
@@ -72,10 +72,10 @@ describe('KitchenTicket', function () {
             $ticket->fireCourse('main');
 
             expect(array_map(fn (DomainEvent $event): string => (string) $event->type, iterator_to_array($ticket->pendingEvents())))->toBe([
-                'kitchen.ticket_opened',
+                'ticket.opened',
                 'ticket.dishes_added',
-                'kitchen.dish_fired',
-                'kitchen.dish_fired',
+                'ticket.dish_fired',
+                'ticket.dish_fired',
             ]);
         });
 

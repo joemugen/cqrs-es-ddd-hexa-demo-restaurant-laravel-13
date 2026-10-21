@@ -1,6 +1,7 @@
 <?php
 
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\DishName;
+use App\Providers\BoundedContexts\FrontOfHouse\Domain\Event\TableOrderCancelled;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\FrontOfHouseException;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\FulfilmentStatus;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\LineId;
@@ -160,6 +161,16 @@ describe('an order fulfilment', function () {
             expect($fulfilment->status())->toBe(FulfilmentStatus::CANCELLED)
                 ->and($fulfilment->reason())->toBe('The guests gave up.')
                 ->and($fulfilment->unavailableLines())->toEqual([steakUnavailable()]);
+        });
+
+        test('records that the order was cancelled, with the lines that are abandoned', function () {
+            $fulfilment = fulfilmentAwaitingRevision();
+
+            $fulfilment->cancel('The guests gave up.');
+
+            expect($fulfilment->releaseEvents())->toEqual([
+                new TableOrderCancelled(new TableOrderId('order-1'), new TableId('table-7'), 'The guests gave up.', [new LineId('order-1-2')]),
+            ]);
         });
 
         test('needs a reason', function () {
