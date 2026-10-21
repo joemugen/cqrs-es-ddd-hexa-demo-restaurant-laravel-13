@@ -68,6 +68,32 @@ final class KitchenTicket implements EventSourcedAggregate
         return $ticket;
     }
 
+    /**
+     * The dining room revised the order: the new dishes join the ticket, and a dish already on it is left alone.
+     *
+     * @param  list<TicketLine>  $lines
+     */
+    public function addDishes(array $lines): void
+    {
+        if ($lines === []) {
+            throw new KitchenException('Add at least one dish to the ticket.');
+        }
+
+        $new = array_values(array_filter(
+            $lines,
+            fn (TicketLine $line): bool => ! isset($this->lines[(string) $line->lineId]),
+        ));
+
+        if ($new === []) {
+            return;
+        }
+
+        $this->record(KitchenEvent::DISHES_ADDED, [
+            'ticketId' => (string) $this->id,
+            'lines' => array_map(fn (TicketLine $line): array => $line->toPayload(), $new),
+        ]);
+    }
+
     public function fireCourse(string $course): void
     {
         $this->guardOpen();
@@ -196,19 +222,14 @@ final class KitchenTicket implements EventSourcedAggregate
         if ($type === KitchenEvent::TICKET_OPENED) {
             $this->partyRef = new PartyRef((string) $payload['partyRef']);
             $this->tableLabel = new TableLabel((string) $payload['tableLabel']);
+            $this->waitingFor($payload['lines']);
 
-            foreach ($payload['lines'] as $line) {
-                $this->lines[(string) $line['lineId']] = [
-                    'dishName' => (string) $line['dishName'],
-                    'station' => (string) $line['station'],
-                    'cookingMinutes' => (int) $line['cookingMinutes'],
-                    'quantity' => (int) $line['quantity'],
-                    'course' => (string) $line['course'],
-                    'allergens' => array_values($line['allergens']),
-                    'fired' => false,
-                    'ready' => false,
-                ];
-            }
+            return;
+        }
+
+        if ($type === KitchenEvent::DISHES_ADDED) {
+            $this->waitingFor($payload['lines']);
+            $this->completed = false;
 
             return;
         }
@@ -227,6 +248,25 @@ final class KitchenTicket implements EventSourcedAggregate
 
         if ($type === KitchenEvent::TICKET_COMPLETED) {
             $this->completed = true;
+        }
+    }
+
+    /**
+     * @param  list<array{lineId: string, dishName: string, station: string, cookingMinutes: int, quantity: int, course: string, allergens: list<string>}>  $lines
+     */
+    private function waitingFor(array $lines): void
+    {
+        foreach ($lines as $line) {
+            $this->lines[(string) $line['lineId']] = [
+                'dishName' => (string) $line['dishName'],
+                'station' => (string) $line['station'],
+                'cookingMinutes' => (int) $line['cookingMinutes'],
+                'quantity' => (int) $line['quantity'],
+                'course' => (string) $line['course'],
+                'allergens' => array_values($line['allergens']),
+                'fired' => false,
+                'ready' => false,
+            ];
         }
     }
 }

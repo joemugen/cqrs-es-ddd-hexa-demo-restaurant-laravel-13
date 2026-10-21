@@ -58,4 +58,60 @@ describe('KitchenTicket', function () {
             ->and($rebuilt->expectedVersion())->toBe(3)
             ->and($rebuilt->pendingEvents())->toHaveCount(0);
     });
+
+    describe('when dishes are added after it opened', function () {
+        function replacementDishes(): array
+        {
+            return [new TicketLine(new LineId('fish'), new DishName('Sea bass'), 'grill', 10, 1, 'main', ['fish'])];
+        }
+
+        test('the new dishes wait to be fired like the others', function () {
+            $ticket = openTicket();
+
+            $ticket->addDishes(replacementDishes());
+            $ticket->fireCourse('main');
+
+            expect(array_map(fn (DomainEvent $event): string => (string) $event->type, iterator_to_array($ticket->pendingEvents())))->toBe([
+                'kitchen.ticket_opened',
+                'kitchen.dishes_added',
+                'kitchen.dish_fired',
+                'kitchen.dish_fired',
+            ]);
+        });
+
+        test('a dish already on the ticket is not added twice', function () {
+            $ticket = openTicket();
+            $ticket->addDishes(replacementDishes());
+            $ticket->addDishes(replacementDishes());
+
+            expect($ticket->pendingEvents())->toHaveCount(2);
+        });
+
+        test('a finished ticket is reopened by the new dishes', function () {
+            $ticket = openTicket();
+            $ticket->fireCourse('starter');
+            $ticket->markReady(new LineId('salad'));
+            $ticket->fireCourse('main');
+            $ticket->markReady(new LineId('steak'));
+
+            $ticket->addDishes(replacementDishes());
+
+            expect($ticket->isComplete())->toBeFalse();
+        });
+
+        test('replaying the stream finds the added dishes again', function () {
+            $original = openTicket();
+            $original->addDishes(replacementDishes());
+
+            $rebuilt = KitchenTicket::fromHistory(new KitchenTicketId('ticket-1'), $original->pendingEvents());
+            $rebuilt->fireCourse('main');
+
+            expect($rebuilt->pendingEvents())->toHaveCount(2);
+        });
+
+        test('needs at least one dish', function () {
+            expect(fn () => openTicket()->addDishes([]))
+                ->toThrow(KitchenException::class, 'Add at least one dish to the ticket.');
+        });
+    });
 });

@@ -73,19 +73,16 @@ final class KitchenScreenProjector implements RebuildableProjector
                 'version' => $version,
             ]);
 
-            foreach ($payload['lines'] as $line) {
-                DB::table(Tables::SCREEN_LINES)->insert([
-                    'ticket_id' => $payload['ticketId'],
-                    'line_id' => $line['lineId'],
-                    'dish_name' => $line['dishName'],
-                    'station' => $line['station'],
-                    'cooking_minutes' => $line['cookingMinutes'],
-                    'quantity' => $line['quantity'],
-                    'course' => $line['course'],
-                    'allergens' => json_encode($line['allergens'], JSON_THROW_ON_ERROR),
-                    'status' => LineStatus::PENDING,
-                ]);
-            }
+            $this->insertLines((string) $payload['ticketId'], $payload['lines']);
+
+            return true;
+        }
+
+        if ($type->is(KitchenEvent::DISHES_ADDED)) {
+            $this->insertLines((string) $payload['ticketId'], $payload['lines']);
+            DB::table(Tables::SCREEN_TICKETS)
+                ->where('ticket_id', $payload['ticketId'])
+                ->update(['done' => false, 'version' => $version]);
 
             return true;
         }
@@ -113,6 +110,26 @@ final class KitchenScreenProjector implements RebuildableProjector
         }
 
         return false;
+    }
+
+    /**
+     * @param  list<array{lineId: string, dishName: string, station: string, cookingMinutes: int, quantity: int, course: string, allergens: list<string>}>  $lines
+     */
+    private function insertLines(string $ticketId, array $lines): void
+    {
+        foreach ($lines as $line) {
+            DB::table(Tables::SCREEN_LINES)->insert([
+                'ticket_id' => $ticketId,
+                'line_id' => $line['lineId'],
+                'dish_name' => $line['dishName'],
+                'station' => $line['station'],
+                'cooking_minutes' => $line['cookingMinutes'],
+                'quantity' => $line['quantity'],
+                'course' => $line['course'],
+                'allergens' => json_encode($line['allergens'], JSON_THROW_ON_ERROR),
+                'status' => LineStatus::PENDING,
+            ]);
+        }
     }
 
     private function versionOf(string $ticketId, int $version): void

@@ -11,6 +11,8 @@ final class KitchenEvent
 {
     public const TICKET_OPENED = 'kitchen.ticket_opened';
 
+    public const DISHES_ADDED = 'kitchen.dishes_added';
+
     public const DISH_FIRED = 'kitchen.dish_fired';
 
     public const DISH_READY = 'kitchen.dish_ready';
