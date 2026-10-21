@@ -93,6 +93,7 @@ These words are technical, but they are the ones of the code and of the discussi
 | --- | --- | --- |
 | **Fact** | Something that happened, named in the past (`DishesAdded`, `BillPaid`). The log only receives facts; a mistake is answered by a new fact. | `Domain/Event` |
 | **Contract** | The only public shape of a fact: what a context promises to the others, with a name and a version. A fact that no one outside should read is *internal*. | `Application/Integration`, `#[PublishedAs]`, `#[Internal]` |
+| **Consumed message** | What a context reads of a contract of another one, in its own words and types. It keeps what the context needs of the payload and nothing more. | `Infrastructure/Consumed`, `#[Consumes]` |
 | **Position** | Where a fact sits in the event log. It is the clock all contexts share, and what decides a late reading. | `StoredEvent::$position` |
 | **Saga** | What follows an order between the room and the kitchen, through the facts they publish, with no one in charge. | `OrderFulfilment`, `OrderFulfilmentProcessor` |
 | **Idempotency key** | Sent with an order: the same key places it once. | `Idempotency-Key` |

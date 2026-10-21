@@ -8,6 +8,7 @@ use App\Providers\Modules\SharedKernel\Application\Bus\Attribute\AsCommandHandle
 use App\Providers\Modules\SharedKernel\Application\Bus\Attribute\AsQueryHandler;
 use App\Providers\Modules\SharedKernel\Application\CommandHandler;
 use App\Providers\Modules\SharedKernel\Application\EventConsumer;
+use App\Providers\Modules\SharedKernel\Application\Publication\ConsumedMessage;
 use App\Providers\Modules\SharedKernel\Application\Publication\IntegrationContract;
 use App\Providers\Modules\SharedKernel\Application\QueryHandler;
 use ReflectionClass;
@@ -23,11 +24,11 @@ use ReflectionClass;
  */
 final class ContextDiscovery
 {
-    /** @var array<string, array{commands: list<class-string>, queries: list<class-string>, consumers: list<class-string>, contracts: list<class-string>}>|null */
+    /** @var array<string, array{commands: list<class-string>, queries: list<class-string>, consumers: list<class-string>, contracts: list<class-string>, consumed: list<class-string>}>|null */
     private ?array $cached = null;
 
     /**
-     * @param  array{namespace: string, layout: array{commands: string, queries: string, processors: string, projectors: string, contracts: string}}  $configuration
+     * @param  array{namespace: string, layout: array{commands: string, queries: string, processors: string, projectors: string, contracts: string, consumed: string}}  $configuration
      */
     public function __construct(
         private readonly string $cachePath,
@@ -95,6 +96,16 @@ final class ContextDiscovery
     }
 
     /**
+     * What a context reads of the contracts of the others.
+     *
+     * @return list<class-string<ConsumedMessage>>
+     */
+    public function consumedMessages(string $context): array
+    {
+        return $this->cachedContext($context)['consumed'] ?? $this->scanConsumedMessages($context);
+    }
+
+    /**
      * Scans every context and writes the result to the cache file.
      */
     public function cache(): string
@@ -107,6 +118,7 @@ final class ContextDiscovery
                 'queries' => $this->scanQueries($context),
                 'consumers' => $this->scanConsumers($context),
                 'contracts' => $this->scanContracts($context),
+                'consumed' => $this->scanConsumedMessages($context),
             ];
         }
 
@@ -131,7 +143,7 @@ final class ContextDiscovery
     }
 
     /**
-     * @return array{commands: list<class-string>, queries: list<class-string>, consumers: list<class-string>, contracts: list<class-string>}|null
+     * @return array{commands: list<class-string>, queries: list<class-string>, consumers: list<class-string>, contracts: list<class-string>, consumed: list<class-string>}|null
      */
     private function cachedContext(string $context): ?array
     {
@@ -164,6 +176,17 @@ final class ContextDiscovery
     private function scanContracts(string $context): array
     {
         return $this->scan($context, 'contracts', IntegrationContract::class);
+    }
+
+    /**
+     * @return list<class-string<ConsumedMessage>>
+     */
+    private function scanConsumedMessages(string $context): array
+    {
+        return array_values(array_filter(
+            $this->scan($context, 'consumed', ConsumedMessage::class),
+            fn (string $class): bool => ! (new ReflectionClass($class))->isAbstract(),
+        ));
     }
 
     /**

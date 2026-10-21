@@ -6,9 +6,9 @@ namespace App\Providers\BoundedContexts\Billing\Infrastructure\Processors;
 
 use App\Providers\BoundedContexts\Billing\Application\Command\PrepareBill;
 use App\Providers\BoundedContexts\Billing\Domain\BillId;
-use App\Providers\BoundedContexts\Billing\Domain\CoverRef;
 use App\Providers\BoundedContexts\Billing\Infrastructure\Bus\BillingCommandBus;
-use App\Providers\BoundedContexts\Billing\Infrastructure\ConsumedEvents;
+use App\Providers\BoundedContexts\Billing\Infrastructure\Consumed\FrontOfHouseBillRequested;
+use App\Providers\Modules\EventStore\Application\ConsumedMessages;
 use App\Providers\Modules\EventStore\Domain\CheckpointStore;
 use App\Providers\Modules\EventStore\Domain\EventStore;
 use App\Providers\Modules\SharedKernel\Application\Processor;
@@ -30,6 +30,7 @@ final class PrepareBillProcessor implements Processor
         private CheckpointStore $checkpoints,
         private BillingCommandBus $bus,
         private RecordServedDishes $ledger,
+        private ConsumedMessages $messages,
     ) {}
 
     public function hasWork(): bool
@@ -46,13 +47,15 @@ final class PrepareBillProcessor implements Processor
         $this->ledger->consume();
 
         foreach ($events as $event) {
-            if ($event->type->is(ConsumedEvents::FRONT_OF_HOUSE_BILL_REQUESTED)) {
+            $message = $this->messages->read($event, self::class);
+
+            if ($message instanceof FrontOfHouseBillRequested) {
                 $handled++;
                 Correlation::resume($event->correlationId);
                 Causation::resume($event->position);
                 $this->bus->dispatch(new PrepareBill(
-                    billId: BillId::forBillRequest(new CoverRef((string) $event->payload['tableId']), $event->position),
-                    coverRef: new CoverRef((string) $event->payload['tableId']),
+                    billId: BillId::forBillRequest($message->coverRef, $event->position),
+                    coverRef: $message->coverRef,
                 ));
             }
 

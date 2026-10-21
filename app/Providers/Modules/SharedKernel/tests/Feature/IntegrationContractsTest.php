@@ -1,5 +1,7 @@
 <?php
 
+use App\Providers\Modules\SharedKernel\Application\Publication\ConsumedMessage;
+use App\Providers\Modules\SharedKernel\Application\Publication\Consumes;
 use App\Providers\Modules\SharedKernel\Application\Publication\IntegrationContract;
 use App\Providers\Modules\SharedKernel\Application\Publication\PublishedAs;
 use App\Providers\Modules\SharedKernel\Application\Publication\Translates;
@@ -69,6 +71,24 @@ describe('integration contracts', function (): void {
         expect(array_map('basename', $offenders))->toBe([]);
     });
 
+    describe('each message a context reads', function (): void {
+        it('is a ConsumedMessage that says which contract and version it reads', function (string $class): void {
+            expect(is_subclass_of($class, ConsumedMessage::class))->toBeTrue("{$class} is not a ConsumedMessage")
+                ->and((new ReflectionClass($class))->getAttributes(Consumes::class))->toHaveCount(1, "{$class} needs #[Consumes]");
+        })->with(array_filter(classesIn('*/Infrastructure/Consumed/*.php'), fn (string $class): bool => ! (new ReflectionClass($class))->isAbstract()));
+
+        it('reads a contract that a context publishes, under that name and that version', function (string $class): void {
+            $consumes = (new ReflectionClass($class))->getAttributes(Consumes::class)[0]->newInstance();
+            $published = array_map(function (string $contract): string {
+                $declared = (new ReflectionClass($contract))->getAttributes(PublishedAs::class)[0]->newInstance();
+
+                return "{$declared->type} v{$declared->version}";
+            }, classesIn('*/Application/Integration/*.php'));
+
+            expect($published)->toContain("{$consumes->type} v{$consumes->version}");
+        })->with(array_filter(classesIn('*/Infrastructure/Consumed/*.php'), fn (string $class): bool => ! (new ReflectionClass($class))->isAbstract()));
+    });
+
     describe('discovery', function (): void {
         it('finds the contracts of a context, with or without the cache', function (): void {
             $path = sys_get_temp_dir().'/contracts-'.bin2hex(random_bytes(4)).'.php';
@@ -81,6 +101,22 @@ describe('integration contracts', function (): void {
 
             expect($withoutCache)->toEqualCanonicalizing(classesIn('Kitchen/Application/Integration/*.php'))
                 ->and($withCache)->toBe($withoutCache);
+        });
+
+        it('finds the messages a context reads, with or without the cache', function (): void {
+            $path = sys_get_temp_dir().'/consumed-'.bin2hex(random_bytes(4)).'.php';
+            $discovery = new ContextDiscovery($path, config('contexts'));
+            $context = config('contexts.namespace').'\\FrontOfHouse';
+            $withoutCache = $discovery->consumedMessages($context);
+
+            $discovery->cache();
+            $withCache = (new ContextDiscovery($path, config('contexts')))->consumedMessages($context);
+            @unlink($path);
+
+            expect($withoutCache)->toEqualCanonicalizing(array_values(array_filter(
+                classesIn('FrontOfHouse/Infrastructure/Consumed/*.php'),
+                fn (string $class): bool => ! (new ReflectionClass($class))->isAbstract(),
+            )))->and($withCache)->toBe($withoutCache);
         });
     });
 });

@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Processors;
 
 use App\Providers\BoundedContexts\FrontOfHouse\Application\MenuRepository;
-use App\Providers\BoundedContexts\FrontOfHouse\Domain\DishName;
-use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\ConsumedEvents;
+use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Consumed\KitchenDishEightySixed;
+use App\Providers\Modules\EventStore\Application\ConsumedMessages;
 use App\Providers\Modules\EventStore\Domain\CheckpointStore;
 use App\Providers\Modules\EventStore\Domain\EventStore;
 use App\Providers\Modules\SharedKernel\Application\Processor;
@@ -24,6 +24,7 @@ final class MarkMenuItemUnavailableProcessor implements Processor
         private EventStore $events,
         private CheckpointStore $checkpoints,
         private MenuRepository $menus,
+        private ConsumedMessages $messages,
     ) {}
 
     public function hasWork(): bool
@@ -37,11 +38,13 @@ final class MarkMenuItemUnavailableProcessor implements Processor
         $position = $this->checkpoints->get(self::CHECKPOINT);
 
         foreach ($this->events->readAllFrom($position) as $event) {
-            if ($event->type->is(ConsumedEvents::KITCHEN_DISH_EIGHTY_SIXED)) {
+            $message = $this->messages->read($event, self::class);
+
+            if ($message instanceof KitchenDishEightySixed) {
                 $handled++;
                 Correlation::resume($event->correlationId);
                 Causation::resume($event->position);
-                $item = $this->menus->findByName(new DishName((string) $event->payload['dishName']));
+                $item = $this->menus->findByName($message->dishName);
                 $item->markUnavailable();
                 $this->menus->save($item);
             }

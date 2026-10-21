@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Processors;
 
 use App\Providers\BoundedContexts\FrontOfHouse\Application\Command\FreeTable;
-use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableId;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Bus\FrontOfHouseCommandBus;
-use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\ConsumedEvents;
+use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Consumed\BillingBillPaid;
+use App\Providers\Modules\EventStore\Application\ConsumedMessages;
 use App\Providers\Modules\EventStore\Domain\CheckpointStore;
 use App\Providers\Modules\EventStore\Domain\EventStore;
 use App\Providers\Modules\SharedKernel\Application\Processor;
@@ -25,6 +25,7 @@ final class FreeTableProcessor implements Processor
         private EventStore $events,
         private CheckpointStore $checkpoints,
         private FrontOfHouseCommandBus $bus,
+        private ConsumedMessages $messages,
     ) {}
 
     public function hasWork(): bool
@@ -38,11 +39,13 @@ final class FreeTableProcessor implements Processor
         $position = $this->checkpoints->get(self::CHECKPOINT);
 
         foreach ($this->events->readAllFrom($position) as $event) {
-            if ($event->type->is(ConsumedEvents::BILLING_BILL_PAID)) {
+            $message = $this->messages->read($event, self::class);
+
+            if ($message instanceof BillingBillPaid) {
                 $handled++;
                 Correlation::resume($event->correlationId);
                 Causation::resume($event->position);
-                $this->bus->dispatch(new FreeTable(new TableId((string) $event->payload['coverRef'])));
+                $this->bus->dispatch(new FreeTable($message->tableId));
             }
 
             $position = $event->position;

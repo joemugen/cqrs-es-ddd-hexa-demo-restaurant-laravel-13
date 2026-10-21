@@ -5,10 +5,8 @@ declare(strict_types=1);
 namespace App\Providers\BoundedContexts\Billing\Infrastructure\Processors;
 
 use App\Providers\BoundedContexts\Billing\Application\ServedLedger;
-use App\Providers\BoundedContexts\Billing\Domain\CoverRef;
-use App\Providers\BoundedContexts\Billing\Domain\ServedDish;
-use App\Providers\BoundedContexts\Billing\Domain\SourceKey;
-use App\Providers\BoundedContexts\Billing\Infrastructure\ConsumedEvents;
+use App\Providers\BoundedContexts\Billing\Infrastructure\Consumed\FrontOfHouseDishServed;
+use App\Providers\Modules\EventStore\Application\ConsumedMessages;
 use App\Providers\Modules\EventStore\Domain\CheckpointStore;
 use App\Providers\Modules\EventStore\Domain\EventStore;
 use App\Providers\Modules\SharedKernel\Application\Processor;
@@ -26,6 +24,7 @@ final class RecordServedDishes implements Processor
         private EventStore $events,
         private CheckpointStore $checkpoints,
         private ServedLedger $served,
+        private ConsumedMessages $messages,
     ) {}
 
     public function hasWork(): bool
@@ -39,18 +38,13 @@ final class RecordServedDishes implements Processor
         $position = $this->checkpoints->get(self::CHECKPOINT);
 
         foreach ($this->events->readAllFrom($position) as $event) {
-            if ($event->type->is(ConsumedEvents::FRONT_OF_HOUSE_DISH_SERVED)) {
+            $message = $this->messages->read($event, self::class);
+
+            if ($message instanceof FrontOfHouseDishServed) {
                 $handled++;
                 Correlation::resume($event->correlationId);
                 Causation::resume($event->position);
-                $payload = $event->payload;
-                $this->served->record(new CoverRef((string) $payload['tableId']), new ServedDish(
-                    sourceKey: new SourceKey((string) $payload['sourceKey']),
-                    description: (string) $payload['description'],
-                    quantity: (int) $payload['quantity'],
-                    unitPriceCents: (int) $payload['unitPriceCents'],
-                    kind: (string) $payload['kind'],
-                ));
+                $this->served->record($message->coverRef, $message->dish);
             }
 
             $position = $event->position;

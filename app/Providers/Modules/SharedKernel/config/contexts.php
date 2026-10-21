@@ -12,5 +12,6 @@ return [
         'processors' => 'Infrastructure\\Processors',
         'projectors' => 'Infrastructure\\Projection',
         'contracts' => 'Application\\Integration',
+        'consumed' => 'Infrastructure\\Consumed',
     ],
 ];

@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 namespace App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Projection;
 
-use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\ConsumedEvents;
+use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Consumed\KitchenDishReady;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Tables;
+use App\Providers\Modules\EventStore\Application\ConsumedMessages;
 use App\Providers\Modules\EventStore\Domain\CheckpointStore;
 use App\Providers\Modules\EventStore\Domain\EventStore;
 use App\Providers\Modules\SharedKernel\Application\Consumption\RunsOnQueue;
@@ -23,6 +24,7 @@ final class ToServeProjector implements Projector
     public function __construct(
         private EventStore $events,
         private CheckpointStore $checkpoints,
+        private ConsumedMessages $messages,
     ) {}
 
     public function hasWork(): bool
@@ -36,14 +38,16 @@ final class ToServeProjector implements Projector
         $position = $this->checkpoints->get(self::CHECKPOINT);
 
         foreach ($this->events->readAllFrom($position) as $event) {
-            if ($event->type->is(ConsumedEvents::KITCHEN_DISH_READY)) {
+            $message = $this->messages->read($event, self::class);
+
+            if ($message instanceof KitchenDishReady) {
                 DB::table(Tables::TO_SERVE)->insertOrIgnore([
-                    'ticket_id' => $event->payload['tableOrderId'],
-                    'line_id' => $event->payload['lineId'],
-                    'table_id' => $event->payload['tableId'],
-                    'table_label' => $event->payload['tableLabel'],
-                    'dish_name' => $event->payload['dishName'],
-                    'quantity' => $event->payload['quantity'],
+                    'ticket_id' => (string) $message->ticketId,
+                    'line_id' => (string) $message->lineId,
+                    'table_id' => (string) $message->tableId,
+                    'table_label' => (string) $message->tableLabel,
+                    'dish_name' => (string) $message->dishName,
+                    'quantity' => $message->quantity,
                 ]);
                 $applied++;
             }

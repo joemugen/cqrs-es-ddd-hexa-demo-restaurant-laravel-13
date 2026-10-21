@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace App\Providers\Modules\EventStore;
 
 use App\Providers\Modules\EventStore\Application\AfterAppend;
+use App\Providers\Modules\EventStore\Application\ConsumedMessages;
 use App\Providers\Modules\EventStore\Application\ContractPublisher;
 use App\Providers\Modules\EventStore\Application\IntegrationBus;
 use App\Providers\Modules\EventStore\Domain\CheckpointStore;
 use App\Providers\Modules\EventStore\Domain\EventStore;
+use App\Providers\Modules\EventStore\Infrastructure\ConventionConsumedMessages;
 use App\Providers\Modules\EventStore\Infrastructure\ConventionContractPublisher;
 use App\Providers\Modules\EventStore\Infrastructure\DatabaseCheckpointStore;
 use App\Providers\Modules\EventStore\Infrastructure\DatabaseConsumerLag;
@@ -30,6 +32,7 @@ final class EventStoreServiceProvider extends ServiceProvider
         $this->app->singleton(ConsumerLag::class, DatabaseConsumerLag::class);
         $this->app->singleton(IntegrationBus::class, DatabaseIntegrationBus::class);
         $this->app->singleton(ContractPublisher::class, ConventionContractPublisher::class);
+        $this->app->singleton(ConsumedMessages::class, ConventionConsumedMessages::class);
     }
 
     public function boot(): void

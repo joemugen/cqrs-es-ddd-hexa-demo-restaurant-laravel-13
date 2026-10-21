@@ -9,6 +9,8 @@ namespace App\Providers\BoundedContexts\FrontOfHouse\Infrastructure;
  */
 final class ConsumedEvents
 {
+    public const FRONT_OF_HOUSE_TABLE_ORDER_PLACED = 'front_of_house.table_order_placed';
+
     public const KITCHEN_DISH_READY = 'kitchen.dish_ready';
 
     public const KITCHEN_DISH_EIGHTY_SIXED = 'kitchen.dish_eighty_sixed';

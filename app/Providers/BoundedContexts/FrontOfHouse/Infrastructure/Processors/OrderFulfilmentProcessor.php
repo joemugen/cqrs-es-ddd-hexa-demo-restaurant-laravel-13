@@ -8,12 +8,13 @@ use App\Providers\BoundedContexts\FrontOfHouse\Application\Command\BeginOrderFul
 use App\Providers\BoundedContexts\FrontOfHouse\Application\Command\CloseOrdersOfPaidTable;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\Command\ConfirmOrder;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\Command\MarkOrderAwaitingRevision;
-use App\Providers\BoundedContexts\FrontOfHouse\Domain\FrontOfHouseEvent;
-use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableId;
-use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableOrderId;
-use App\Providers\BoundedContexts\FrontOfHouse\Domain\UnavailableLine;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Bus\FrontOfHouseCommandBus;
-use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\ConsumedEvents;
+use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Consumed\BillingBillPaid;
+use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Consumed\FrontOfHouseTableOrderPlaced;
+use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Consumed\KitchenDishesAdded;
+use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Consumed\KitchenLinesUnavailable;
+use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Consumed\KitchenTicketOpened;
+use App\Providers\Modules\EventStore\Application\ConsumedMessages;
 use App\Providers\Modules\EventStore\Domain\CheckpointStore;
 use App\Providers\Modules\EventStore\Domain\EventStore;
 use App\Providers\Modules\EventStore\Domain\StoredEvent;
@@ -34,6 +35,7 @@ final class OrderFulfilmentProcessor implements Processor
         private EventStore $events,
         private CheckpointStore $checkpoints,
         private FrontOfHouseCommandBus $bus,
+        private ConsumedMessages $messages,
     ) {}
 
     public function hasWork(): bool
@@ -61,25 +63,14 @@ final class OrderFulfilmentProcessor implements Processor
 
     private function react(StoredEvent $event): bool
     {
+        $message = $this->messages->read($event, self::class);
+
         $command = match (true) {
-            $event->type->is(FrontOfHouseEvent::TABLE_ORDER_PLACED) => new BeginOrderFulfilment(
-                new TableOrderId((string) $event->payload['tableOrderId']),
-                new TableId((string) $event->payload['tableId']),
-                $event->position,
-            ),
-            $event->type->is(ConsumedEvents::KITCHEN_TICKET_OPENED),
-            $event->type->is(ConsumedEvents::KITCHEN_DISHES_ADDED) => new ConfirmOrder(
-                new TableOrderId((string) $event->payload['tableOrderId']),
-            ),
-            $event->type->is(ConsumedEvents::KITCHEN_LINES_UNAVAILABLE) => new MarkOrderAwaitingRevision(
-                new TableOrderId((string) $event->payload['tableOrderId']),
-                array_map(UnavailableLine::fromPayload(...), $event->payload['lines']),
-                (int) $event->payload['orderPosition'],
-            ),
-            $event->type->is(ConsumedEvents::BILLING_BILL_PAID) => new CloseOrdersOfPaidTable(
-                new TableId((string) $event->payload['coverRef']),
-                $event->position,
-            ),
+            $message instanceof FrontOfHouseTableOrderPlaced => new BeginOrderFulfilment($message->tableOrderId, $message->tableId, $event->position),
+            $message instanceof KitchenTicketOpened,
+            $message instanceof KitchenDishesAdded => new ConfirmOrder($message->tableOrderId),
+            $message instanceof KitchenLinesUnavailable => new MarkOrderAwaitingRevision($message->tableOrderId, $message->lines, $message->orderPosition),
+            $message instanceof BillingBillPaid => new CloseOrdersOfPaidTable($message->tableId, $event->position),
             default => null,
         };
 
