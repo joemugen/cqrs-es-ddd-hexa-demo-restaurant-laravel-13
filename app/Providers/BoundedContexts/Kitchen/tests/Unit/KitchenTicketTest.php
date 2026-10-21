@@ -8,7 +8,7 @@ use App\Providers\BoundedContexts\Kitchen\Domain\LineId;
 use App\Providers\BoundedContexts\Kitchen\Domain\PartyRef;
 use App\Providers\BoundedContexts\Kitchen\Domain\TableLabel;
 use App\Providers\BoundedContexts\Kitchen\Domain\TicketLine;
-use App\Providers\Modules\SharedKernel\Domain\DomainEvent;
+use App\Providers\Modules\SharedKernel\Domain\RecordedEvent;
 
 function openTicket(): KitchenTicket
 {
@@ -30,7 +30,7 @@ describe('KitchenTicket', function () {
         $ticket->markReady(new LineId('steak'));
 
         expect($ticket->isComplete())->toBeTrue()
-            ->and(array_map(fn (DomainEvent $event): string => (string) $event->type, iterator_to_array($ticket->pendingEvents())))->toBe([
+            ->and(array_map(fn (RecordedEvent $event): string => (string) $event->type, iterator_to_array($ticket->pendingEvents())))->toBe([
                 'ticket.opened',
                 'ticket.dish_fired',
                 'ticket.dish_ready',
@@ -71,7 +71,7 @@ describe('KitchenTicket', function () {
             $ticket->addDishes(replacementDishes());
             $ticket->fireCourse('main');
 
-            expect(array_map(fn (DomainEvent $event): string => (string) $event->type, iterator_to_array($ticket->pendingEvents())))->toBe([
+            expect(array_map(fn (RecordedEvent $event): string => (string) $event->type, iterator_to_array($ticket->pendingEvents())))->toBe([
                 'ticket.opened',
                 'ticket.dishes_added',
                 'ticket.dish_fired',

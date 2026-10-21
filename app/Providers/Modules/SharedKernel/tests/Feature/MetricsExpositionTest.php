@@ -6,8 +6,8 @@ use App\Providers\Modules\EventStore\Domain\EventStore;
 use App\Providers\Modules\SharedKernel\Application\Metrics\Label;
 use App\Providers\Modules\SharedKernel\Application\Metrics\Metric;
 use App\Providers\Modules\SharedKernel\Application\Metrics\MetricsRecorder;
-use App\Providers\Modules\SharedKernel\Domain\DomainEvent;
-use App\Providers\Modules\SharedKernel\Domain\DomainEvents;
+use App\Providers\Modules\SharedKernel\Domain\RecordedEvent;
+use App\Providers\Modules\SharedKernel\Domain\RecordedEvents;
 use App\Providers\Modules\SharedKernel\Domain\StreamId;
 use App\Providers\Modules\SharedKernel\Infrastructure\Metrics\MetricsReport;
 
@@ -33,7 +33,7 @@ describe('metrics exposition', function (): void {
     });
 
     it('adds the lag of each checkpoint, read when asked', function (): void {
-        app(EventStore::class)->append(new StreamId('lag-1'), 0, DomainEvents::of(DomainEvent::now('tests.lag', [])));
+        app(EventStore::class)->append(new StreamId('lag-1'), 0, RecordedEvents::of(RecordedEvent::now('tests.lag', [])));
         app(CheckpointStore::class)->put('kitchen.open-ticket', 0);
 
         $lag = collect(app(MetricsReport::class)->samples())->first(fn ($sample): bool => $sample->labels === [Label::CHECKPOINT => 'kitchen.open-ticket']);
@@ -72,7 +72,7 @@ describe('metrics of a real service', function (): void {
         config(['consumption.mode' => 'worker']);
         $this->seed(FrontOfHouseSeeder::class);
         $this->postJson('/api/front-of-house/tables/table-4/guests', ['guestCount' => 2])->assertOk();
-        app(EventStore::class)->append(new StreamId('noise-1'), 0, DomainEvents::of(DomainEvent::now('tests.noise', [])));
+        app(EventStore::class)->append(new StreamId('noise-1'), 0, RecordedEvents::of(RecordedEvent::now('tests.noise', [])));
 
         $this->artisan('kitchen:consume --stop-when-empty')->assertSuccessful();
 

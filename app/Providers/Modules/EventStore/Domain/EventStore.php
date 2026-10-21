@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Providers\Modules\EventStore\Domain;
 
-use App\Providers\Modules\SharedKernel\Domain\DomainEvents;
+use App\Providers\Modules\SharedKernel\Domain\RecordedEvents;
 use App\Providers\Modules\SharedKernel\Domain\StreamId;
 
 interface EventStore
@@ -16,7 +16,7 @@ interface EventStore
      *
      * @return int the position in the log of the last fact written, 0 when there was none
      */
-    public function append(StreamId $streamId, int $expectedVersion, DomainEvents $events): int;
+    public function append(StreamId $streamId, int $expectedVersion, RecordedEvents $events): int;
 
     /**
      * Whether any event sits past $position. A read that does not load the events.

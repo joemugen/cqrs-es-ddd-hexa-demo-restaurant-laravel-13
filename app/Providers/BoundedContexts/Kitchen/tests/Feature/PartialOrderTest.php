@@ -5,8 +5,8 @@ use App\Providers\BoundedContexts\Kitchen\Infrastructure\KitchenSeeder;
 use App\Providers\Modules\EventStore\Domain\CheckpointStore;
 use App\Providers\Modules\EventStore\Domain\EventStore;
 use App\Providers\Modules\EventStore\Domain\StoredEvent;
-use App\Providers\Modules\SharedKernel\Domain\DomainEvent;
-use App\Providers\Modules\SharedKernel\Domain\DomainEvents;
+use App\Providers\Modules\SharedKernel\Domain\RecordedEvent;
+use App\Providers\Modules\SharedKernel\Domain\RecordedEvents;
 use App\Providers\Modules\SharedKernel\Domain\StreamId;
 
 /**
@@ -33,7 +33,7 @@ function reviseOrderWith(string $tableOrderId, string $menuItemName, string $lin
     return app(EventStore::class)->append(
         new StreamId('integration-'.bin2hex(random_bytes(4))),
         0,
-        DomainEvents::of(DomainEvent::now('front_of_house.table_order_revised', [
+        RecordedEvents::of(RecordedEvent::now('front_of_house.table_order_revised', [
             'tableOrderId' => $tableOrderId,
             'tableId' => 'table-4',
             'tableLabel' => 'Window 4',

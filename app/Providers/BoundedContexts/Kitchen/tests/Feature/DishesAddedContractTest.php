@@ -12,8 +12,8 @@ use App\Providers\BoundedContexts\Kitchen\Infrastructure\Bus\KitchenCommandBus;
 use App\Providers\BoundedContexts\Kitchen\Infrastructure\KitchenSeeder;
 use App\Providers\Modules\EventStore\Domain\EventStore;
 use App\Providers\Modules\EventStore\Domain\StoredEvent;
-use App\Providers\Modules\SharedKernel\Domain\DomainEvent;
-use App\Providers\Modules\SharedKernel\Domain\DomainEvents;
+use App\Providers\Modules\SharedKernel\Domain\RecordedEvent;
+use App\Providers\Modules\SharedKernel\Domain\RecordedEvents;
 use App\Providers\Modules\SharedKernel\Domain\StreamId;
 use Illuminate\Support\Facades\DB;
 
@@ -105,7 +105,7 @@ describe('the envelope of the event store', function () {
         app(EventStore::class)->append(
             new StreamId('integration-test'),
             0,
-            DomainEvents::of(DomainEvent::now('kitchen.something', ['a' => 1], 2)),
+            RecordedEvents::of(RecordedEvent::now('kitchen.something', ['a' => 1], 2)),
         );
 
         expect(DB::table('events')->where('stream_id', 'integration-test')->value('contract_version'))->toBe(2)

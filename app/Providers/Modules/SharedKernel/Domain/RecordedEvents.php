@@ -12,21 +12,21 @@ use Traversable;
 /**
  * An ordered, immutable run of facts: the history of an aggregate or what it has yet to commit.
  *
- * @implements IteratorAggregate<int, DomainEvent>
+ * @implements IteratorAggregate<int, RecordedEvent>
  */
-final readonly class DomainEvents implements Countable, IteratorAggregate
+final readonly class RecordedEvents implements Countable, IteratorAggregate
 {
     /**
-     * @param  list<DomainEvent>  $events
+     * @param  list<RecordedEvent>  $events
      */
     public function __construct(private array $events = []) {}
 
-    public static function of(DomainEvent ...$events): self
+    public static function of(RecordedEvent ...$events): self
     {
         return new self(array_values($events));
     }
 
-    public function with(DomainEvent $event): self
+    public function with(RecordedEvent $event): self
     {
         return new self([...$this->events, $event]);
     }
@@ -42,7 +42,7 @@ final readonly class DomainEvents implements Countable, IteratorAggregate
     }
 
     /**
-     * @return Traversable<int, DomainEvent>
+     * @return Traversable<int, RecordedEvent>
      */
     public function getIterator(): Traversable
     {

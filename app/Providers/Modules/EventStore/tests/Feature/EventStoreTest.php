@@ -7,14 +7,14 @@ use App\Providers\Modules\EventStore\Domain\IntegrationEvent;
 use App\Providers\Modules\EventStore\Domain\OptimisticConcurrencyException;
 use App\Providers\Modules\SharedKernel\Application\Publication\IntegrationContract;
 use App\Providers\Modules\SharedKernel\Application\Publication\PublishedAs;
-use App\Providers\Modules\SharedKernel\Domain\DomainEvent;
-use App\Providers\Modules\SharedKernel\Domain\DomainEvents;
 use App\Providers\Modules\SharedKernel\Domain\EventType;
+use App\Providers\Modules\SharedKernel\Domain\RecordedEvent;
+use App\Providers\Modules\SharedKernel\Domain\RecordedEvents;
 use App\Providers\Modules\SharedKernel\Domain\StreamId;
 
-function eventStoreMessage(string $type, array $payload = []): DomainEvent
+function eventStoreMessage(string $type, array $payload = []): RecordedEvent
 {
-    return DomainEvent::now($type, $payload);
+    return RecordedEvent::now($type, $payload);
 }
 
 /**
@@ -42,10 +42,10 @@ describe('the event store', function () {
     test('a stream is appended and read back in version order', function () {
         $store = app(EventStore::class);
 
-        $store->append(new StreamId('kitchen-ticket-1'), 0, DomainEvents::of(
+        $store->append(new StreamId('kitchen-ticket-1'), 0, RecordedEvents::of(
             eventStoreMessage('tests.opened', ['ticketId' => '1']),
         ));
-        $store->append(new StreamId('kitchen-ticket-1'), 1, DomainEvents::of(
+        $store->append(new StreamId('kitchen-ticket-1'), 1, RecordedEvents::of(
             eventStoreMessage('tests.fired', ['lineId' => 'salad']),
             eventStoreMessage('tests.ready', ['lineId' => 'salad']),
         ));
@@ -63,8 +63,8 @@ describe('the event store', function () {
 
     test('reading from a global position returns only later events', function () {
         $store = app(EventStore::class);
-        $store->append(new StreamId('stream-a'), 0, DomainEvents::of(eventStoreMessage('one')));
-        $store->append(new StreamId('stream-b'), 0, DomainEvents::of(eventStoreMessage('two')));
+        $store->append(new StreamId('stream-a'), 0, RecordedEvents::of(eventStoreMessage('one')));
+        $store->append(new StreamId('stream-b'), 0, RecordedEvents::of(eventStoreMessage('two')));
 
         $first = $store->readAllFrom(0);
         $rest = $store->readAllFrom($first[0]->position);
@@ -76,12 +76,12 @@ describe('the event store', function () {
 
     test('append refuses a stale expected version', function () {
         $store = app(EventStore::class);
-        $store->append(new StreamId('kitchen-ticket-1'), 0, DomainEvents::of(eventStoreMessage('tests.opened')));
+        $store->append(new StreamId('kitchen-ticket-1'), 0, RecordedEvents::of(eventStoreMessage('tests.opened')));
 
-        expect(fn () => $store->append(new StreamId('kitchen-ticket-1'), 0, DomainEvents::of(eventStoreMessage('tests.fired'))))
+        expect(fn () => $store->append(new StreamId('kitchen-ticket-1'), 0, RecordedEvents::of(eventStoreMessage('tests.fired'))))
             ->toThrow(OptimisticConcurrencyException::class);
 
-        $store->append(new StreamId('kitchen-ticket-1'), 1, DomainEvents::of(eventStoreMessage('tests.fired')));
+        $store->append(new StreamId('kitchen-ticket-1'), 1, RecordedEvents::of(eventStoreMessage('tests.fired')));
 
         expect($store->readStream(new StreamId('kitchen-ticket-1')))->toHaveCount(2);
     });
@@ -119,8 +119,8 @@ describe('the event store', function () {
     test('append and publish return the position of the last fact they wrote', function () {
         $store = app(EventStore::class);
 
-        $first = $store->append(new StreamId('stream-a'), 0, DomainEvents::of(eventStoreMessage('one')));
-        $last = $store->append(new StreamId('stream-b'), 0, DomainEvents::of(eventStoreMessage('two'), eventStoreMessage('three')));
+        $first = $store->append(new StreamId('stream-a'), 0, RecordedEvents::of(eventStoreMessage('one')));
+        $last = $store->append(new StreamId('stream-b'), 0, RecordedEvents::of(eventStoreMessage('two'), eventStoreMessage('three')));
         $published = app(IntegrationBus::class)->publish(pingContract());
 
         $positions = array_map(fn ($event) => $event->position, $store->readAllFrom(0));
@@ -128,6 +128,6 @@ describe('the event store', function () {
         expect($first)->toBe($positions[0])
             ->and($last)->toBe($positions[2])
             ->and($published)->toBe($positions[3])
-            ->and($store->append(new StreamId('stream-c'), 0, new DomainEvents))->toBe(0);
+            ->and($store->append(new StreamId('stream-c'), 0, new RecordedEvents))->toBe(0);
     });
 });

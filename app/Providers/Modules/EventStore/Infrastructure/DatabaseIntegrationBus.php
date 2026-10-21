@@ -9,9 +9,9 @@ use App\Providers\Modules\EventStore\Domain\EventStore;
 use App\Providers\Modules\EventStore\Domain\IntegrationEvent;
 use App\Providers\Modules\SharedKernel\Application\Publication\IntegrationContract;
 use App\Providers\Modules\SharedKernel\Application\Publication\PublishedAs;
-use App\Providers\Modules\SharedKernel\Domain\DomainEvent;
-use App\Providers\Modules\SharedKernel\Domain\DomainEvents;
 use App\Providers\Modules\SharedKernel\Domain\EventType;
+use App\Providers\Modules\SharedKernel\Domain\RecordedEvent;
+use App\Providers\Modules\SharedKernel\Domain\RecordedEvents;
 use App\Providers\Modules\SharedKernel\Domain\StreamId;
 use Closure;
 use ReflectionClass;
@@ -31,7 +31,7 @@ final class DatabaseIntegrationBus implements IntegrationBus
         $position = $this->events->append(
             new StreamId('integration-'.bin2hex(random_bytes(8))),
             0,
-            DomainEvents::of(DomainEvent::now((string) $event->type, $event->payload, $event->version)),
+            RecordedEvents::of(RecordedEvent::now((string) $event->type, $event->payload, $event->version)),
         );
 
         foreach ($this->listeners[(string) $event->type] ?? [] as $listener) {

@@ -8,8 +8,8 @@ use App\Providers\Modules\EventStore\Application\AfterAppend;
 use App\Providers\Modules\EventStore\Domain\EventStore;
 use App\Providers\Modules\EventStore\Domain\OptimisticConcurrencyException;
 use App\Providers\Modules\EventStore\Domain\StoredEvent;
-use App\Providers\Modules\SharedKernel\Domain\DomainEvents;
 use App\Providers\Modules\SharedKernel\Domain\EventType;
+use App\Providers\Modules\SharedKernel\Domain\RecordedEvents;
 use App\Providers\Modules\SharedKernel\Domain\StreamId;
 use App\Providers\Modules\SharedKernel\Infrastructure\Causation;
 use App\Providers\Modules\SharedKernel\Infrastructure\Correlation;
@@ -20,7 +20,7 @@ final class DatabaseEventStore implements EventStore
 {
     public function __construct(private AfterAppend $afterAppend) {}
 
-    public function append(StreamId $streamId, int $expectedVersion, DomainEvents $events): int
+    public function append(StreamId $streamId, int $expectedVersion, RecordedEvents $events): int
     {
         if ($events->isEmpty()) {
             return 0;

@@ -3,14 +3,14 @@
 use App\Providers\Modules\EventStore\Domain\CheckpointStore;
 use App\Providers\Modules\EventStore\Domain\EventStore;
 use App\Providers\Modules\SharedKernel\Application\Metrics\ConsumerLag;
-use App\Providers\Modules\SharedKernel\Domain\DomainEvent;
-use App\Providers\Modules\SharedKernel\Domain\DomainEvents;
+use App\Providers\Modules\SharedKernel\Domain\RecordedEvent;
+use App\Providers\Modules\SharedKernel\Domain\RecordedEvents;
 use App\Providers\Modules\SharedKernel\Domain\StreamId;
 
 function appendLagEvents(int $count): void
 {
     foreach (range(1, $count) as $number) {
-        app(EventStore::class)->append(new StreamId("lag-stream-{$number}"), 0, DomainEvents::of(DomainEvent::now('tests.lag', [])));
+        app(EventStore::class)->append(new StreamId("lag-stream-{$number}"), 0, RecordedEvents::of(RecordedEvent::now('tests.lag', [])));
     }
 }
 

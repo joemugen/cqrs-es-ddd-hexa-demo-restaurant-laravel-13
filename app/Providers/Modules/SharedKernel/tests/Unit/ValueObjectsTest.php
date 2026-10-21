@@ -1,9 +1,9 @@
 <?php
 
-use App\Providers\Modules\SharedKernel\Domain\DomainEvent;
-use App\Providers\Modules\SharedKernel\Domain\DomainEvents;
 use App\Providers\Modules\SharedKernel\Domain\EventType;
 use App\Providers\Modules\SharedKernel\Domain\InvalidValue;
+use App\Providers\Modules\SharedKernel\Domain\RecordedEvent;
+use App\Providers\Modules\SharedKernel\Domain\RecordedEvents;
 use App\Providers\Modules\SharedKernel\Domain\StreamId;
 
 describe('a typed string', function (): void {
@@ -30,8 +30,8 @@ describe('an event type', function (): void {
 
 describe('domain events', function (): void {
     it('are collected without changing the collection they started from', function (): void {
-        $none = new DomainEvents;
-        $one = $none->with(DomainEvent::now('tests.opened', ['id' => '1']));
+        $none = new RecordedEvents;
+        $one = $none->with(RecordedEvent::now('tests.opened', ['id' => '1']));
 
         expect($none)->toHaveCount(0)
             ->and($none->isEmpty())->toBeTrue()

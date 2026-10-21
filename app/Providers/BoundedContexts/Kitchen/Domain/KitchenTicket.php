@@ -10,9 +10,9 @@ use App\Providers\BoundedContexts\Kitchen\Domain\Event\DishReady;
 use App\Providers\BoundedContexts\Kitchen\Domain\Event\TicketCompleted;
 use App\Providers\BoundedContexts\Kitchen\Domain\Event\TicketOpened;
 use App\Providers\Modules\SharedKernel\Domain\AggregateId;
-use App\Providers\Modules\SharedKernel\Domain\DomainEvent;
-use App\Providers\Modules\SharedKernel\Domain\DomainEvents;
 use App\Providers\Modules\SharedKernel\Domain\EventSourcedAggregate;
+use App\Providers\Modules\SharedKernel\Domain\RecordedEvent;
+use App\Providers\Modules\SharedKernel\Domain\RecordedEvents;
 use App\Providers\Modules\SharedKernel\Domain\StreamedDomainEvent;
 use App\Providers\Modules\SharedKernel\Domain\StreamId;
 
@@ -29,7 +29,7 @@ final class KitchenTicket implements EventSourcedAggregate
         TicketCompleted::STORED_AS => TicketCompleted::class,
     ];
 
-    private DomainEvents $pending;
+    private RecordedEvents $pending;
 
     /**
      * @var array<string, array{dishName: string, station: string, cookingMinutes: int, quantity: int, course: string, allergens: list<string>, fired: bool, ready: bool}>
@@ -46,7 +46,7 @@ final class KitchenTicket implements EventSourcedAggregate
         private readonly KitchenTicketId $id,
         private int $version = 0,
     ) {
-        $this->pending = new DomainEvents;
+        $this->pending = new RecordedEvents;
     }
 
     /**
@@ -64,7 +64,7 @@ final class KitchenTicket implements EventSourcedAggregate
         return $ticket;
     }
 
-    public static function fromHistory(AggregateId $id, DomainEvents $history): self
+    public static function fromHistory(AggregateId $id, RecordedEvents $history): self
     {
         assert($id instanceof KitchenTicketId);
 
@@ -177,14 +177,14 @@ final class KitchenTicket implements EventSourcedAggregate
         return $this->version;
     }
 
-    public function pendingEvents(): DomainEvents
+    public function pendingEvents(): RecordedEvents
     {
         return $this->pending;
     }
 
     public function commit(int $version): void
     {
-        $this->pending = new DomainEvents;
+        $this->pending = new RecordedEvents;
         $this->version = $version;
     }
 
@@ -209,7 +209,7 @@ final class KitchenTicket implements EventSourcedAggregate
     private function recordFact(StreamedDomainEvent $fact): void
     {
         $this->when($fact);
-        $this->pending = $this->pending->with(DomainEvent::recording($fact));
+        $this->pending = $this->pending->with(RecordedEvent::recording($fact));
     }
 
     /**

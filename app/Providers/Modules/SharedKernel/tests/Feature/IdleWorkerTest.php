@@ -2,8 +2,8 @@
 
 use App\Providers\Modules\EventStore\Domain\EventStore;
 use App\Providers\Modules\SharedKernel\Application\EventConsumer;
-use App\Providers\Modules\SharedKernel\Domain\DomainEvent;
-use App\Providers\Modules\SharedKernel\Domain\DomainEvents;
+use App\Providers\Modules\SharedKernel\Domain\RecordedEvent;
+use App\Providers\Modules\SharedKernel\Domain\RecordedEvents;
 use App\Providers\Modules\SharedKernel\Domain\StreamId;
 use App\Providers\Modules\SharedKernel\Infrastructure\Eventing\ConsumerWorker;
 use Illuminate\Database\Events\TransactionBeginning;
@@ -36,7 +36,7 @@ function appendIrrelevantEvent(): void
     app(EventStore::class)->append(
         new StreamId('integration-'.bin2hex(random_bytes(4))),
         0,
-        DomainEvents::of(DomainEvent::now('tests.noise', [])),
+        RecordedEvents::of(RecordedEvent::now('tests.noise', [])),
     );
 }
 

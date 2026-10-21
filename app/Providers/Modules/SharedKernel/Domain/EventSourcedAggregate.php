@@ -9,13 +9,13 @@ namespace App\Providers\Modules\SharedKernel\Domain;
  */
 interface EventSourcedAggregate extends AggregateRoot
 {
-    public static function fromHistory(AggregateId $id, DomainEvents $history): self;
+    public static function fromHistory(AggregateId $id, RecordedEvents $history): self;
 
     public function streamId(): StreamId;
 
     public function expectedVersion(): int;
 
-    public function pendingEvents(): DomainEvents;
+    public function pendingEvents(): RecordedEvents;
 
     public function commit(int $version): void;
 }

@@ -11,7 +11,7 @@ use DateTimeZone;
  * A fact as the event store keeps it: a type, a payload of plain data, and when it happened. A contract carries the
  * version it is published as. An aggregate that records a typed fact keeps it too, so it can be translated.
  */
-final readonly class DomainEvent
+final readonly class RecordedEvent
 {
     /**
      * @param  array<string, mixed>  $payload

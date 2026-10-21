@@ -13,8 +13,8 @@ use App\Providers\Modules\EventStore\Domain\EventStore;
 use App\Providers\Modules\EventStore\Domain\OptimisticConcurrencyException;
 use App\Providers\Modules\EventStore\Domain\StoredEvent;
 use App\Providers\Modules\SharedKernel\Domain\ConcurrencyConflict;
-use App\Providers\Modules\SharedKernel\Domain\DomainEvent;
-use App\Providers\Modules\SharedKernel\Domain\DomainEvents;
+use App\Providers\Modules\SharedKernel\Domain\RecordedEvent;
+use App\Providers\Modules\SharedKernel\Domain\RecordedEvents;
 use App\Providers\Modules\SharedKernel\Domain\StreamId;
 use App\Providers\Modules\SharedKernel\Domain\TypedDomainEvent;
 use DateTimeImmutable;
@@ -40,8 +40,8 @@ final class EventStoreKitchenTicketRepository implements KitchenTicketRepository
             throw new KitchenException("Unknown kitchen ticket {$id}.", 404);
         }
 
-        return KitchenTicket::fromHistory($id, new DomainEvents(array_map(
-            fn (StoredEvent $event): DomainEvent => new DomainEvent(
+        return KitchenTicket::fromHistory($id, new RecordedEvents(array_map(
+            fn (StoredEvent $event): RecordedEvent => new RecordedEvent(
                 $event->type,
                 $event->payload,
                 new DateTimeImmutable($event->occurredAt, new DateTimeZone('UTC')),
@@ -73,10 +73,10 @@ final class EventStoreKitchenTicketRepository implements KitchenTicketRepository
     /**
      * @return list<TypedDomainEvent>
      */
-    private function factsOf(DomainEvents $events): array
+    private function factsOf(RecordedEvents $events): array
     {
         return array_values(array_filter(array_map(
-            fn (DomainEvent $event): ?TypedDomainEvent => $event->fact,
+            fn (RecordedEvent $event): ?TypedDomainEvent => $event->fact,
             iterator_to_array($events),
         )));
     }

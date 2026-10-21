@@ -3,8 +3,8 @@
 use App\Providers\Modules\EventStore\Domain\CheckpointStore;
 use App\Providers\Modules\EventStore\Domain\EventStore;
 use App\Providers\Modules\SharedKernel\Application\EventConsumer;
-use App\Providers\Modules\SharedKernel\Domain\DomainEvent;
-use App\Providers\Modules\SharedKernel\Domain\DomainEvents;
+use App\Providers\Modules\SharedKernel\Domain\RecordedEvent;
+use App\Providers\Modules\SharedKernel\Domain\RecordedEvents;
 use App\Providers\Modules\SharedKernel\Domain\StreamId;
 use App\Providers\Modules\SharedKernel\Infrastructure\Eventing\ConsumerWorker;
 use Illuminate\Support\Facades\Exceptions;
@@ -61,7 +61,7 @@ final class RecordingConsumer implements EventConsumer
 function appendOnStreams(array $streams): void
 {
     foreach ($streams as $stream) {
-        app(EventStore::class)->append(new StreamId($stream.'-'.bin2hex(random_bytes(3))), 0, DomainEvents::of(DomainEvent::now('tests.noise', [])));
+        app(EventStore::class)->append(new StreamId($stream.'-'.bin2hex(random_bytes(3))), 0, RecordedEvents::of(RecordedEvent::now('tests.noise', [])));
     }
 }
 
