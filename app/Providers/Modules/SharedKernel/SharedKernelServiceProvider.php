@@ -11,6 +11,7 @@ use App\Providers\Modules\SharedKernel\Infrastructure\Console\CacheContexts;
 use App\Providers\Modules\SharedKernel\Infrastructure\Console\ClearContexts;
 use App\Providers\Modules\SharedKernel\Infrastructure\Console\ShowMetrics;
 use App\Providers\Modules\SharedKernel\Infrastructure\Metrics\DatabaseMetricsRecorder;
+use App\Providers\Modules\SharedKernel\Infrastructure\Metrics\SafeMetricsRecorder;
 use Illuminate\Contracts\Debug\ExceptionHandler;
 use Illuminate\Foundation\Exceptions\Handler;
 use Illuminate\Support\ServiceProvider;
@@ -21,7 +22,7 @@ final class SharedKernelServiceProvider extends ServiceProvider
     {
         $this->mergeConfigFrom(__DIR__.'/config/consumption.php', 'consumption');
 
-        $this->app->singleton(MetricsRecorder::class, DatabaseMetricsRecorder::class);
+        $this->app->singleton(MetricsRecorder::class, fn ($app): MetricsRecorder => new SafeMetricsRecorder($app->make(DatabaseMetricsRecorder::class)));
 
         $this->app->singleton(
             ContextDiscovery::class,

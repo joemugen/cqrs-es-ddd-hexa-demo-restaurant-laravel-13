@@ -5,6 +5,7 @@ use App\Providers\Modules\SharedKernel\Application\Metrics\Metric;
 use App\Providers\Modules\SharedKernel\Application\Metrics\MetricsRecorder;
 use App\Providers\Modules\SharedKernel\Infrastructure\Metrics\DatabaseMetricsRecorder;
 use App\Providers\Modules\SharedKernel\Infrastructure\Metrics\InMemoryMetricsRecorder;
+use App\Providers\Modules\SharedKernel\Infrastructure\Metrics\SafeMetricsRecorder;
 
 describe('a metrics recorder', function (): void {
     $labels = [Label::TYPE => 'PayBill', Label::OUTCOME => 'success'];
@@ -61,7 +62,7 @@ describe('a metrics recorder', function (): void {
         });
     });
 
-    it('is the adapter the application uses', function (): void {
-        expect(app(MetricsRecorder::class))->toBeInstanceOf(DatabaseMetricsRecorder::class);
+    it('is the database adapter, guarded so that a write that fails does not fail the work', function (): void {
+        expect(app(MetricsRecorder::class))->toBeInstanceOf(SafeMetricsRecorder::class);
     });
 });

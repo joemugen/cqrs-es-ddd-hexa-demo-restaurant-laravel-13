@@ -176,7 +176,7 @@ sqlite3 database/database.sqlite "select position, type, causation_id from event
 
 ## Metrics
 
-Both buses count every message by type and outcome (`success`, `refused`, `conflict`, `precondition_failed`, `failure`) with the sum and the slowest duration. `MetricsCommandMiddleware` wraps the retry, so a retried command counts once, as its caller sees it. `ConsumerWorker` does the same per consumer for each pass that had something to read, and counts the events it handled. Lag, the positions a checkpoint has left to read, is computed when you ask, so a stopped worker shows it growing.
+Both buses count every message by type and outcome (`success`, `refused`, `conflict`, `precondition_failed`, `failure`) with the sum and the slowest duration. `MetricsCommandMiddleware` wraps the retry, so a retried command counts once, as its caller sees it. `ConsumerWorker` does the same per consumer for each pass that had something to read, and counts the events it handled. Lag, the positions a checkpoint has left to read, is computed when you ask, so a stopped worker shows it growing. A metric that cannot be written (a locked database) is reported and never fails the message or the worker.
 
 The `MetricsRecorder` port has a database adapter, not a cache one: a single upsert adds the count and the sum and keeps the max atomically, which a cache increment cannot do for the max. Tests bind `InMemoryMetricsRecorder`.
 
