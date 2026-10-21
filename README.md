@@ -11,6 +11,8 @@ One restaurant, used as the example of several posts. Each post isolates one ide
 
 A post that needs its own variation gets its own branch.
 
+The words of the restaurant (86, the pass, a cover...) are defined in [GLOSSARY.md](GLOSSARY.md): the code speaks them.
+
 The metaphor stays the same. The menu is not the kitchen ticket. A guest reads a name, a price, and a list of allergens. The kitchen cooks a dish at a station for a number of minutes, and never sees the price. The till charges what actually left the pass. Same evening, three models, no shared class.
 
 ## Three levels
