@@ -168,6 +168,12 @@ In `sync` mode the process that appended the fact consumes it, one at a time: fi
 - **At least once.** After a failure a consumer may see an event twice, so each one is idempotent.
 - **No order between consumers.** A consumer that needs another to be up to date says so in code, as `PrepareBillProcessor` does for the ledger of served dishes.
 
+## A fact of the domain is not a contract
+
+A ticket records typed facts (`DishesAdded`, a `TypedDomainEvent`) in its own stream, under a name the kitchen owns (`ticket.dishes_added`) and in a format it may change. What the other contexts read is a contract: `DishesAddedV1`, a class of `Application/Integration` that says `#[PublishedAs('kitchen.dishes_added', version: 1)]` and `#[Translates(DishesAdded::class)]`, is built by `from()` and keeps back what the others do not need (stations, cooking times). When the repository saves the ticket, `ContractPublisher` tells each contract in the same transaction. The version sits in the envelope of the event (`events.contract_version`), not in the payload.
+
+A typed fact is `#[Internal]` or translated, and a Pest test fails on one that is neither: whether others will read a fact is decided when it is written. The contracts are discovered by convention and cached by `contexts:cache`. The saga of the dining room reads `kitchen.dishes_added`, never the stream of the ticket. Only `DishesAdded` is typed so far; the other facts of the ticket are still strings.
+
 ## Stale commands
 
 Each ticket on the kitchen screen has a `version`: the number of facts in its stream. A client sends it back as `If-Match` on `fire` and `ready`, and the response carries the new version as an `ETag`. If the ticket moved on, the command is refused with a 412 and nothing changes, so the client reads again and decides again. The header is optional, and a refusal is never replayed by the bus, unlike a write conflict between two writers.
@@ -261,13 +267,14 @@ The kitchen screen catches up after the order's transaction commits, before the 
 | --- | --- |
 | 1. Seat guests and the floor plan | `app/Providers/BoundedContexts/FrontOfHouse/Application/Command/SeatGuestsHandler.php#L27-L35` |
 | 2. Place a table order | `app/Providers/BoundedContexts/FrontOfHouse/Application/Command/PlaceTableOrderHandler.php#L33-L55` |
-| 3. Open a kitchen ticket | `app/Providers/BoundedContexts/Kitchen/Infrastructure/Processors/OpenKitchenTicketProcessor.php#L47-L101`, `app/Providers/BoundedContexts/Kitchen/Domain/KitchenTicket.php#L40-L55` |
-| 4. Fire, ready, kitchen screen | `app/Providers/BoundedContexts/Kitchen/Domain/KitchenTicket.php#L97-L152`, `app/Providers/BoundedContexts/Kitchen/Infrastructure/Projection/KitchenScreenProjector.php#L64-L113` |
+| 3. Open a kitchen ticket | `app/Providers/BoundedContexts/Kitchen/Infrastructure/Processors/OpenKitchenTicketProcessor.php#L47-L101`, `app/Providers/BoundedContexts/Kitchen/Domain/KitchenTicket.php#L42-L57` |
+| 4. Fire, ready, kitchen screen | `app/Providers/BoundedContexts/Kitchen/Domain/KitchenTicket.php#L96-L151`, `app/Providers/BoundedContexts/Kitchen/Infrastructure/Projection/KitchenScreenProjector.php#L65-L114` |
 | 5. Queued pass, then serve | `app/Providers/BoundedContexts/FrontOfHouse/Infrastructure/Projection/ToServeProjector.php#L33-L57`, `app/Providers/BoundedContexts/FrontOfHouse/Infrastructure/Projection/ProjectToServeList.php#L10-L18`, `app/Providers/BoundedContexts/FrontOfHouse/Application/Command/ServeDishHandler.php#L28-L44` |
 | 6. Second order | `tests/Feature/FullServiceTest.php#L53-L68` |
 | 7. 86 the menu | `app/Providers/BoundedContexts/Kitchen/Domain/Dish.php#L29-L36`, `app/Providers/BoundedContexts/Kitchen/Application/Command/DeclareDishEightySixedHandler.php#L26-L37`, `app/Providers/BoundedContexts/FrontOfHouse/Infrastructure/Processors/MarkMenuItemUnavailableProcessor.php#L33-L53` |
 | 8. Bill, pay, free the table | `app/Providers/BoundedContexts/FrontOfHouse/Application/Command/RequestBillHandler.php#L27-L40`, `app/Providers/BoundedContexts/Billing/Infrastructure/Processors/RecordServedDishes.php#L35-L60`, `app/Providers/BoundedContexts/Billing/Application/Command/PrepareBillHandler.php#L27-L49`, `app/Providers/BoundedContexts/Billing/Domain/Bill.php#L44-L67`, `app/Providers/BoundedContexts/Billing/Application/Command/PayBillHandler.php#L26-L40`, `app/Providers/BoundedContexts/FrontOfHouse/Application/Command/FreeTableHandler.php#L27-L35` |
-| 9. Revise a partial order | `app/Providers/BoundedContexts/Kitchen/Infrastructure/Processors/OpenKitchenTicketProcessor.php#L88-L101`, `app/Providers/BoundedContexts/FrontOfHouse/Application/Command/ReviseOrderHandler.php#L39-L66`, `app/Providers/BoundedContexts/FrontOfHouse/Domain/OrderFulfilment.php#L62-L114`, `app/Providers/BoundedContexts/Kitchen/Domain/KitchenTicket.php#L76-L95` |
+| 9. Revise a partial order | `app/Providers/BoundedContexts/Kitchen/Infrastructure/Processors/OpenKitchenTicketProcessor.php#L88-L101`, `app/Providers/BoundedContexts/FrontOfHouse/Application/Command/ReviseOrderHandler.php#L39-L66`, `app/Providers/BoundedContexts/FrontOfHouse/Domain/OrderFulfilment.php#L62-L114`, `app/Providers/BoundedContexts/Kitchen/Domain/KitchenTicket.php#L78-L94` |
+| 10. A fact of the domain, a contract for the others | `app/Providers/BoundedContexts/Kitchen/Domain/Event/DishesAdded.php#L14-L46`, `app/Providers/BoundedContexts/Kitchen/Application/Integration/DishesAddedV1.php#L18-L55`, `app/Providers/Modules/EventStore/Infrastructure/ContractPublisher.php#L33-L46`, `app/Providers/BoundedContexts/Kitchen/Infrastructure/EventStoreKitchenTicketRepository.php#L52-L70` |
 | Level 1 | `SeatGuestsHandler.php#L27-L35` and `FreeTableHandler.php#L27-L35` |
 | Level 2 | `ToServeProjector.php#L33-L57` and `ProjectToServeList.php#L10-L18` |
-| Level 3 | `app/Providers/Modules/EventStore/Infrastructure/DatabaseEventStore.php#L22-L71`, `app/Providers/BoundedContexts/Kitchen/Infrastructure/EventStoreKitchenTicketRepository.php#L48-L65`, `app/Providers/Modules/EventStore/Infrastructure/InProcessAfterAppend.php#L53-L60` |
+| Level 3 | `app/Providers/Modules/EventStore/Infrastructure/DatabaseEventStore.php#L22-L73`, `app/Providers/BoundedContexts/Kitchen/Infrastructure/EventStoreKitchenTicketRepository.php#L52-L70`, `app/Providers/Modules/EventStore/Infrastructure/InProcessAfterAppend.php#L53-L60` |

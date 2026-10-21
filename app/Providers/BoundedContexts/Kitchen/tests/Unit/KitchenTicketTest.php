@@ -73,7 +73,7 @@ describe('KitchenTicket', function () {
 
             expect(array_map(fn (DomainEvent $event): string => (string) $event->type, iterator_to_array($ticket->pendingEvents())))->toBe([
                 'kitchen.ticket_opened',
-                'kitchen.dishes_added',
+                'ticket.dishes_added',
                 'kitchen.dish_fired',
                 'kitchen.dish_fired',
             ]);

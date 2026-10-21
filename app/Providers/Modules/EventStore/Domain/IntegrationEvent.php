@@ -17,6 +17,7 @@ final readonly class IntegrationEvent
     public function __construct(
         public EventType $type,
         public array $payload,
+        public ?int $version = null,
     ) {}
 
     /**

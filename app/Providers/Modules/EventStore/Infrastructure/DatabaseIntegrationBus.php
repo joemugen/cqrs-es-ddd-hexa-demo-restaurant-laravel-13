@@ -25,7 +25,7 @@ final class DatabaseIntegrationBus implements IntegrationBus
         $position = $this->events->append(
             new StreamId('integration-'.bin2hex(random_bytes(8))),
             0,
-            DomainEvents::of(DomainEvent::now((string) $event->type, $event->payload)),
+            DomainEvents::of(DomainEvent::now((string) $event->type, $event->payload, $event->version)),
         );
 
         foreach ($this->listeners[(string) $event->type] ?? [] as $listener) {

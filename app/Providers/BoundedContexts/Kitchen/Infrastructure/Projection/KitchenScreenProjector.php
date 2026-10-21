@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Providers\BoundedContexts\Kitchen\Infrastructure\Projection;
 
+use App\Providers\BoundedContexts\Kitchen\Domain\Event\DishesAdded;
 use App\Providers\BoundedContexts\Kitchen\Domain\KitchenEvent;
 use App\Providers\BoundedContexts\Kitchen\Infrastructure\Tables;
 use App\Providers\Modules\EventStore\Domain\CheckpointStore;
@@ -78,7 +79,7 @@ final class KitchenScreenProjector implements RebuildableProjector
             return true;
         }
 
-        if ($type->is(KitchenEvent::DISHES_ADDED)) {
+        if ($type->is(DishesAdded::STORED_AS)) {
             $this->insertLines((string) $payload['ticketId'], $payload['lines']);
             DB::table(Tables::SCREEN_TICKETS)
                 ->where('ticket_id', $payload['ticketId'])

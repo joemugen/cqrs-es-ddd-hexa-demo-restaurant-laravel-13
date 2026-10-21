@@ -11,6 +11,7 @@ use App\Providers\BoundedContexts\Kitchen\Domain\KitchenTicketId;
 use App\Providers\Modules\EventStore\Domain\EventStore;
 use App\Providers\Modules\EventStore\Domain\OptimisticConcurrencyException;
 use App\Providers\Modules\EventStore\Domain\StoredEvent;
+use App\Providers\Modules\EventStore\Infrastructure\ContractPublisher;
 use App\Providers\Modules\SharedKernel\Domain\ConcurrencyConflict;
 use App\Providers\Modules\SharedKernel\Domain\DomainEvent;
 use App\Providers\Modules\SharedKernel\Domain\DomainEvents;
@@ -20,7 +21,10 @@ use DateTimeZone;
 
 final class EventStoreKitchenTicketRepository implements KitchenTicketRepository
 {
-    public function __construct(private EventStore $events) {}
+    public function __construct(
+        private EventStore $events,
+        private ContractPublisher $contracts,
+    ) {}
 
     public function exists(KitchenTicketId $id): bool
     {
@@ -61,6 +65,7 @@ final class EventStoreKitchenTicketRepository implements KitchenTicketRepository
             throw new ConcurrencyConflict($exception->getMessage());
         }
 
+        $this->contracts->publish($pending);
         $ticket->commit($expected + count($pending));
     }
 

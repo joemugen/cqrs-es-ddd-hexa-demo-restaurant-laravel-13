@@ -50,6 +50,7 @@ final class DatabaseEventStore implements EventStore
                         'occurred_at' => $event->occurredAt->format('Y-m-d H:i:s'),
                         'correlation_id' => Correlation::current(),
                         'causation_id' => Causation::current(),
+                        'contract_version' => $event->contractVersion,
                     ], 'position');
                 } catch (UniqueConstraintViolationException) {
                     throw new OptimisticConcurrencyException(
@@ -120,6 +121,7 @@ final class DatabaseEventStore implements EventStore
             occurredAt: (string) $row->occurred_at,
             correlationId: $row->correlation_id !== null ? (string) $row->correlation_id : null,
             causationId: $row->causation_id !== null ? (string) $row->causation_id : null,
+            contractVersion: $row->contract_version !== null ? (int) $row->contract_version : null,
         );
     }
 }

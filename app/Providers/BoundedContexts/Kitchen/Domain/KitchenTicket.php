@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace App\Providers\BoundedContexts\Kitchen\Domain;
 
+use App\Providers\BoundedContexts\Kitchen\Domain\Event\DishesAdded;
 use App\Providers\Modules\SharedKernel\Domain\AggregateId;
 use App\Providers\Modules\SharedKernel\Domain\DomainEvent;
 use App\Providers\Modules\SharedKernel\Domain\DomainEvents;
 use App\Providers\Modules\SharedKernel\Domain\EventSourcedAggregate;
 use App\Providers\Modules\SharedKernel\Domain\StreamId;
+use App\Providers\Modules\SharedKernel\Domain\TypedDomainEvent;
 
 final class KitchenTicket implements EventSourcedAggregate
 {
@@ -88,10 +90,7 @@ final class KitchenTicket implements EventSourcedAggregate
             return;
         }
 
-        $this->record(KitchenEvent::DISHES_ADDED, [
-            'ticketId' => (string) $this->id,
-            'lines' => array_map(fn (TicketLine $line): array => $line->toPayload(), $new),
-        ]);
+        $this->recordFact(new DishesAdded($this->id, $new));
     }
 
     public function fireCourse(string $course): void
@@ -214,6 +213,12 @@ final class KitchenTicket implements EventSourcedAggregate
         $this->pending = $this->pending->with(DomainEvent::now($type, $payload));
     }
 
+    private function recordFact(TypedDomainEvent $fact): void
+    {
+        $this->apply($fact->storedAs(), $fact->toStored());
+        $this->pending = $this->pending->with(DomainEvent::recording($fact));
+    }
+
     /**
      * @param  array<string, mixed>  $payload
      */
@@ -227,7 +232,7 @@ final class KitchenTicket implements EventSourcedAggregate
             return;
         }
 
-        if ($type === KitchenEvent::DISHES_ADDED) {
+        if ($type === DishesAdded::STORED_AS) {
             $this->waitingFor($payload['lines']);
             $this->completed = false;
 

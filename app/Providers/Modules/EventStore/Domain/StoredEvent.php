@@ -21,5 +21,6 @@ final readonly class StoredEvent
         public string $occurredAt,
         public ?string $correlationId = null,
         public ?string $causationId = null,
+        public ?int $contractVersion = null,
     ) {}
 }

@@ -23,6 +23,22 @@ final readonly class TicketLine
     ) {}
 
     /**
+     * @param  array{lineId: string, dishName: string, station: string, cookingMinutes: int, quantity: int, course: string, allergens: list<string>}  $payload
+     */
+    public static function fromPayload(array $payload): self
+    {
+        return new self(
+            new LineId((string) $payload['lineId']),
+            new DishName((string) $payload['dishName']),
+            (string) $payload['station'],
+            (int) $payload['cookingMinutes'],
+            (int) $payload['quantity'],
+            (string) $payload['course'],
+            array_values($payload['allergens']),
+        );
+    }
+
+    /**
      * @return array{lineId: string, dishName: string, station: string, cookingMinutes: int, quantity: int, course: string, allergens: list<string>}
      */
     public function toPayload(): array

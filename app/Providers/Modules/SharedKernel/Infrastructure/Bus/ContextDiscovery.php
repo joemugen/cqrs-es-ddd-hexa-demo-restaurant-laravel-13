@@ -8,11 +8,13 @@ use App\Providers\Modules\SharedKernel\Application\Bus\Attribute\AsCommandHandle
 use App\Providers\Modules\SharedKernel\Application\Bus\Attribute\AsQueryHandler;
 use App\Providers\Modules\SharedKernel\Application\CommandHandler;
 use App\Providers\Modules\SharedKernel\Application\EventConsumer;
+use App\Providers\Modules\SharedKernel\Application\Publication\IntegrationContract;
 use App\Providers\Modules\SharedKernel\Application\QueryHandler;
 use ReflectionClass;
 
 /**
- * Finds what a context wires by convention: its handlers, so no bus lists them by hand, and its event consumers.
+ * Finds what a context wires by convention: its handlers, so no bus lists them by hand, its event consumers and the
+ * contracts it publishes (in Application/Integration).
  *
  * Command handlers live in Application/Command and query handlers in Infrastructure/Query. A class there is a handler
  * when it implements the contract or carries the attribute, so a handler that forgets one is reported by the HandlerMap
@@ -20,7 +22,7 @@ use ReflectionClass;
  */
 final class ContextDiscovery
 {
-    /** @var array<string, array{commands: list<class-string>, queries: list<class-string>, consumers: list<class-string>}>|null */
+    /** @var array<string, array{commands: list<class-string>, queries: list<class-string>, consumers: list<class-string>, contracts: list<class-string>}>|null */
     private ?array $cached = null;
 
     public function __construct(private readonly string $cachePath) {}
@@ -52,6 +54,16 @@ final class ContextDiscovery
     }
 
     /**
+     * The contracts a context publishes to the others.
+     *
+     * @return list<class-string<IntegrationContract>>
+     */
+    public function contracts(string $contextRoot): array
+    {
+        return $this->cachedContext($contextRoot)['contracts'] ?? $this->scan($contextRoot.'/Application/Integration', IntegrationContract::class);
+    }
+
+    /**
      * Scans every context under $contextsRoot and writes the result to the cache file.
      */
     public function cache(string $contextsRoot): string
@@ -63,6 +75,7 @@ final class ContextDiscovery
                 'commands' => $this->scan($contextRoot.'/Application/Command', CommandHandler::class, AsCommandHandler::class),
                 'queries' => $this->scan($contextRoot.'/Infrastructure/Query', QueryHandler::class, AsQueryHandler::class),
                 'consumers' => $this->scanConsumers($contextRoot),
+                'contracts' => $this->scan($contextRoot.'/Application/Integration', IntegrationContract::class),
             ];
         }
 
@@ -88,7 +101,7 @@ final class ContextDiscovery
     }
 
     /**
-     * @return array{commands: list<class-string>, queries: list<class-string>, consumers: list<class-string>}|null
+     * @return array{commands: list<class-string>, queries: list<class-string>, consumers: list<class-string>, contracts: list<class-string>}|null
      */
     private function cachedContext(string $contextRoot): ?array
     {
