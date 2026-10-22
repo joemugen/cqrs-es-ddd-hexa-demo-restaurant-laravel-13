@@ -3,6 +3,7 @@
 use App\Providers\BoundedContexts\FrontOfHouse\Application\Command\FreeTable;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\FloorPlan;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\TableRepository;
+use App\Providers\BoundedContexts\FrontOfHouse\Domain\FrontOfHouseException;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\Table;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableId;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\VisitId;
@@ -120,6 +121,31 @@ describe('seating guests', function () {
             $first = $this->postJson('/api/front-of-house/tables/table-4/guests', ['guestCount' => 2])->assertOk()->json('visitId');
 
             expect($first)->toBe((string) VisitId::forSeating(new TableId('table-4'), 1));
+        });
+    });
+
+    describe('two seatings that read the same free table', function () {
+        test('cannot both be saved: the database holds one open visit per table, so the second is refused', function () {
+            $tables = app(TableRepository::class);
+            $first = $tables->get(new TableId('table-4'));
+            $second = $tables->get(new TableId('table-4'));
+            $first->seat(2);
+            $second->seat(4);
+            $tables->save($first);
+
+            expect(fn () => $tables->save($second))->toThrow(FrontOfHouseException::class, 'This table already has guests.')
+                ->and(DB::table('foh_visits')->where('table_id', 'table-4')->whereNull('closed_at')->count())->toBe(1)
+                ->and(DB::table(Tables::TABLES)->where('id', 'table-4')->value('guest_count'))->toBe(2);
+        });
+
+        test('leave room for the next guests once the first ones are gone', function () {
+            $visit = $this->postJson('/api/front-of-house/tables/table-4/guests', ['guestCount' => 2])->assertOk()->json('visitId');
+            app(FrontOfHouseCommandBus::class)->dispatch(new FreeTable(new VisitId($visit)));
+
+            $this->postJson('/api/front-of-house/tables/table-4/guests', ['guestCount' => 3])->assertOk();
+
+            expect(DB::table('foh_visits')->where('table_id', 'table-4')->count())->toBe(2)
+                ->and(DB::table('foh_visits')->where('table_id', 'table-4')->whereNull('closed_at')->count())->toBe(1);
         });
     });
 

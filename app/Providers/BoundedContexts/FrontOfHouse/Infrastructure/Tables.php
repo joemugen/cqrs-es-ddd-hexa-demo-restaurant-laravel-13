@@ -15,6 +15,8 @@ final class Tables
 
     public const TABLES = 'foh_tables';
 
+    public const VISITS = 'foh_visits';
+
     public const TABLE_ORDERS = 'foh_table_orders';
 
     public const TABLE_ORDER_LINES = 'foh_table_order_lines';

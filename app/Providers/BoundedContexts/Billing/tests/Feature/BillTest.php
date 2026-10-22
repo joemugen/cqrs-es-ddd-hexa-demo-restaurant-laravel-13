@@ -12,6 +12,8 @@ use App\Providers\BoundedContexts\Billing\Infrastructure\Bus\BillingCommandBus;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\FrontOfHouseSeeder;
 use App\Providers\BoundedContexts\Kitchen\Infrastructure\KitchenSeeder;
 use App\Providers\Modules\EventStore\Domain\EventStore;
+use App\Providers\Modules\SharedKernel\Domain\ExpectedVersion;
+use App\Providers\Modules\SharedKernel\Domain\PreconditionFailed;
 use Illuminate\Support\Facades\DB;
 
 describe('the till', function () {
@@ -266,6 +268,36 @@ function serveOnTheLatestTicket(string $course, string $dishName): void
 
     test()->postJson("/api/front-of-house/to-serve/{$waiting['id']}/serve")->assertOk();
 }
+
+describe('two payments that read the same bill', function () {
+    test('cannot both be saved, whatever the database: the second finds the bill changed, with a 412', function () {
+        $dish = new ServedDish(new SourceKey('order-1:line-1'), 'Green salad', 1, 1100, DishKind::FOOD);
+        $bills = app(BillRepository::class);
+        $bills->save(Bill::prepare(new BillId('bill-1'), new CoverRef('visit-1'), [$dish]));
+        $first = $bills->get(new BillId('bill-1'));
+        $second = $bills->get(new BillId('bill-1'));
+        $first->pay(600, 0, ExpectedVersion::of(1));
+        $second->pay(600, 0, ExpectedVersion::of(1));
+        $bills->save($first);
+
+        expect(fn () => $bills->save($second))->toThrow(PreconditionFailed::class)
+            ->and($bills->get(new BillId('bill-1'))->balanceCents())->toBe(500);
+    });
+
+    test('are still allowed one after the other on the same version of the note: a payment does not change the note', function () {
+        $dish = new ServedDish(new SourceKey('order-1:line-1'), 'Green salad', 1, 1100, DishKind::FOOD);
+        $bills = app(BillRepository::class);
+        $bills->save(Bill::prepare(new BillId('bill-1'), new CoverRef('visit-1'), [$dish]));
+
+        foreach ([600, 500] as $amount) {
+            $bill = $bills->get(new BillId('bill-1'));
+            $bill->pay($amount, 0, ExpectedVersion::of(1));
+            $bills->save($bill);
+        }
+
+        expect($bills->get(new BillId('bill-1'))->isPaid())->toBeTrue();
+    });
+});
 
 describe('the bill of a cover', function () {
     test('is the latest one, whatever its id sorts like', function () {

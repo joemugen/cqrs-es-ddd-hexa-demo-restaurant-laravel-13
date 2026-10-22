@@ -13,6 +13,7 @@ use App\Providers\BoundedContexts\Billing\Domain\CoverRef;
 use App\Providers\BoundedContexts\Billing\Domain\Payment;
 use App\Providers\BoundedContexts\Billing\Domain\ServedDish;
 use App\Providers\BoundedContexts\Billing\Domain\SourceKey;
+use App\Providers\Modules\SharedKernel\Domain\PreconditionFailed;
 use Illuminate\Support\Facades\DB;
 
 final class DatabaseBillRepository implements BillRepository
@@ -30,20 +31,7 @@ final class DatabaseBillRepository implements BillRepository
 
     public function save(Bill $bill): void
     {
-        $isNew = ! DB::table(Tables::BILLS)->where('id', (string) $bill->id())->exists();
-
-        DB::table(Tables::BILLS)->updateOrInsert(['id' => (string) $bill->id()], [
-            'cover_ref' => (string) $bill->coverRef(),
-            'status' => $bill->isPaid() ? BillStatus::PAID : BillStatus::OPEN,
-            'food_gross_cents' => $bill->foodGrossCents(),
-            'alcohol_gross_cents' => $bill->alcoholGrossCents(),
-            'vat_cents' => $bill->vatCents(),
-            'total_cents' => $bill->totalCents(),
-            'balance_cents' => $bill->balanceCents(),
-            'tip_cents' => $bill->tipCents(),
-            'version' => $bill->version(),
-            ...($isNew ? ['sequence' => (int) DB::table(Tables::BILLS)->max('sequence') + 1] : []),
-        ]);
+        $this->write($bill);
 
         DB::table(Tables::BILL_LINES)->where('bill_id', (string) $bill->id())->delete();
 
@@ -67,6 +55,45 @@ final class DatabaseBillRepository implements BillRepository
                 'amount_cents' => $payment->amountCents,
                 'tip_cents' => $payment->tipCents,
             ]);
+        }
+    }
+
+    /**
+     * The bill is written only if nobody wrote it since it was read, with any database: the revisions it had then are its
+     * version for the lock, and a stale writer is refused with a 412.
+     */
+    private function write(Bill $bill): void
+    {
+        $row = [
+            'cover_ref' => (string) $bill->coverRef(),
+            'status' => $bill->isPaid() ? BillStatus::PAID : BillStatus::OPEN,
+            'food_gross_cents' => $bill->foodGrossCents(),
+            'alcohol_gross_cents' => $bill->alcoholGrossCents(),
+            'vat_cents' => $bill->vatCents(),
+            'total_cents' => $bill->totalCents(),
+            'balance_cents' => $bill->balanceCents(),
+            'tip_cents' => $bill->tipCents(),
+            'version' => $bill->version(),
+            'revision' => $bill->revision(),
+        ];
+
+        $written = DB::table(Tables::BILLS)
+            ->where('id', (string) $bill->id())
+            ->where('revision', $bill->revisionWhenLoaded())
+            ->update($row);
+
+        if ($written > 0) {
+            return;
+        }
+
+        if (! DB::table(Tables::BILLS)->where('id', (string) $bill->id())->exists()) {
+            DB::table(Tables::BILLS)->insert(['id' => (string) $bill->id(), 'sequence' => (int) DB::table(Tables::BILLS)->max('sequence') + 1] + $row);
+
+            return;
+        }
+
+        if ((int) DB::table(Tables::BILLS)->where('id', (string) $bill->id())->value('revision') !== $bill->revisionWhenLoaded()) {
+            throw new PreconditionFailed('The bill changed while it was being written: read it again and decide again.');
         }
     }
 
@@ -123,6 +150,7 @@ final class DatabaseBillRepository implements BillRepository
             $payments,
             $row->status === BillStatus::PAID,
             (int) $row->version,
+            (int) $row->revision,
         );
     }
 }

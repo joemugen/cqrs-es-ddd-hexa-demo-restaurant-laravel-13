@@ -12,13 +12,17 @@ final class Table implements AggregateRoot
 {
     use RecordsEvents;
 
+    private readonly int $visitsSeatedWhenLoaded;
+
     private function __construct(
         private readonly TableId $id,
         private readonly TableLabel $label,
         private int $guestCount,
         private ?VisitId $visit,
         private int $visitsSeated,
-    ) {}
+    ) {
+        $this->visitsSeatedWhenLoaded = $visitsSeated;
+    }
 
     public static function restore(TableId $id, TableLabel $label, int $guestCount, ?VisitId $visit = null, int $visitsSeated = 0): self
     {
@@ -75,6 +79,14 @@ final class Table implements AggregateRoot
     public function visit(): ?VisitId
     {
         return $this->visit;
+    }
+
+    /**
+     * Whether guests sat down since the table was read: the save then writes a visit, which the database allows once per table.
+     */
+    public function hasStartedAVisit(): bool
+    {
+        return $this->visitsSeated > $this->visitsSeatedWhenLoaded;
     }
 
     public function visitsSeated(): int

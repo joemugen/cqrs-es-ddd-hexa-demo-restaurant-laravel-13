@@ -10,6 +10,7 @@ use App\Providers\BoundedContexts\FrontOfHouse\Domain\Table;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableId;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableLabel;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\VisitId;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 
 final class DatabaseTableRepository implements TableRepository
@@ -34,11 +35,36 @@ final class DatabaseTableRepository implements TableRepository
 
     public function save(Table $table): void
     {
+        $this->holdTheVisit($table);
+
         DB::table(Tables::TABLES)->where('id', (string) $table->id())->update([
             'guest_count' => $table->guestCount(),
             'visit_id' => $table->visit() === null ? null : (string) $table->visit(),
             'visits_seated' => $table->visitsSeated(),
         ]);
+    }
+
+    /**
+     * The database holds that a table has one open visit: the visit of the guests who sit down is written before the table, and
+     * a second visit on a table that already has one is refused by the partial unique index. The visit that leaves is closed.
+     */
+    private function holdTheVisit(Table $table): void
+    {
+        if ($table->visit() === null) {
+            DB::table(Tables::VISITS)->where('table_id', (string) $table->id())->whereNull('closed_at')->update(['closed_at' => now()]);
+
+            return;
+        }
+
+        if (! $table->hasStartedAVisit()) {
+            return;
+        }
+
+        try {
+            DB::table(Tables::VISITS)->insert(['id' => (string) $table->visit(), 'table_id' => (string) $table->id()]);
+        } catch (UniqueConstraintViolationException) {
+            throw new FrontOfHouseException('This table already has guests.');
+        }
     }
 
     private function table(object $row): Table

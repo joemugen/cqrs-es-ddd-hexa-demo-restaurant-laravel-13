@@ -15,6 +15,8 @@ final class Bill implements AggregateRoot
 {
     use RecordsEvents;
 
+    private readonly int $revisionWhenLoaded;
+
     /**
      * @param  list<ServedDish>  $lines
      * @param  list<Payment>  $payments
@@ -26,7 +28,10 @@ final class Bill implements AggregateRoot
         private array $payments,
         private bool $paid,
         private int $version,
-    ) {}
+        private int $revision,
+    ) {
+        $this->revisionWhenLoaded = $revision;
+    }
 
     /**
      * @param  list<ServedDish>  $lines
@@ -37,16 +42,16 @@ final class Bill implements AggregateRoot
             throw new BillingException('Nothing has been served.');
         }
 
-        return new self($id, $coverRef, array_values($lines), [], false, 1);
+        return new self($id, $coverRef, array_values($lines), [], false, 1, 0);
     }
 
     /**
      * @param  list<ServedDish>  $lines
      * @param  list<Payment>  $payments
      */
-    public static function restore(BillId $id, CoverRef $coverRef, array $lines, array $payments, bool $paid, int $version = 1): self
+    public static function restore(BillId $id, CoverRef $coverRef, array $lines, array $payments, bool $paid, int $version = 1, int $revision = 0): self
     {
-        return new self($id, $coverRef, $lines, $payments, $paid, $version);
+        return new self($id, $coverRef, $lines, $payments, $paid, $version, $revision);
     }
 
     /**
@@ -70,6 +75,7 @@ final class Bill implements AggregateRoot
 
         $this->lines[] = $dish;
         $this->version++;
+        $this->revision++;
     }
 
     /**
@@ -98,6 +104,7 @@ final class Bill implements AggregateRoot
         }
 
         $this->payments[] = new Payment($amountCents, $tipCents);
+        $this->revision++;
 
         if ($this->balanceCents() === 0) {
             $this->paid = true;
@@ -137,6 +144,20 @@ final class Bill implements AggregateRoot
     public function version(): int
     {
         return $this->version;
+    }
+
+    /**
+     * How many times the bill was written, a payment as much as a dish: what a save checks so that two writers who read the same
+     * bill cannot both write it. It is not the version of the note, which a payment does not change.
+     */
+    public function revisionWhenLoaded(): int
+    {
+        return $this->revisionWhenLoaded;
+    }
+
+    public function revision(): int
+    {
+        return $this->revision;
     }
 
     public function isPaid(): bool
