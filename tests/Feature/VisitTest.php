@@ -164,5 +164,19 @@ describe('a dish served late', function () {
         }
 
         expect(theServedDishesOnNoBill())->toBe([]);
-    })->skip('waiting for the business rule of the dish served after the bill was requested');
+    });
+
+    test('is refused when the guests paid and left: nothing is served to a closed visit', function () {
+        cookedFor('table-4', 'green-salad', 'starter');
+        $ready = $this->getJson('/api/front-of-house/to-serve')->json()[0]['id'];
+        $this->postJson("/api/front-of-house/to-serve/{$ready}/serve")->assertOk();
+        cookedFor('table-4', 'creme-brulee', 'dessert');
+        $dessert = collect($this->getJson('/api/front-of-house/to-serve')->json())->firstWhere('dishName', 'Creme brulee')['id'];
+        $this->postJson('/api/front-of-house/tables/table-4/bill')->assertOk();
+        theGuestsPayTheirBill($this->visit);
+
+        $this->postJson("/api/front-of-house/to-serve/{$dessert}/serve")
+            ->assertStatus(409)
+            ->assertJson(['message' => 'The guests of this visit already paid and left: nothing is served to them.']);
+    });
 });

@@ -23,10 +23,14 @@ final class DishAtThePass implements AggregateRoot
     ) {}
 
     /**
-     * The guests are billed what they ordered at: the price and the kind come from their line, not from the menu of the moment.
+     * Only the guests who are still there are served. The guests are billed what they ordered at: the price and the kind come from their line, not from the menu of the moment.
      */
-    public function serve(OrderLine $line, VisitId $visit): void
+    public function serve(OrderLine $line, Table $table, VisitId $visit): void
     {
+        if (! $table->isHosting($visit)) {
+            throw new VisitIsClosed;
+        }
+
         if ($this->served) {
             throw new FrontOfHouseException('That dish has already left the pass.');
         }

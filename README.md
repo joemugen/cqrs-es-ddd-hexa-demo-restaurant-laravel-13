@@ -50,7 +50,7 @@ Prices on the bill are tax-inclusive. Food eaten in is 10% (`gross * 10 / 110`) 
 2. `PlaceTableOrder` publishes `TableOrderPlaced`. The payload has no price.
 3. A processor opens a `KitchenTicket` in the event store (version checked on every save).
 4. The kitchen fires a course and marks a dish ready. The kitchen screen is a projection of that stream.
-5. A processor puts each ready dish at the pass, the write model where the room decides what was served, and a queued projector keeps a "to serve" list of it. `ServeDish` decides on the pass, never on the list, and publishes `DishServed`.
+5. A processor puts each ready dish at the pass, the write model where the room decides what was served, and a queued projector keeps a "to serve" list of it. `ServeDish` decides on the pass, never on the list, and publishes `DishServed`. It refuses (409) to serve guests whose visit is closed: the payment closes it.
 6. A second order on the same table (the desserts) opens a second ticket.
 7. The kitchen declares the steak 86. The menu marks that item unavailable. A new order is refused. The steak already on a ticket can still be cooked.
 8. `RequestBill` asks the till to prepare a `Bill` from served dishes only. `PayBill` may be split, and a tip does not reduce the balance. A paid bill is immutable. `BillPaid` frees the table, and the floor plan moves with it.
