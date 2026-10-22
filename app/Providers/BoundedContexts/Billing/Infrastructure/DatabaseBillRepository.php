@@ -41,6 +41,7 @@ final class DatabaseBillRepository implements BillRepository
             'total_cents' => $bill->totalCents(),
             'balance_cents' => $bill->balanceCents(),
             'tip_cents' => $bill->tipCents(),
+            'version' => $bill->version(),
             ...($isNew ? ['sequence' => (int) DB::table(Tables::BILLS)->max('sequence') + 1] : []),
         ]);
 
@@ -110,6 +111,7 @@ final class DatabaseBillRepository implements BillRepository
             $lines,
             $payments,
             $row->status === BillStatus::PAID,
+            (int) $row->version,
         );
     }
 }

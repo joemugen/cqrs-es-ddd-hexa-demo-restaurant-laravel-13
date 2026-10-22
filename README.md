@@ -40,7 +40,7 @@ They never call each other, and they do not share a class for the same concept. 
 
 The contexts find a dish of another by its **name**, which is unique in the menu and in the kitchen: on a short menu the name of a dish is its business key (a long menu would carry a code). A line of an order keeps the price of the menu at the time of the order, and that is the price the till charges.
 
-What the guests ordered, were served and owe belongs to their **visit**, never to the table: a table sees several in an evening. The till knows a visit as a cover, and a bill counts what was served before the request for it, by log position, so a dish served later, or to the next guests, is not on it.
+What the guests ordered, were served and owe belongs to their **visit**, never to the table: a table sees several in an evening. The till knows a visit as a cover, and a bill counts what was served to that visit, and asking for it freezes nothing: a dish served afterwards goes on the bill that is still open, which moves to its next version, as the guests see their note grow. The next guests are another visit, so another bill.
 
 Prices on the bill are tax-inclusive. Food eaten in is 10% (`gross * 10 / 110`) and alcohol is 20% (`gross * 20 / 120`).
 

@@ -64,6 +64,26 @@ describe('the till', function () {
             ->and($bill['alcoholGrossCents'])->toBe(0);
     });
 
+    test('asking for the bill freezes nothing: a dish served after the request goes on the open bill, which moves to version 2', function () {
+        $this->visit = $this->postJson('/api/front-of-house/tables/table-4/guests', ['guestCount' => 2])->assertOk()->json('visitId');
+        $this->postJson('/api/front-of-house/tables/table-4/orders', ['lines' => [['menuItemId' => 'green-salad', 'quantity' => 1, 'course' => 'starter']]])->assertOk();
+        serveOnTheLatestTicket('starter', 'Green salad');
+        $this->postJson('/api/front-of-house/tables/table-4/bill')->assertOk();
+        $before = $this->getJson("/api/billing/covers/{$this->visit}/bill")->assertOk()->json();
+
+        $this->postJson('/api/front-of-house/tables/table-4/orders', ['lines' => [['menuItemId' => 'creme-brulee', 'quantity' => 1, 'course' => 'dessert']]])->assertOk();
+        serveOnTheLatestTicket('dessert', 'Creme brulee');
+        $after = $this->getJson("/api/billing/covers/{$this->visit}/bill")->assertOk()->json();
+
+        expect($before['version'])->toBe(1)
+            ->and($after['billId'])->toBe($before['billId'])
+            ->and($after['version'])->toBe(2)
+            ->and($after['status'])->toBe('open')
+            ->and(array_column($after['lines'], 'description'))->toBe(['Green salad', 'Creme brulee'])
+            ->and($after['totalCents'])->toBe(2200)
+            ->and($after['balanceCents'])->toBe(2200);
+    });
+
     test('a split payment keeps the table until the balance is gone, then the bill is immutable', function () {
         $this->visit = $this->postJson('/api/front-of-house/tables/table-4/guests', ['guestCount' => 2])->assertOk()->json('visitId');
         $this->postJson('/api/front-of-house/tables/table-4/orders', [

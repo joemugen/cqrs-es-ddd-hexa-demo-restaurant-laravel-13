@@ -19,9 +19,10 @@ final class Bill implements AggregateRoot
     private function __construct(
         private readonly BillId $id,
         private readonly CoverRef $coverRef,
-        private readonly array $lines,
+        private array $lines,
         private array $payments,
         private bool $paid,
+        private int $version,
     ) {}
 
     /**
@@ -33,16 +34,36 @@ final class Bill implements AggregateRoot
             throw new BillingException('Nothing has been served.');
         }
 
-        return new self($id, $coverRef, array_values($lines), [], false);
+        return new self($id, $coverRef, array_values($lines), [], false, 1);
     }
 
     /**
      * @param  list<ServedDish>  $lines
      * @param  list<Payment>  $payments
      */
-    public static function restore(BillId $id, CoverRef $coverRef, array $lines, array $payments, bool $paid): self
+    public static function restore(BillId $id, CoverRef $coverRef, array $lines, array $payments, bool $paid, int $version = 1): self
     {
-        return new self($id, $coverRef, $lines, $payments, $paid);
+        return new self($id, $coverRef, $lines, $payments, $paid, $version);
+    }
+
+    /**
+     * Asking for the bill freezes nothing: a dish served afterwards goes on the bill that is still open, which moves to its
+     * next version. A dish told twice is on the bill once.
+     */
+    public function receive(ServedDish $dish): void
+    {
+        if ($this->paid) {
+            throw new BillingException('A paid bill cannot be changed.');
+        }
+
+        foreach ($this->lines as $line) {
+            if ($line->sourceKey->equals($dish->sourceKey)) {
+                return;
+            }
+        }
+
+        $this->lines[] = $dish;
+        $this->version++;
     }
 
     public function pay(int $amountCents, int $tipCents): void
@@ -95,6 +116,14 @@ final class Bill implements AggregateRoot
     public function payments(): array
     {
         return $this->payments;
+    }
+
+    /**
+     * Which note the guests saw: it grows each time a dish is added to the lines.
+     */
+    public function version(): int
+    {
+        return $this->version;
     }
 
     public function isPaid(): bool

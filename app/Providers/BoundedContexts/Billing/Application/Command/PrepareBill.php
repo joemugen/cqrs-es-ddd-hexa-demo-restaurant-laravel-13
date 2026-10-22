@@ -13,6 +13,5 @@ final readonly class PrepareBill implements Command
     public function __construct(
         public BillId $billId,
         public CoverRef $coverRef,
-        public int $requestPosition,
     ) {}
 }

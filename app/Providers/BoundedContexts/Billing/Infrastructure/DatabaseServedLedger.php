@@ -26,12 +26,12 @@ final class DatabaseServedLedger implements ServedLedger
         ]);
     }
 
-    public function unbilled(CoverRef $coverRef, int $upToPosition): array
+    public function unbilled(CoverRef $coverRef): array
     {
         return DB::table(Tables::SERVED_ITEMS)
             ->where('cover_ref', (string) $coverRef)
             ->whereNull('bill_id')
-            ->where('position', '<=', $upToPosition)
+            ->orderBy('position')
             ->orderBy('source_key')
             ->get()
             ->map(fn (object $row): ServedDish => new ServedDish(

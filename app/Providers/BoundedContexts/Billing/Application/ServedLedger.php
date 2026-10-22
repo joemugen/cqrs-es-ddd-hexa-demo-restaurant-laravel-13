@@ -17,11 +17,11 @@ interface ServedLedger
     public function record(CoverRef $coverRef, ServedDish $dish, int $position): void;
 
     /**
-     * What was served to a cover and is not on a bill, up to the position of the request of this one.
+     * What was served to a cover and is not on a bill.
      *
      * @return list<ServedDish>
      */
-    public function unbilled(CoverRef $coverRef, int $upToPosition): array;
+    public function unbilled(CoverRef $coverRef): array;
 
     /**
      * @param  list<SourceKey>  $sourceKeys

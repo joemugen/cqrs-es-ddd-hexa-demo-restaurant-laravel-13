@@ -45,14 +45,14 @@ describe('a visit of a table', function () {
         expect($this->visit)->toBeString()->not->toBe('table-4');
     });
 
-    test('a dessert served after the bill was prepared does not end up on the bill of the next guests', function () {
+    test('a dessert served after the bill was prepared goes on the bill of its own visit, and not on the bill of the next guests', function () {
         cookedFor('table-4', 'green-salad', 'starter');
         everythingAtThePassIsServed();
         $this->postJson('/api/front-of-house/tables/table-4/bill')->assertOk();
-        $first = $this->getJson("/api/billing/covers/{$this->visit}/bill")->json();
 
         cookedFor('table-4', 'creme-brulee', 'dessert');
         everythingAtThePassIsServed();
+        $first = $this->getJson("/api/billing/covers/{$this->visit}/bill")->json();
         $this->postJson("/api/billing/bills/{$first['billId']}/payments", ['amountCents' => $first['balanceCents']])->assertOk();
 
         $next = $this->postJson('/api/front-of-house/tables/table-4/guests', ['guestCount' => 2])->assertOk()->json('visitId');
@@ -61,10 +61,11 @@ describe('a visit of a table', function () {
         $this->postJson('/api/front-of-house/tables/table-4/bill')->assertOk();
 
         expect($next)->not->toBe($this->visit)
+            ->and(theLinesOfTheBillOf($this->visit))->toBe(['Green salad', 'Creme brulee'])
             ->and(theLinesOfTheBillOf($next))->toBe(['House red']);
     });
 
-    test('a dish served after the bill was requested is not on that bill, even when the till is late', function () {
+    test('a dish served after the bill was requested goes on that bill, even when the till prepares it late', function () {
         cookedFor('table-4', 'green-salad', 'starter');
         everythingAtThePassIsServed();
 
@@ -80,7 +81,7 @@ describe('a visit of a table', function () {
 
         catchUp('billing');
 
-        expect(theLinesOfTheBillOf($this->visit))->toBe(['Green salad']);
+        expect(theLinesOfTheBillOf($this->visit))->toBe(['Green salad', 'Creme brulee']);
     });
 
     test('the payment of the previous guests does not free the table of the next ones, even when the dining room hears it again', function () {

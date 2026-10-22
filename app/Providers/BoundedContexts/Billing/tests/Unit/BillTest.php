@@ -78,6 +78,30 @@ describe('Bill', function () {
             ->toThrow(BillingException::class, 'A paid bill cannot be changed.');
     });
 
+    describe('when a dish is served after it was prepared', function () {
+        test('starts at version 1, and takes the dish as a line: the bill moves to its next version', function () {
+            $bill = Bill::prepare(new BillId('bill-1'), new CoverRef('table-4'), [servedDish('Green salad', 1100, 1, 'food')]);
+            expect($bill->version())->toBe(1);
+
+            $bill->receive(servedDish('Creme brulee', 1100, 1, 'food'));
+
+            expect($bill->version())->toBe(2)
+                ->and($bill->totalCents())->toBe(2200)
+                ->and($bill->balanceCents())->toBe(2200)
+                ->and($bill->lines())->toHaveCount(2);
+        });
+
+        test('takes a dish told twice once, and stays at the same version', function () {
+            $bill = Bill::prepare(new BillId('bill-1'), new CoverRef('table-4'), [servedDish('Green salad', 1100, 1, 'food')]);
+            $bill->receive(servedDish('Creme brulee', 1100, 1, 'food'));
+
+            $bill->receive(servedDish('Creme brulee', 1100, 1, 'food'));
+
+            expect($bill->version())->toBe(2)
+                ->and($bill->lines())->toHaveCount(2);
+        });
+    });
+
     describe('when paid', function () {
         function aBillOf1100(): Bill
         {
