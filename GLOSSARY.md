@@ -31,8 +31,8 @@ The same word does not always mean the same thing in two contexts, and that is o
 | **Fire** | lancer | Tell the stations to start cooking a whole course of the ticket. | `FireDishes`, `KitchenTicket::fireCourse()` |
 | **Ready** | prêt | A fired dish is cooked and waits at the pass. | `MarkDishReady`, `DishReady` |
 | **Kitchen screen** | écran cuisine | What the cooks see: the tickets and the state of each dish. A reading, rebuilt from the tickets. | `KitchenScreenProjector` |
-| **86** (verb or adjective) | être en rupture, « 86 » | The kitchen has run out of a dish: it is *86*, or the cook *86es* it. See the entry below. | `Dish::eightySix()`, `DishEightySixed` |
-| **Unavailable line** | ligne indisponible | A line of an order that the kitchen cannot cook, because its dish is 86 or unknown. It comes with its reason. | `UnavailableLine`, `LinesUnavailable` |
+| **86** (verb or adjective) | être en rupture, « 86 » | The kitchen has run out of a dish: it is *86*, or the cook *86es* it. See the entry below. | `Dish::eightySix()`, `Dish::isAvailableAt()`, `DishEightySixed` |
+| **Unavailable line** | ligne indisponible | A line of an order that the kitchen cannot cook, because its dish is 86 or unknown. It comes with its reason. The kitchen decides it when it reads the order. | `UnavailableLine`, `LinesUnavailable`, `OrderAssessment` |
 
 ### 86
 

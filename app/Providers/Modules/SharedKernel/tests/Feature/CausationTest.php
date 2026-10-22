@@ -3,7 +3,7 @@
 use App\Providers\BoundedContexts\FrontOfHouse\Application\Command\ConfirmOrder;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\Command\PlaceTableOrder;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\FrontOfHouseSeeder;
-use App\Providers\BoundedContexts\Kitchen\Application\Command\OpenKitchenTicket;
+use App\Providers\BoundedContexts\Kitchen\Application\Command\ReceiveOrder;
 use App\Providers\BoundedContexts\Kitchen\Infrastructure\KitchenSeeder;
 use App\Providers\Modules\EventStore\Domain\EventStore;
 use App\Providers\Modules\EventStore\Domain\StoredEvent;
@@ -71,15 +71,15 @@ describe('the causation id', function (): void {
             }
 
             $placeOrder = theHandledCommand($this->logged, PlaceTableOrder::class);
-            $openTicket = theHandledCommand($this->logged, OpenKitchenTicket::class);
+            $receiveOrder = theHandledCommand($this->logged, ReceiveOrder::class);
             $confirm = theHandledCommand($this->logged, ConfirmOrder::class);
             $placed = theEventOfType('front_of_house.table_order_placed');
             $opened = theEventOfType('kitchen.ticket_opened');
 
             expect($placeOrder['caused_by'])->toBeNull()
                 ->and($placed->causationId)->toBe($placeOrder['command_id'])
-                ->and($openTicket['caused_by'])->toBe((string) $placed->position)
-                ->and($opened->causationId)->toBe($openTicket['command_id'])
+                ->and($receiveOrder['caused_by'])->toBe((string) $placed->position)
+                ->and($opened->causationId)->toBe($receiveOrder['command_id'])
                 ->and($confirm['caused_by'])->toBe((string) $opened->position);
         })->with(['in the request' => 'sync', 'across the workers' => 'worker']);
 

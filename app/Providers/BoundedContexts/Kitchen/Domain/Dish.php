@@ -18,6 +18,7 @@ final class Dish implements AggregateRoot
         private readonly string $station,
         private readonly int $cookingMinutes,
         private bool $inStock,
+        private readonly ?int $eightySixedPosition = null,
     ) {}
 
     public static function restore(
@@ -26,8 +27,9 @@ final class Dish implements AggregateRoot
         string $station,
         int $cookingMinutes,
         bool $inStock,
+        ?int $eightySixedPosition = null,
     ): self {
-        return new self($id, $name, $station, $cookingMinutes, $inStock);
+        return new self($id, $name, $station, $cookingMinutes, $inStock, $eightySixedPosition);
     }
 
     public function eightySix(): void
@@ -38,6 +40,29 @@ final class Dish implements AggregateRoot
 
         $this->inStock = false;
         $this->recordThat(new DishEightySixed($this->id, $this->name));
+    }
+
+    /**
+     * A dish is judged where an order sits in the log: one declared 86 after the order was still available when it was
+     * placed, however late a worker reads it. A dish out of stock with no recorded position predates the position and
+     * counts as 86 for every order.
+     */
+    public function isAvailableAt(int $orderPosition): bool
+    {
+        return $this->inStock || ($this->eightySixedPosition !== null && $this->eightySixedPosition >= $orderPosition);
+    }
+
+    public function ticketLineFor(OrderedLine $line): TicketLine
+    {
+        return new TicketLine(
+            lineId: $line->lineId,
+            dishName: $this->name,
+            station: $this->station,
+            cookingMinutes: $this->cookingMinutes,
+            quantity: $line->quantity,
+            course: $line->course,
+            allergens: array_values($line->allergens),
+        );
     }
 
     public function isInStock(): bool

@@ -1,15 +1,16 @@
 <?php
 
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\FrontOfHouseSeeder;
-use App\Providers\BoundedContexts\Kitchen\Application\Command\AddDishesToTicket;
+use App\Providers\BoundedContexts\Kitchen\Application\Command\ReceiveOrder;
 use App\Providers\BoundedContexts\Kitchen\Domain\DishName;
 use App\Providers\BoundedContexts\Kitchen\Domain\KitchenTicketId;
 use App\Providers\BoundedContexts\Kitchen\Domain\LineId;
+use App\Providers\BoundedContexts\Kitchen\Domain\OrderedLine;
 use App\Providers\BoundedContexts\Kitchen\Domain\PartyRef;
 use App\Providers\BoundedContexts\Kitchen\Domain\TableLabel;
-use App\Providers\BoundedContexts\Kitchen\Domain\TicketLine;
 use App\Providers\BoundedContexts\Kitchen\Infrastructure\Bus\KitchenCommandBus;
 use App\Providers\BoundedContexts\Kitchen\Infrastructure\KitchenSeeder;
+use App\Providers\Modules\EventStore\Application\ContractPublisher;
 use App\Providers\Modules\EventStore\Domain\EventStore;
 use App\Providers\Modules\EventStore\Domain\StoredEvent;
 use App\Providers\Modules\SharedKernel\Domain\RecordedEvent;
@@ -28,13 +29,14 @@ function loggedAs(string $type): array
     ));
 }
 
-function creamBruleeAddedTo(string $order): AddDishesToTicket
+function creamBruleeReceivedFor(string $order): ReceiveOrder
 {
-    return new AddDishesToTicket(
+    return new ReceiveOrder(
         new KitchenTicketId($order),
         new PartyRef('table-4'),
         new TableLabel('Window 4'),
-        [new TicketLine(new LineId("{$order}-9"), new DishName('Creme brulee'), 'pastry', 8, 1, 'dessert', ['dairy'])],
+        [new OrderedLine(new LineId("{$order}-9"), new DishName('Creme brulee'), 1, 'dessert', ['dairy'])],
+        100_000,
     );
 }
 
@@ -49,7 +51,7 @@ describe('the dishes added to a ticket', function () {
     });
 
     test('are a fact of the ticket under its own name, and a contract for the others under the public one', function () {
-        app(KitchenCommandBus::class)->dispatch(creamBruleeAddedTo($this->order));
+        app(KitchenCommandBus::class)->dispatch(creamBruleeReceivedFor($this->order));
 
         $internal = loggedAs('ticket.dishes_added');
         $published = loggedAs('kitchen.dishes_added');
@@ -65,29 +67,31 @@ describe('the dishes added to a ticket', function () {
     });
 
     test('carry the version of the contract in the envelope, not in the payload', function () {
-        app(KitchenCommandBus::class)->dispatch(creamBruleeAddedTo($this->order));
+        app(KitchenCommandBus::class)->dispatch(creamBruleeReceivedFor($this->order));
 
         expect(loggedAs('kitchen.dishes_added')[0]->contractVersion)->toBe(1)
             ->and(loggedAs('kitchen.dishes_added')[0]->payload)->not->toHaveKey('version')
             ->and(loggedAs('ticket.dishes_added')[0]->contractVersion)->toBeNull();
     });
 
-    test('are published in the transaction of the command: nothing is published when it fails', function () {
+    test('are published in the transaction of the command: nothing is kept when the contract cannot be told', function () {
         $before = count(app(EventStore::class)->readAllFrom(0));
+        app()->instance(ContractPublisher::class, new class implements ContractPublisher
+        {
+            public function publish(array $facts): array
+            {
+                throw new RuntimeException('The bus is down.');
+            }
+        });
 
-        expect(fn () => app(KitchenCommandBus::class)->dispatch(new AddDishesToTicket(
-            new KitchenTicketId($this->order),
-            new PartyRef('table-4'),
-            new TableLabel('Window 4'),
-            [],
-        )))->toThrow(Exception::class);
-
-        expect(count(app(EventStore::class)->readAllFrom(0)))->toBe($before);
+        expect(fn () => app(KitchenCommandBus::class)->dispatch(creamBruleeReceivedFor($this->order)))
+            ->toThrow(RuntimeException::class, 'The bus is down.')
+            ->and(count(app(EventStore::class)->readAllFrom(0)))->toBe($before);
     });
 
     test('are not published a second time when the same dishes are added again', function () {
-        app(KitchenCommandBus::class)->dispatch(creamBruleeAddedTo($this->order));
-        app(KitchenCommandBus::class)->dispatch(creamBruleeAddedTo($this->order));
+        app(KitchenCommandBus::class)->dispatch(creamBruleeReceivedFor($this->order));
+        app(KitchenCommandBus::class)->dispatch(creamBruleeReceivedFor($this->order));
 
         expect(loggedAs('kitchen.dishes_added'))->toHaveCount(1);
     });

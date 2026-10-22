@@ -4,18 +4,12 @@ declare(strict_types=1);
 
 namespace App\Providers\BoundedContexts\Kitchen\Infrastructure\Processors;
 
-use App\Providers\BoundedContexts\Kitchen\Application\Command\AddDishesToTicket;
-use App\Providers\BoundedContexts\Kitchen\Application\Command\DeclareLinesUnavailable;
-use App\Providers\BoundedContexts\Kitchen\Application\Command\OpenKitchenTicket;
-use App\Providers\BoundedContexts\Kitchen\Application\DishCatalog;
-use App\Providers\BoundedContexts\Kitchen\Domain\LinesAvailability;
+use App\Providers\BoundedContexts\Kitchen\Application\Command\ReceiveOrder;
 use App\Providers\BoundedContexts\Kitchen\Infrastructure\Bus\KitchenCommandBus;
-use App\Providers\BoundedContexts\Kitchen\Infrastructure\Consumed\FrontOfHouseTableOrderPlaced;
 use App\Providers\BoundedContexts\Kitchen\Infrastructure\Consumed\OrderToCook;
 use App\Providers\Modules\EventStore\Application\ConsumedMessages;
 use App\Providers\Modules\EventStore\Domain\CheckpointStore;
 use App\Providers\Modules\EventStore\Domain\EventStore;
-use App\Providers\Modules\EventStore\Domain\StoredEvent;
 use App\Providers\Modules\SharedKernel\Application\Processor;
 use App\Providers\Modules\SharedKernel\Infrastructure\Causation;
 use App\Providers\Modules\SharedKernel\Infrastructure\Correlation;
@@ -31,7 +25,6 @@ final class OpenKitchenTicketProcessor implements Processor
     public function __construct(
         private EventStore $events,
         private CheckpointStore $checkpoints,
-        private DishCatalog $dishes,
         private KitchenCommandBus $bus,
         private ConsumedMessages $messages,
     ) {}
@@ -53,7 +46,7 @@ final class OpenKitchenTicketProcessor implements Processor
                 $handled++;
                 Correlation::resume($event->correlationId);
                 Causation::resume($event->position);
-                $this->cookWhatIsAvailable($event, $order);
+                $this->bus->dispatch(new ReceiveOrder($order->ticketId, $order->partyRef, $order->tableLabel, $order->lines, $event->position));
             }
 
             $position = $event->position;
@@ -62,30 +55,5 @@ final class OpenKitchenTicketProcessor implements Processor
         $this->checkpoints->put(self::CHECKPOINT, $position);
 
         return $handled;
-    }
-
-    /**
-     * What the kitchen can cook goes to the ticket at once. What it cannot is not a failure to retry: it becomes a fact
-     * the dining room answers, and the orders behind go on. The position of the event, not the stock of the moment,
-     * says what was available.
-     */
-    private function cookWhatIsAvailable(StoredEvent $event, OrderToCook $order): void
-    {
-        $lines = $this->dishes->linesFor($order->lines, $event->position);
-
-        if ($lines->available !== []) {
-            $this->bus->dispatch($this->ticketCommand($order, $lines));
-        }
-
-        if ($lines->unavailable !== []) {
-            $this->bus->dispatch(new DeclareLinesUnavailable($order->ticketId, $order->partyRef, $event->position, $lines->unavailable));
-        }
-    }
-
-    private function ticketCommand(OrderToCook $order, LinesAvailability $lines): OpenKitchenTicket|AddDishesToTicket
-    {
-        return $order instanceof FrontOfHouseTableOrderPlaced
-            ? new OpenKitchenTicket($order->ticketId, $order->partyRef, $order->tableLabel, $lines->available)
-            : new AddDishesToTicket($order->ticketId, $order->partyRef, $order->tableLabel, $lines->available);
     }
 }

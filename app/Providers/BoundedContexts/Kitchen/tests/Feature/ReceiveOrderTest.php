@@ -1,29 +1,41 @@
 <?php
 
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\FrontOfHouseSeeder;
-use App\Providers\BoundedContexts\Kitchen\Application\Command\AddDishesToTicket;
+use App\Providers\BoundedContexts\Kitchen\Application\Command\ReceiveOrder;
 use App\Providers\BoundedContexts\Kitchen\Domain\DishName;
 use App\Providers\BoundedContexts\Kitchen\Domain\KitchenTicketId;
 use App\Providers\BoundedContexts\Kitchen\Domain\LineId;
+use App\Providers\BoundedContexts\Kitchen\Domain\OrderedLine;
 use App\Providers\BoundedContexts\Kitchen\Domain\PartyRef;
 use App\Providers\BoundedContexts\Kitchen\Domain\TableLabel;
-use App\Providers\BoundedContexts\Kitchen\Domain\TicketLine;
 use App\Providers\BoundedContexts\Kitchen\Infrastructure\Bus\KitchenCommandBus;
 use App\Providers\BoundedContexts\Kitchen\Infrastructure\KitchenSeeder;
 use App\Providers\BoundedContexts\Kitchen\Infrastructure\Projection\KitchenScreenProjector;
+use App\Providers\BoundedContexts\Kitchen\Infrastructure\Tables;
 use App\Providers\Modules\EventStore\Domain\EventStore;
+use Illuminate\Support\Facades\DB;
 
-function steakAddedTo(string $ticketId): AddDishesToTicket
+const ORDER_RECEIVED_AT = 100_000;
+
+/**
+ * @param  list<string>  $dishes  names of dishes, one line each
+ */
+function receivedFor(string $ticketId, string ...$dishes): ReceiveOrder
 {
-    return new AddDishesToTicket(
+    return new ReceiveOrder(
         new KitchenTicketId($ticketId),
         new PartyRef('table-4'),
         new TableLabel('Window 4'),
-        [new TicketLine(new LineId("{$ticketId}-9"), new DishName('Steak frites'), 'grill', 12, 1, 'main', ['gluten'])],
+        array_map(
+            fn (string $dish, int $index): OrderedLine => new OrderedLine(new LineId("{$ticketId}-".(9 + $index)), new DishName($dish), 1, 'main', []),
+            $dishes,
+            array_keys($dishes),
+        ),
+        ORDER_RECEIVED_AT,
     );
 }
 
-describe('adding dishes to a kitchen ticket', function () {
+describe('the kitchen receiving an order', function () {
     beforeEach(function () {
         $this->seed(FrontOfHouseSeeder::class);
         $this->seed(KitchenSeeder::class);
@@ -36,7 +48,7 @@ describe('adding dishes to a kitchen ticket', function () {
     test('the dishes join the ticket on the screen, and the version moves so a stale If-Match is refused', function () {
         $before = $this->getJson('/api/kitchen/screen')->json()[0];
 
-        app(KitchenCommandBus::class)->dispatch(steakAddedTo($this->ticketId));
+        app(KitchenCommandBus::class)->dispatch(receivedFor($this->ticketId, 'Steak frites'));
 
         $after = $this->getJson('/api/kitchen/screen')->json()[0];
 
@@ -48,9 +60,9 @@ describe('adding dishes to a kitchen ticket', function () {
             ->assertStatus(412);
     });
 
-    test('adding the same dishes again changes nothing', function () {
-        app(KitchenCommandBus::class)->dispatch(steakAddedTo($this->ticketId));
-        app(KitchenCommandBus::class)->dispatch(steakAddedTo($this->ticketId));
+    test('receiving the same lines again changes nothing', function () {
+        app(KitchenCommandBus::class)->dispatch(receivedFor($this->ticketId, 'Steak frites'));
+        app(KitchenCommandBus::class)->dispatch(receivedFor($this->ticketId, 'Steak frites'));
 
         $added = array_filter(app(EventStore::class)->readAllFrom(0), fn ($event) => $event->type->is('kitchen.dishes_added'));
 
@@ -64,13 +76,13 @@ describe('adding dishes to a kitchen ticket', function () {
         $this->postJson("/api/kitchen/tickets/{$this->ticketId}/lines/{$line}/ready")->assertOk();
         expect($this->getJson('/api/kitchen/screen')->json()[0]['done'])->toBeTrue();
 
-        app(KitchenCommandBus::class)->dispatch(steakAddedTo($this->ticketId));
+        app(KitchenCommandBus::class)->dispatch(receivedFor($this->ticketId, 'Steak frites'));
 
         expect($this->getJson('/api/kitchen/screen')->json()[0]['done'])->toBeFalse();
     });
 
     test('the screen rebuilt from the stream shows the added dishes', function () {
-        app(KitchenCommandBus::class)->dispatch(steakAddedTo($this->ticketId));
+        app(KitchenCommandBus::class)->dispatch(receivedFor($this->ticketId, 'Steak frites'));
 
         app(KitchenScreenProjector::class)->rebuild();
 
@@ -78,11 +90,35 @@ describe('adding dishes to a kitchen ticket', function () {
     });
 
     test('opens the ticket when the kitchen had none yet', function () {
-        app(KitchenCommandBus::class)->dispatch(steakAddedTo('order-without-ticket'));
+        app(KitchenCommandBus::class)->dispatch(receivedFor('order-without-ticket', 'Steak frites'));
 
         $screen = collect($this->getJson('/api/kitchen/screen')->json())->firstWhere('ticketId', 'order-without-ticket');
 
         expect($screen['lines'])->toHaveCount(1)
             ->and($screen['partyRef'])->toBe('table-4');
+    });
+
+    test('cooks what it can and tells the rest as a fact, in that order', function () {
+        DB::table(Tables::DISHES)->where('name', 'Steak frites')->update(['in_stock' => false, 'eighty_sixed_position' => 1]);
+
+        app(KitchenCommandBus::class)->dispatch(receivedFor($this->ticketId, 'Creme brulee', 'Steak frites'));
+
+        $unavailable = array_values(array_filter(app(EventStore::class)->readAllFrom(0), fn ($event) => $event->type->is('kitchen.lines_unavailable')));
+        $opened = array_values(array_filter(app(EventStore::class)->readAllFrom(0), fn ($event) => $event->type->is('ticket.dishes_added')));
+
+        expect($this->getJson('/api/kitchen/screen')->json()[0]['lines'])->toHaveCount(2)
+            ->and($unavailable)->toHaveCount(1)
+            ->and($unavailable[0]->payload['orderPosition'])->toBe(ORDER_RECEIVED_AT)
+            ->and($unavailable[0]->payload['lines'][0]['reason'])->toBe('Steak frites is 86.')
+            ->and($unavailable[0]->position)->toBeGreaterThan($opened[0]->position);
+    });
+
+    test('opens no ticket when nothing can be cooked, and only tells it', function () {
+        DB::table(Tables::DISHES)->where('name', 'Steak frites')->update(['in_stock' => false]);
+
+        app(KitchenCommandBus::class)->dispatch(receivedFor('order-all-86', 'Steak frites'));
+
+        expect(collect($this->getJson('/api/kitchen/screen')->json())->pluck('ticketId')->all())->not->toContain('order-all-86')
+            ->and(array_filter(app(EventStore::class)->readAllFrom(0), fn ($event) => $event->type->is('kitchen.lines_unavailable')))->toHaveCount(1);
     });
 });
