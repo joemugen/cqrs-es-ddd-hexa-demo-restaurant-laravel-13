@@ -53,7 +53,7 @@ describe('a visit of a table', function () {
         cookedFor('table-4', 'creme-brulee', 'dessert');
         everythingAtThePassIsServed();
         $first = $this->getJson("/api/billing/covers/{$this->visit}/bill")->json();
-        $this->postJson("/api/billing/bills/{$first['billId']}/payments", ['amountCents' => $first['balanceCents']])->assertOk();
+        $this->postJson("/api/billing/bills/{$first['billId']}/payments", ['amountCents' => $first['balanceCents']], ['If-Match' => '"'.$first['version'].'"'])->assertOk();
 
         $next = $this->postJson('/api/front-of-house/tables/table-4/guests', ['guestCount' => 2])->assertOk()->json('visitId');
         cookedFor('table-4', 'house-red', 'drink');
@@ -89,7 +89,7 @@ describe('a visit of a table', function () {
         everythingAtThePassIsServed();
         $this->postJson('/api/front-of-house/tables/table-4/bill')->assertOk();
         $bill = $this->getJson("/api/billing/covers/{$this->visit}/bill")->json();
-        $this->postJson("/api/billing/bills/{$bill['billId']}/payments", ['amountCents' => $bill['balanceCents']])->assertOk();
+        $this->postJson("/api/billing/bills/{$bill['billId']}/payments", ['amountCents' => $bill['balanceCents']], ['If-Match' => '"'.$bill['version'].'"'])->assertOk();
         $this->postJson('/api/front-of-house/tables/table-4/guests', ['guestCount' => 3])->assertOk();
 
         config(['consumption.mode' => 'worker']);
@@ -112,7 +112,7 @@ describe('a visit of a table', function () {
         everythingAtThePassIsServed();
         $this->postJson('/api/front-of-house/tables/table-4/bill')->assertOk();
         $bill = $this->getJson("/api/billing/covers/{$this->visit}/bill")->json();
-        $this->postJson("/api/billing/bills/{$bill['billId']}/payments", ['amountCents' => $bill['balanceCents']])->assertOk();
+        $this->postJson("/api/billing/bills/{$bill['billId']}/payments", ['amountCents' => $bill['balanceCents']], ['If-Match' => '"'.$bill['version'].'"'])->assertOk();
         $this->postJson('/api/front-of-house/tables/table-4/guests', ['guestCount' => 2])->assertOk();
 
         $this->postJson("/api/front-of-house/orders/{$id}/revisions", ['lines' => [['menuItemId' => 'creme-brulee', 'quantity' => 1, 'course' => 'dessert']]])
@@ -129,7 +129,7 @@ function theServedDishesOnNoBill(): array
 function theGuestsPayTheirBill(string $visit): void
 {
     $bill = test()->getJson("/api/billing/covers/{$visit}/bill")->assertOk()->json();
-    test()->postJson("/api/billing/bills/{$bill['billId']}/payments", ['amountCents' => $bill['balanceCents']])->assertOk();
+    test()->postJson("/api/billing/bills/{$bill['billId']}/payments", ['amountCents' => $bill['balanceCents']], ['If-Match' => '"'.$bill['version'].'"'])->assertOk();
 }
 
 describe('a dish served late', function () {

@@ -84,6 +84,51 @@ describe('the till', function () {
             ->and($after['balanceCents'])->toBe(2200);
     });
 
+    describe('paying a bill', function () {
+        beforeEach(function () {
+            $this->visit = $this->postJson('/api/front-of-house/tables/table-4/guests', ['guestCount' => 2])->assertOk()->json('visitId');
+            $this->postJson('/api/front-of-house/tables/table-4/orders', ['lines' => [['menuItemId' => 'green-salad', 'quantity' => 1, 'course' => 'starter']]])->assertOk();
+            serveOnTheLatestTicket('starter', 'Green salad');
+            $this->postJson('/api/front-of-house/tables/table-4/bill')->assertOk();
+        });
+
+        test('shows the version of the note as an ETag, to be sent back with the payment', function () {
+            $this->getJson("/api/billing/covers/{$this->visit}/bill")->assertOk()->assertHeader('ETag', '"1"');
+        });
+
+        test('is of the version the guests saw: when a dish was added since, the payment is refused and the note is presented again', function () {
+            $seen = $this->getJson("/api/billing/covers/{$this->visit}/bill")->json();
+            $this->postJson('/api/front-of-house/tables/table-4/orders', ['lines' => [['menuItemId' => 'creme-brulee', 'quantity' => 1, 'course' => 'dessert']]])->assertOk();
+            serveOnTheLatestTicket('dessert', 'Creme brulee');
+
+            $this->postJson("/api/billing/bills/{$seen['billId']}/payments", ['amountCents' => $seen['balanceCents']], ['If-Match' => '"1"'])
+                ->assertStatus(412)
+                ->assertJson(['message' => 'The bill changed since the guests saw it: it is at version 2, not 1. Present it again.']);
+
+            $presented = $this->getJson("/api/billing/covers/{$this->visit}/bill")->assertOk()->assertHeader('ETag', '"2"')->json();
+            $this->postJson("/api/billing/bills/{$seen['billId']}/payments", ['amountCents' => $presented['balanceCents']], ['If-Match' => '"2"'])->assertOk();
+
+            expect($presented['totalCents'])->toBe(2200)
+                ->and($this->getJson("/api/billing/covers/{$this->visit}/bill")->json('status'))->toBe('paid');
+        });
+
+        test('does not take If-Match: * for a version: a wildcard is not a note that was shown', function () {
+            $bill = $this->getJson("/api/billing/covers/{$this->visit}/bill")->json();
+
+            $this->postJson("/api/billing/bills/{$bill['billId']}/payments", ['amountCents' => 1100], ['If-Match' => '*'])->assertStatus(428);
+        });
+
+        test('names a version: nobody pays a note that no one has shown him', function () {
+            $bill = $this->getJson("/api/billing/covers/{$this->visit}/bill")->json();
+
+            $this->postJson("/api/billing/bills/{$bill['billId']}/payments", ['amountCents' => 1100])
+                ->assertStatus(428)
+                ->assertJson(['message' => 'Send the version of the bill you read as If-Match: the payment is of that note.']);
+
+            expect($this->getJson("/api/billing/covers/{$this->visit}/bill")->json('balanceCents'))->toBe(1100);
+        });
+    });
+
     test('a split payment keeps the table until the balance is gone, then the bill is immutable', function () {
         $this->visit = $this->postJson('/api/front-of-house/tables/table-4/guests', ['guestCount' => 2])->assertOk()->json('visitId');
         $this->postJson('/api/front-of-house/tables/table-4/orders', [
@@ -99,7 +144,7 @@ describe('the till', function () {
         $this->postJson("/api/billing/bills/{$billId}/payments", [
             'amountCents' => 600,
             'tipCents' => 0,
-        ])->assertExactJson(['billId' => $billId, 'accepted' => true]);
+        ], ['If-Match' => '"1"'])->assertExactJson(['billId' => $billId, 'accepted' => true]);
 
         $open = $this->getJson("/api/billing/covers/{$this->visit}/bill")->json();
         $table = collect($this->getJson('/api/front-of-house/floor-plan')->json())->firstWhere('tableId', 'table-4');
@@ -112,7 +157,7 @@ describe('the till', function () {
         $this->postJson("/api/billing/bills/{$billId}/payments", [
             'amountCents' => 500,
             'tipCents' => 200,
-        ])->assertOk();
+        ], ['If-Match' => '"1"'])->assertOk();
 
         $paid = $this->getJson("/api/billing/covers/{$this->visit}/bill")->json();
         $freed = collect($this->getJson('/api/front-of-house/floor-plan')->json())->firstWhere('tableId', 'table-4');
@@ -125,7 +170,7 @@ describe('the till', function () {
 
         $this->postJson("/api/billing/bills/{$billId}/payments", [
             'amountCents' => 1,
-        ])->assertUnprocessable()
+        ], ['If-Match' => '"1"'])->assertUnprocessable()
             ->assertJson(['message' => 'A paid bill cannot be changed.']);
     });
 

@@ -80,6 +80,7 @@ The guests do not leave without paying: the table is freed by the payment of its
 | --- | --- | --- | --- |
 | **Cover** | couvert | The guests of one visit, as the till knows them. It is the id of the visit, under another name: the till does not know the room. | `CoverRef` |
 | **Bill** | addition | What a cover owes for the dishes that were served to it. Asking for it freezes nothing: a dish served afterwards goes on the open bill, which moves to its next version. Open until its balance is gone, then paid and immutable. | `Bill`, `BillStatus` |
+| **Version of a bill** | version de l'addition | Which note the guests saw: it grows each time a dish joins the bill. A payment is of a version, and is refused when the bill changed since. | `Bill::version()`, `If-Match` |
 | **Served dish** | plat servi | A line of the bill. Its source (order and line) makes sure a dish is charged once. | `ServedDish`, `SourceKey` |
 | **VAT** | TVA | Prices are tax-inclusive. Food eaten in is 10 %, alcohol 20 %. | `Vat`, `DishKind` |
 | **Payment** | paiement | An amount paid on a bill. It may be split between several payments. | `Payment`, `PayBill` |

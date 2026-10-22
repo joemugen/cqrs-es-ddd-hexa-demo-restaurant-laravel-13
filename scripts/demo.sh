@@ -46,12 +46,13 @@ call() {
   local path=$2
   local body=${3:-}
   local expected=${4:-200}
+  local if_match=${5:-}
   local tmp
   tmp=$(mktemp)
 
   if [[ -n "$body" ]]; then
     code=$(curl -sS -o "$tmp" -w '%{http_code}' -X "$method" \
-      -H 'Accept: application/json' -H 'Content-Type: application/json' \
+      -H 'Accept: application/json' -H 'Content-Type: application/json' -H "If-Match: ${if_match}" \
       -d "$body" "${BASE}${path}")
   else
     code=$(curl -sS -o "$tmp" -w '%{http_code}' -X "$method" \
@@ -86,6 +87,7 @@ serve_the_pass() {
 
 heading "1. Seat two guests. The floor plan moves in the same transaction."
 call POST /api/front-of-house/tables/table-4/guests '{"guestCount":2}'
+VISIT=$(php -r 'echo json_decode(file_get_contents("/tmp/restaurant-cqrs-last.json"), true)["visitId"];')
 call GET /api/front-of-house/floor-plan
 
 heading "2. Place the first order."
@@ -133,13 +135,14 @@ call POST /api/front-of-house/tables/table-4/orders '{"lines":[{"menuItemId":"st
 
 heading "8. The bill is what was served. Split the payment, add a tip, free the table."
 call POST /api/front-of-house/tables/table-4/bill
-call GET /api/billing/covers/table-4/bill
+call GET "/api/billing/covers/${VISIT}/bill"
 BILL=$(php -r 'echo json_decode(file_get_contents("/tmp/restaurant-cqrs-last.json"), true)["billId"];')
-call POST "/api/billing/bills/${BILL}/payments" '{"amountCents":4000}'
+VERSION=$(php -r 'echo json_decode(file_get_contents("/tmp/restaurant-cqrs-last.json"), true)["version"];')
+call POST "/api/billing/bills/${BILL}/payments" '{"amountCents":4000}' 200 "\"${VERSION}\""
 call GET /api/front-of-house/floor-plan
-call POST "/api/billing/bills/${BILL}/payments" '{"amountCents":2700,"tipCents":500}'
-call GET /api/billing/covers/table-4/bill
+call POST "/api/billing/bills/${BILL}/payments" '{"amountCents":2700,"tipCents":500}' 200 "\"${VERSION}\""
+call GET "/api/billing/covers/${VISIT}/bill"
 call GET /api/front-of-house/floor-plan
-call POST "/api/billing/bills/${BILL}/payments" '{"amountCents":1}' 422
+call POST "/api/billing/bills/${BILL}/payments" '{"amountCents":1}' 422 "\"${VERSION}\""
 
 printf '\n# Service complete.\n'

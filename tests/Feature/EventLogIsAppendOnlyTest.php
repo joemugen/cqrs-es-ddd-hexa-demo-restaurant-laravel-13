@@ -61,7 +61,7 @@ describe('the event log is append only', function (): void {
         $this->postJson('/api/kitchen/dishes/dish-steak/eighty-six')->assertOk();
         $this->postJson('/api/front-of-house/tables/table-4/bill')->assertOk();
         $bill = $this->getJson("/api/billing/covers/{$this->visit}/bill")->json();
-        $this->postJson("/api/billing/bills/{$bill['billId']}/payments", ['amountCents' => $bill['totalCents']])->assertOk();
+        $this->postJson("/api/billing/bills/{$bill['billId']}/payments", ['amountCents' => $bill['totalCents']], ['If-Match' => '"'.$bill['version'].'"'])->assertOk();
 
         expect(count(loggedEvents()))->toBeGreaterThan(8)
             ->and(writesToTheEventLog($this->statements))->toBe(['insert into']);

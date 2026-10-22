@@ -195,6 +195,8 @@ Contracts, handlers, processors and projectors are found by namespace, not by pa
 
 Each ticket on the kitchen screen has a `version`: the number of facts in its stream. A client sends it back as `If-Match` on `fire` and `ready`, and the response carries the new version as an `ETag`. If the ticket moved on, the command is refused with a 412 and nothing changes, so the client reads again and decides again. The header is optional, and a refusal is never replayed by the bus, unlike a write conflict between two writers.
 
+A payment is a stale command of the same kind, and its header is not optional: `POST /bills/{billId}/payments` pays the note the guests saw, so it carries its version as `If-Match` (the `ETag` of `GET /covers/{visitId}/bill`). If a dish joined the bill since, the payment is refused with a 412 and the note is presented again; without the header it is refused with a 428.
+
 ## Tracing a request
 
 Every request carries a correlation id. `CorrelationIdMiddleware`, first in the `api` group (see `bootstrap/app.php`), reads `X-Correlation-Id` (or `X-Request-Id`) when it is a short token of letters, digits, dots, dashes and underscores, makes a UUID otherwise, and returns it in the `X-Correlation-Id` header of the response, a refusal included. Quote it when something goes wrong.

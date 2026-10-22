@@ -7,6 +7,8 @@ namespace App\Providers\BoundedContexts\Billing\Infrastructure\Http;
 use App\Providers\BoundedContexts\Billing\Application\Command\PayBill;
 use App\Providers\BoundedContexts\Billing\Domain\BillId;
 use App\Providers\BoundedContexts\Billing\Infrastructure\Bus\BillingCommandBus;
+use App\Providers\Modules\SharedKernel\Domain\ExpectedVersion;
+use App\Providers\Modules\SharedKernel\Domain\PreconditionRequired;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -23,6 +25,8 @@ final class PayBillController
             billId: new BillId($billId),
             amountCents: (int) $validated['amountCents'],
             tipCents: (int) ($validated['tipCents'] ?? 0),
+            seen: ExpectedVersion::fromIfMatch($request->header('If-Match'))
+                ?? throw new PreconditionRequired('Send the version of the bill you read as If-Match: the payment is of that note.'),
         )));
     }
 }
