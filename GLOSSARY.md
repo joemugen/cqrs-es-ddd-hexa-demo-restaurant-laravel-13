@@ -69,7 +69,7 @@ Sources: [Wikipedia](https://en.wikipedia.org/wiki/86_(term)), [Snopes](https://
 | **Confirmed** | confirmée | The kitchen cooks what the order asks. | `FulfilmentStatus::CONFIRMED` |
 | **Awaiting revision** | en attente de révision | Some lines are unavailable; the waiter must go back to the guests. | `FulfilmentStatus::AWAITING_REVISION` |
 | **Cancelled** | annulée | The guests gave up the lines that were unavailable. What is already on the ticket is still cooked. | `CancelOrder`, `FulfilmentStatus::CANCELLED` |
-| **Closed** | clôturée | The guests paid and left before a revision came. A revision is then **obsolete** and refused. | `FulfilmentStatus::CLOSED`, `ObsoleteRevision` |
+| **Closed** | clôturée | The guests paid and left: the payment closes the visit and every order of it that is not over. A revision is then **obsolete** and refused, nothing more is served, and the kitchen cancels what it still cooks. | `FulfilmentStatus::CLOSED`, `ObsoleteRevision` |
 | **Abandoned line** | ligne abandonnée | A line given up for good: replaced by a revision, or dropped by a cancellation. | `abandonedLines` |
 
 The guests do not leave without paying: the table is freed by the payment of its bill and by nothing else.

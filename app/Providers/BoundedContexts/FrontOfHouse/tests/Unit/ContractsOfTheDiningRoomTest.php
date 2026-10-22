@@ -3,6 +3,7 @@
 use App\Providers\BoundedContexts\FrontOfHouse\Application\Integration\BillRequestedV1;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\Integration\DishServedV1;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\Integration\TableOrderCancelledV1;
+use App\Providers\BoundedContexts\FrontOfHouse\Application\Integration\TableOrderClosedV1;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\Integration\TableOrderPlacedV1;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\Integration\TableOrderRevisedV1;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\DishKind;
@@ -10,6 +11,7 @@ use App\Providers\BoundedContexts\FrontOfHouse\Domain\DishName;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\Event\BillRequested;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\Event\DishServed;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\Event\TableOrderCancelled;
+use App\Providers\BoundedContexts\FrontOfHouse\Domain\Event\TableOrderClosed;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\Event\TableOrderPlaced;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\Event\TableOrderRevised;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\LineId;
@@ -76,6 +78,14 @@ describe('what the dining room tells the others', function () {
                 'abandonedLines' => ['order-1-2'],
             ])
             ->and(TableOrderCancelledV1::fromPayload($contract->toPayload()))->toEqual($contract);
+    });
+
+    test('an order closed: the guests paid and left, so the kitchen stops cooking it', function () {
+        $contract = TableOrderClosedV1::from(new TableOrderClosed(new TableOrderId('order-1'), new TableId('table-4'), new VisitId('visit-1')));
+
+        expect(publishedAs(TableOrderClosedV1::class))->toBe('front_of_house.table_order_closed v1')
+            ->and($contract->toPayload())->toBe(['tableOrderId' => 'order-1', 'tableId' => 'table-4'])
+            ->and(TableOrderClosedV1::fromPayload($contract->toPayload()))->toEqual($contract);
     });
 
     test('a bill requested: which table', function () {

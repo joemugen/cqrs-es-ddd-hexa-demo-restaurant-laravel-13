@@ -7,6 +7,7 @@ namespace App\Providers\BoundedContexts\Kitchen\Infrastructure\Projection;
 use App\Providers\BoundedContexts\Kitchen\Domain\Event\DishesAdded;
 use App\Providers\BoundedContexts\Kitchen\Domain\Event\DishFired;
 use App\Providers\BoundedContexts\Kitchen\Domain\Event\DishReady;
+use App\Providers\BoundedContexts\Kitchen\Domain\Event\TicketCancelled;
 use App\Providers\BoundedContexts\Kitchen\Domain\Event\TicketCompleted;
 use App\Providers\BoundedContexts\Kitchen\Domain\Event\TicketOpened;
 use App\Providers\BoundedContexts\Kitchen\Infrastructure\Tables;
@@ -109,6 +110,13 @@ final class KitchenScreenProjector implements RebuildableProjector
             DB::table(Tables::SCREEN_TICKETS)
                 ->where('ticket_id', $payload['ticketId'])
                 ->update(['done' => true, 'version' => $version]);
+
+            return true;
+        }
+
+        if ($type->is(TicketCancelled::STORED_AS)) {
+            DB::table(Tables::SCREEN_LINES)->where('ticket_id', $payload['ticketId'])->delete();
+            DB::table(Tables::SCREEN_TICKETS)->where('ticket_id', $payload['ticketId'])->delete();
 
             return true;
         }

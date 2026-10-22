@@ -6,6 +6,7 @@ namespace App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Projection;
 
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\DishAtThePassId;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Consumed\FrontOfHouseDishServed;
+use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Consumed\FrontOfHouseTableOrderClosed;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Consumed\KitchenDishReady;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Tables;
 use App\Providers\Modules\EventStore\Application\ConsumedMessages;
@@ -59,6 +60,11 @@ final class ToServeProjector implements RebuildableProjector
 
             if ($message instanceof FrontOfHouseDishServed) {
                 DB::table(Tables::TO_SERVE)->where('id', (string) $message->dishAtThePassId)->delete();
+                $applied++;
+            }
+
+            if ($message instanceof FrontOfHouseTableOrderClosed) {
+                DB::table(Tables::TO_SERVE)->where('table_order_id', (string) $message->tableOrderId)->delete();
                 $applied++;
             }
 

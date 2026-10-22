@@ -151,15 +151,13 @@ placed -> awaiting-kitchen --ticket opened / dishes added--> confirmed
               | ReviseOrder                     lines_unavailable|
               |                                                  v
               +------------------------------------------ awaiting-revision --CancelOrder--> cancelled
-                                                                 |
-                                                       billing.bill_paid
-                                                                 v
-                                                              closed
+
+     any order that is not over --billing.bill_paid--> closed
 ```
 
 The waiter asks the guests, then `POST /orders/{id}/revisions` adds replacement lines and abandons the unavailable ones. `ReviseOrder` writes the order and nothing else (one aggregate per transaction): the saga learns of the revision from its fact, `front_of_house.table_order_revised`, and a second revision is refused until it has seen the first. The fact makes the kitchen add the cookable lines to the same ticket (`kitchen.dishes_added`, which moves the ticket version), or open it if there was none. A replacement can be 86 too, and the loop starts again. If the guests give up, `POST /orders/{id}/cancel` abandons only the lines still unavailable: what is on the ticket is still cooked.
 
-A bill is paid before a revision: `billing.bill_paid` closes the order, and `ReviseOrder` is refused with a 412 (`The revision of the order is obsolete: the guests already paid and left.`). The payment names the visit that paid, so it closes the orders of that visit and no other, and frees the table only if that visit is still the one sitting there: a payment heard late, or twice, says nothing of the guests who sit there now. The position of the order keeps a late answer of the kitchen from undoing a revision made since. The table is freed by `billing.bill_paid` alone, so nobody leaves without paying.
+The payment closes the visit. `billing.bill_paid` closes every order of that visit that is not over, and each one says it with `front_of_house.table_order_closed`: the kitchen cancels what its ticket still has to cook (a ticket that is finished is left alone), the list to serve drops what waited at the pass, and `ServeDish` refuses the visit (409). A bill is paid before a revision: the order is closed, and `ReviseOrder` is refused with a 412 (`The revision of the order is obsolete: the guests already paid and left.`). The payment names the visit that paid, so it closes the orders of that visit and no other, and frees the table only if that visit is still the one sitting there: a payment heard late, or twice, says nothing of the guests who sit there now. The position of the order keeps a late answer of the kitchen from undoing a revision made since. The table is freed by `billing.bill_paid` alone, so nobody leaves without paying.
 
 ### One worker per stream
 

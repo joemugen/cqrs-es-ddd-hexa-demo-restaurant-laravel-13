@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Providers\BoundedContexts\Kitchen\Infrastructure\Processors;
 
+use App\Providers\BoundedContexts\Kitchen\Application\Command\CancelTicket;
 use App\Providers\BoundedContexts\Kitchen\Application\Command\ReceiveOrder;
 use App\Providers\BoundedContexts\Kitchen\Infrastructure\Bus\KitchenCommandBus;
+use App\Providers\BoundedContexts\Kitchen\Infrastructure\Consumed\FrontOfHouseTableOrderClosed;
 use App\Providers\BoundedContexts\Kitchen\Infrastructure\Consumed\OrderToCook;
 use App\Providers\Modules\EventStore\Application\ConsumedMessages;
 use App\Providers\Modules\EventStore\Domain\CheckpointStore;
@@ -16,7 +18,7 @@ use App\Providers\Modules\SharedKernel\Infrastructure\Correlation;
 
 /**
  * A processor reacts once. It is not a projection, but replaying it is harmless: the kitchen opens a ticket and adds a
- * line only when they are not there yet.
+ * line only when they are not there yet, and cancels a ticket once.
  */
 final class OpenKitchenTicketProcessor implements Processor
 {
@@ -40,13 +42,19 @@ final class OpenKitchenTicketProcessor implements Processor
         $position = $this->checkpoints->get(self::CHECKPOINT);
 
         foreach ($this->events->readAllFrom($position) as $event) {
-            $order = $this->messages->read($event, self::class);
+            $message = $this->messages->read($event, self::class);
 
-            if ($order instanceof OrderToCook) {
+            $command = match (true) {
+                $message instanceof OrderToCook => new ReceiveOrder($message->ticketId, $message->partyRef, $message->tableLabel, $message->lines, $event->position),
+                $message instanceof FrontOfHouseTableOrderClosed => new CancelTicket($message->ticketId),
+                default => null,
+            };
+
+            if ($command !== null) {
                 $handled++;
                 Correlation::resume($event->correlationId);
                 Causation::resume($event->position);
-                $this->bus->dispatch(new ReceiveOrder($order->ticketId, $order->partyRef, $order->tableLabel, $order->lines, $event->position));
+                $this->bus->dispatch($command);
             }
 
             $position = $event->position;

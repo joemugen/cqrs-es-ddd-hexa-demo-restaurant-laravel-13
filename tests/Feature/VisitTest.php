@@ -179,4 +179,18 @@ describe('a dish served late', function () {
             ->assertStatus(409)
             ->assertJson(['message' => 'The guests of this visit already paid and left: nothing is served to them.']);
     });
+
+    test('closes the orders of the visit once it is paid: the kitchen stops what it still cooks and the pass keeps nothing for them', function () {
+        cookedFor('table-4', 'green-salad', 'starter');
+        everythingAtThePassIsServed();
+        cookedFor('table-4', 'steak-frites', 'main');
+        $dessert = $this->postJson('/api/front-of-house/tables/table-4/orders', ['lines' => [['menuItemId' => 'creme-brulee', 'quantity' => 1, 'course' => 'dessert']]])->json('tableOrderId');
+        $this->postJson('/api/front-of-house/tables/table-4/bill')->assertOk();
+        expect(collect($this->getJson('/api/kitchen/screen')->json())->pluck('ticketId')->all())->toContain($dessert);
+
+        theGuestsPayTheirBill($this->visit);
+
+        expect(collect($this->getJson('/api/kitchen/screen')->json())->pluck('ticketId')->all())->not->toContain($dessert)
+            ->and($this->getJson('/api/front-of-house/to-serve')->json())->toBe([]);
+    });
 });
