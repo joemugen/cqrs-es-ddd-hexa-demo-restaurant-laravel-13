@@ -12,6 +12,7 @@ use App\Providers\BoundedContexts\Billing\Infrastructure\Bus\BillingCommandBus;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\FrontOfHouseSeeder;
 use App\Providers\BoundedContexts\Kitchen\Infrastructure\KitchenSeeder;
 use App\Providers\Modules\EventStore\Domain\EventStore;
+use App\Providers\Modules\SharedKernel\Domain\ConcurrencyConflict;
 use App\Providers\Modules\SharedKernel\Domain\ExpectedVersion;
 use App\Providers\Modules\SharedKernel\Domain\PreconditionFailed;
 use Illuminate\Support\Facades\DB;
@@ -269,6 +270,29 @@ function serveOnTheLatestTicket(string $course, string $dishName): void
     test()->postJson("/api/front-of-house/to-serve/{$waiting['id']}/serve")->assertOk();
 }
 
+describe('two bills prepared for the same cover', function () {
+    test('cannot both be open: the database holds one open bill per cover, so the second is refused', function () {
+        $dish = new ServedDish(new SourceKey('order-1:line-1'), 'Green salad', 1, 1100, DishKind::FOOD);
+        $bills = app(BillRepository::class);
+        $bills->save(Bill::prepare(new BillId('first'), new CoverRef('visit-1'), [$dish]));
+
+        expect(fn () => $bills->save(Bill::prepare(new BillId('second'), new CoverRef('visit-1'), [$dish])))->toThrow(ConcurrencyConflict::class)
+            ->and(DB::table('billing_bills')->where('cover_ref', 'visit-1')->count())->toBe(1);
+    });
+
+    test('are allowed once the first one is paid, for the cover keeps its history', function () {
+        $dish = new ServedDish(new SourceKey('order-1:line-1'), 'Green salad', 1, 1100, DishKind::FOOD);
+        $bills = app(BillRepository::class);
+        $first = Bill::prepare(new BillId('first'), new CoverRef('visit-1'), [$dish]);
+        $first->pay(1100, 0, ExpectedVersion::of(1));
+        $bills->save($first);
+
+        $bills->save(Bill::prepare(new BillId('second'), new CoverRef('visit-1'), [$dish]));
+
+        expect(DB::table('billing_bills')->where('cover_ref', 'visit-1')->count())->toBe(2);
+    });
+});
+
 describe('two payments that read the same bill', function () {
     test('cannot both be saved, whatever the database: the second finds the bill changed, with a 412', function () {
         $dish = new ServedDish(new SourceKey('order-1:line-1'), 'Green salad', 1, 1100, DishKind::FOOD);
@@ -304,7 +328,9 @@ describe('the bill of a cover', function () {
         $dish = new ServedDish(new SourceKey('ticket-1:line-1'), 'Green salad', 1, 1100, DishKind::FOOD);
         $bills = app(BillRepository::class);
 
-        $bills->save(Bill::prepare(new BillId('zzzz-opened-first'), new CoverRef('visit-1'), [$dish]));
+        $first = Bill::prepare(new BillId('zzzz-opened-first'), new CoverRef('visit-1'), [$dish]);
+        $first->pay(1100, 0, ExpectedVersion::of(1));
+        $bills->save($first);
         $bills->save(Bill::prepare(new BillId('aaaa-opened-second'), new CoverRef('visit-1'), [$dish]));
 
         $this->getJson('/api/billing/covers/visit-1/bill')

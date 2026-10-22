@@ -13,7 +13,9 @@ use App\Providers\BoundedContexts\Billing\Domain\CoverRef;
 use App\Providers\BoundedContexts\Billing\Domain\Payment;
 use App\Providers\BoundedContexts\Billing\Domain\ServedDish;
 use App\Providers\BoundedContexts\Billing\Domain\SourceKey;
+use App\Providers\Modules\SharedKernel\Domain\ConcurrencyConflict;
 use App\Providers\Modules\SharedKernel\Domain\PreconditionFailed;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 
 final class DatabaseBillRepository implements BillRepository
@@ -87,13 +89,25 @@ final class DatabaseBillRepository implements BillRepository
         }
 
         if (! DB::table(Tables::BILLS)->where('id', (string) $bill->id())->exists()) {
-            DB::table(Tables::BILLS)->insert(['id' => (string) $bill->id(), 'sequence' => (int) DB::table(Tables::BILLS)->max('sequence') + 1] + $row);
+            $this->insert($bill, $row);
 
             return;
         }
 
         if ((int) DB::table(Tables::BILLS)->where('id', (string) $bill->id())->value('revision') !== $bill->revisionWhenLoaded()) {
             throw new PreconditionFailed('The bill changed while it was being written: read it again and decide again.');
+        }
+    }
+
+    /**
+     * @param  array<string, mixed>  $row
+     */
+    private function insert(Bill $bill, array $row): void
+    {
+        try {
+            DB::table(Tables::BILLS)->insert(['id' => (string) $bill->id(), 'sequence' => (int) DB::table(Tables::BILLS)->max('sequence') + 1] + $row);
+        } catch (UniqueConstraintViolationException) {
+            throw new ConcurrencyConflict("The cover {$bill->coverRef()} already has an open bill.");
         }
     }
 

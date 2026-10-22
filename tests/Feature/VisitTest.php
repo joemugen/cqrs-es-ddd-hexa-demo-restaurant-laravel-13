@@ -146,7 +146,7 @@ describe('a dish served late', function () {
         cookedFor('table-4', 'creme-brulee', 'dessert');
         everythingAtThePassIsServed();
 
-        $this->postJson('/api/front-of-house/tables/table-4/bill');
+        $this->postJson('/api/front-of-house/tables/table-4/bill')->assertOk();
         theGuestsPayTheirBill($this->visit);
 
         expect(theServedDishesOnNoBill())->toBe([]);
