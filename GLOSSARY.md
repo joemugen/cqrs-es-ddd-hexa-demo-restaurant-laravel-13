@@ -14,8 +14,9 @@ The same word does not always mean the same thing in two contexts, and that is o
 | **Seat** | installer | Welcome guests at a free table. A table that already has guests cannot be seated. | `SeatGuests` |
 | **Floor plan** | plan de salle | What the room sees of its tables: label, guests, free or occupied. | `FloorPlan`, `GET /floor-plan` |
 | **Menu**, **menu item** | carte, plat à la carte | What the room offers, with its price and allergens. A menu item is available or not. | `Menu`, `MenuItem` |
+| **Dish name** | nom du plat | What a dish is called, and its business key: the room, the kitchen and the till find a dish by its name, which is unique in the menu and in the kitchen. A short menu needs no code. | `DishName`, `foh_menu_items.name`, `kitchen_dishes.name` |
 | **Order** | commande | What a table asks for, once. A table can place several (the desserts come later). | `TableOrder`, `PlaceTableOrder` |
-| **Line** | ligne | One dish of an order, with its quantity and its course. The kitchen never sees its price. | `OrderLine` (room), `TicketLine` (kitchen) |
+| **Line** | ligne | One dish of an order, with its quantity and its course. The kitchen never sees its price. The line keeps the price of the menu at the time of the order, and that is what the guests pay. | `OrderLine` (room), `TicketLine` (kitchen) |
 | **Course** | service (entrée, plat…) | When in the meal a dish comes: `starter`, `main`, `dessert`, `drink`. | `Course` |
 | **Allergens** | allergènes | What a dish contains that some guests cannot eat. They travel with the line to the kitchen. | `allergens` |
 | **Waiter** | serveur | The person who talks to the guests. The system has no waiter object: the waiter acts through the HTTP routes. | `ReviseOrder`, `CancelOrder` |

@@ -38,6 +38,8 @@ Each context names the evening differently.
 
 They never call each other, and they do not share a class for the same concept. A context publishes an integration event (a type string and a payload). After the writer's transaction commits, each processor and projector runs in its own transaction and advances its own checkpoint. A failure in the kitchen cannot roll back an order. The shared modules are `SharedKernel` (contracts, buses, value types) and `EventStore`, a technical log: append-only `events` (`stream_id`, `version`, `type`, `payload`, `occurred_at`, `position`) with an expected version, plus a `checkpoints` table.
 
+The contexts find a dish of another by its **name**, which is unique in the menu and in the kitchen: on a short menu the name of a dish is its business key (a long menu would carry a code). A line of an order keeps the price of the menu at the time of the order, and that is the price the till charges.
+
 Prices on the bill are tax-inclusive. Food eaten in is 10% (`gross * 10 / 110`) and alcohol is 20% (`gross * 20 / 120`).
 
 ## One service
@@ -275,7 +277,7 @@ The kitchen screen catches up after the order's transaction commits, before the 
 | 2. Place a table order | `app/Providers/BoundedContexts/FrontOfHouse/Application/Command/PlaceTableOrderHandler.php#L31-L48` |
 | 3. Open a kitchen ticket | `app/Providers/BoundedContexts/Kitchen/Infrastructure/Processors/OpenKitchenTicketProcessor.php#L37-L58`, `app/Providers/BoundedContexts/Kitchen/Application/Command/ReceiveOrderHandler.php#L33-L52`, `app/Providers/BoundedContexts/Kitchen/Domain/KitchenTicket.php#L55-L65` |
 | 4. Fire, ready, kitchen screen | `app/Providers/BoundedContexts/Kitchen/Domain/KitchenTicket.php#L104-L153`, `app/Providers/BoundedContexts/Kitchen/Infrastructure/Projection/KitchenScreenProjector.php#L68-L117` |
-| 5. Queued pass, then serve | `app/Providers/BoundedContexts/FrontOfHouse/Infrastructure/Projection/ToServeProjector.php#L35-L61`, `app/Providers/BoundedContexts/FrontOfHouse/Infrastructure/Projection/ProjectToServeList.php#L10-L18`, `app/Providers/BoundedContexts/FrontOfHouse/Application/Command/ServeDishHandler.php#L26-L34` |
+| 5. Queued pass, then serve | `app/Providers/BoundedContexts/FrontOfHouse/Infrastructure/Projection/ToServeProjector.php#L35-L61`, `app/Providers/BoundedContexts/FrontOfHouse/Infrastructure/Projection/ProjectToServeList.php#L10-L18`, `app/Providers/BoundedContexts/FrontOfHouse/Application/Command/ServeDishHandler.php#L27-L35` |
 | 6. Second order | `tests/Feature/FullServiceTest.php#L53-L68` |
 | 7. 86 the menu | `app/Providers/BoundedContexts/Kitchen/Domain/Dish.php#L35-L43`, `app/Providers/BoundedContexts/Kitchen/Application/Command/DeclareDishEightySixedHandler.php#L24-L32`, `app/Providers/BoundedContexts/FrontOfHouse/Infrastructure/Processors/MarkMenuItemUnavailableProcessor.php#L35-L58` |
 | 8. Bill, pay, free the table | `app/Providers/BoundedContexts/FrontOfHouse/Application/Command/RequestBillHandler.php#L24-L31`, `app/Providers/BoundedContexts/Billing/Infrastructure/Processors/RecordServedDishes.php#L35-L56`, `app/Providers/BoundedContexts/Billing/Application/Command/PrepareBillHandler.php#L27-L49`, `app/Providers/BoundedContexts/Billing/Domain/Bill.php#L48-L72`, `app/Providers/BoundedContexts/Billing/Application/Command/PayBillHandler.php#L24-L33`, `app/Providers/BoundedContexts/FrontOfHouse/Application/Command/FreeTableHandler.php#L27-L35` |
