@@ -9,6 +9,7 @@ use App\Providers\Modules\SharedKernel\Infrastructure\Eventing\ConsumerWorker;
 use Illuminate\Database\Events\TransactionBeginning;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Str;
 
 /**
  * @return list<string> the statements of a callback that write, and the transactions it opens
@@ -34,7 +35,7 @@ function writesDuring(Closure $work): array
 function appendIrrelevantEvent(): void
 {
     app(EventStore::class)->append(
-        new StreamId('integration-'.bin2hex(random_bytes(4))),
+        new StreamId('integration-'.Str::uuid()),
         0,
         RecordedEvents::of(RecordedEvent::now('tests.noise', [])),
     );

@@ -14,6 +14,7 @@ use App\Providers\Modules\SharedKernel\Domain\RecordedEvent;
 use App\Providers\Modules\SharedKernel\Domain\RecordedEvents;
 use App\Providers\Modules\SharedKernel\Domain\StreamId;
 use Closure;
+use Illuminate\Support\Str;
 use ReflectionClass;
 
 final class DatabaseIntegrationBus implements IntegrationBus
@@ -29,7 +30,7 @@ final class DatabaseIntegrationBus implements IntegrationBus
         $event = new IntegrationEvent(new EventType($published->type), $contract->toPayload(), $published->version);
 
         $position = $this->events->append(
-            new StreamId('integration-'.bin2hex(random_bytes(8))),
+            new StreamId('integration-'.Str::uuid()),
             0,
             RecordedEvents::of(RecordedEvent::now((string) $event->type, $event->payload, $event->version)),
         );

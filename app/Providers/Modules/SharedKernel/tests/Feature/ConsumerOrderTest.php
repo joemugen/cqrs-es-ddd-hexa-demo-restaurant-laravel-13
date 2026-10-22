@@ -8,6 +8,7 @@ use App\Providers\Modules\SharedKernel\Domain\RecordedEvents;
 use App\Providers\Modules\SharedKernel\Domain\StreamId;
 use App\Providers\Modules\SharedKernel\Infrastructure\Eventing\ConsumerWorker;
 use Illuminate\Support\Facades\Exceptions;
+use Illuminate\Support\Str;
 
 /**
  * Reads the log the way every real consumer does: from its checkpoint, in order, checkpoint last.
@@ -61,7 +62,7 @@ final class RecordingConsumer implements EventConsumer
 function appendOnStreams(array $streams): void
 {
     foreach ($streams as $stream) {
-        app(EventStore::class)->append(new StreamId($stream.'-'.bin2hex(random_bytes(3))), 0, RecordedEvents::of(RecordedEvent::now('tests.noise', [])));
+        app(EventStore::class)->append(new StreamId($stream.'-'.Str::uuid()), 0, RecordedEvents::of(RecordedEvent::now('tests.noise', [])));
     }
 }
 

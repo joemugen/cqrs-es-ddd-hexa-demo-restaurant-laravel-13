@@ -8,6 +8,7 @@ use App\Providers\Modules\EventStore\Domain\StoredEvent;
 use App\Providers\Modules\SharedKernel\Domain\RecordedEvent;
 use App\Providers\Modules\SharedKernel\Domain\RecordedEvents;
 use App\Providers\Modules\SharedKernel\Domain\StreamId;
+use Illuminate\Support\Str;
 
 /**
  * @return list<StoredEvent>
@@ -31,7 +32,7 @@ function kitchenWorker(): void
 function reviseOrderWith(string $tableOrderId, string $menuItemName, string $lineId): int
 {
     return app(EventStore::class)->append(
-        new StreamId('integration-'.bin2hex(random_bytes(4))),
+        new StreamId('integration-'.Str::uuid()),
         0,
         RecordedEvents::of(RecordedEvent::now('front_of_house.table_order_revised', [
             'tableOrderId' => $tableOrderId,
