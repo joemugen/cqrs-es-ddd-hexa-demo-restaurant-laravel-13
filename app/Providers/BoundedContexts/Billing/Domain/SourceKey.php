@@ -13,6 +13,11 @@ final readonly class SourceKey extends StringValue
 {
     private const MAX_LENGTH = 129;
 
+    public static function ofLine(string $tableOrderId, string $lineId): self
+    {
+        return new self($tableOrderId.':'.$lineId);
+    }
+
     protected static function validate(string $value): void
     {
         self::requireFilled($value, 'A source key cannot be blank.');

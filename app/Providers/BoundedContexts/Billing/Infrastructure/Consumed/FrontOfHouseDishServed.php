@@ -27,7 +27,7 @@ final readonly class FrontOfHouseDishServed implements ConsumedMessage
         return new self(
             new CoverRef((string) $payload['visitId']),
             new ServedDish(
-                sourceKey: new SourceKey((string) $payload['sourceKey']),
+                sourceKey: SourceKey::ofLine((string) $payload['tableOrderId'], (string) $payload['lineId']),
                 description: (string) $payload['description'],
                 quantity: (int) $payload['quantity'],
                 unitPriceCents: (int) $payload['unitPriceCents'],

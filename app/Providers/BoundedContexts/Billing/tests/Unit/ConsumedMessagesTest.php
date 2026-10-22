@@ -15,11 +15,12 @@ describe('what the till reads of the dining room', function () {
             'quantity' => 2,
             'unitPriceCents' => 1100,
             'kind' => 'food',
-            'sourceKey' => 'ticket-1:line-1',
+            'tableOrderId' => 'order-1',
+            'lineId' => 'line-1',
         ]);
 
         expect($message->coverRef)->toEqual(new CoverRef('visit-1'))
-            ->and($message->dish)->toEqual(new ServedDish(new SourceKey('ticket-1:line-1'), 'Green salad', 2, 1100, 'food'));
+            ->and($message->dish)->toEqual(new ServedDish(new SourceKey('order-1:line-1'), 'Green salad', 2, 1100, 'food'));
     });
 
     test('a bill requested: the cover is the visit of the guests who asked', function () {

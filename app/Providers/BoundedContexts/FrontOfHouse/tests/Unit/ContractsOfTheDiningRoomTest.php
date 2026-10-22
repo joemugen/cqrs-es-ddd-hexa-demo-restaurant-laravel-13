@@ -86,7 +86,7 @@ describe('what the dining room tells the others', function () {
             ->and(BillRequestedV1::fromPayload($contract->toPayload()))->toEqual($contract);
     });
 
-    test('a dish served: what the till bills, and where it comes from', function () {
+    test('a dish served: what the till bills, and the line of the order it comes from', function () {
         $contract = DishServedV1::from(new DishServed(new TableId('table-4'), new VisitId('visit-1'), new DishName('Green salad'), 2, 1100, DishKind::FOOD, new TableOrderId('order-1'), new LineId('line-1')));
 
         expect(publishedAs(DishServedV1::class))->toBe('front_of_house.dish_served v1')
@@ -99,7 +99,6 @@ describe('what the dining room tells the others', function () {
                 'quantity' => 2,
                 'unitPriceCents' => 1100,
                 'kind' => DishKind::FOOD,
-                'sourceKey' => 'order-1:line-1',
             ])
             ->and(DishServedV1::fromPayload($contract->toPayload()))->toEqual($contract);
     });
