@@ -10,6 +10,7 @@ The same word does not always mean the same thing in two contexts, and that is o
 | --- | --- | --- | --- |
 | **Service** | service | One evening, from the welcome of the guests to their departure. | `tests/Feature/FullServiceTest.php` |
 | **Table** | table | A place in the dining room. It is free, or occupied by guests. | `FrontOfHouse` `Table`, `TableStatus` |
+| **Visit** | tablée | The guests of a table, from the moment they sit down to the moment they leave. A table sees several visits in an evening, and everything the guests order, are served and owe belongs to their visit, never to the table. | `VisitId`, `Table::seat()` |
 | **Guests** | convives, clients | The people sitting at a table. | `Table::seat()`, `guestCount` |
 | **Seat** | installer | Welcome guests at a free table. A table that already has guests cannot be seated. | `SeatGuests` |
 | **Floor plan** | plan de salle | What the room sees of its tables: label, guests, free or occupied. | `FloorPlan`, `GET /floor-plan` |
@@ -77,14 +78,14 @@ The guests do not leave without paying: the table is freed by the payment of its
 
 | Term | FR | Meaning | In the code |
 | --- | --- | --- | --- |
-| **Cover** | couvert | The guests of one table, as the till knows them. It is the id of the table, under another name: the till does not know the room. | `CoverRef` |
-| **Bill** | addition | What a cover owes for the dishes that were served. Open until its balance is gone, then paid and immutable. | `Bill`, `BillStatus` |
+| **Cover** | couvert | The guests of one visit, as the till knows them. It is the id of the visit, under another name: the till does not know the room. | `CoverRef` |
+| **Bill** | addition | What a cover owes for the dishes that were served before the request for the bill. Open until its balance is gone, then paid and immutable. | `Bill`, `BillStatus` |
 | **Served dish** | plat servi | A line of the bill. Its source (ticket and line) makes sure a dish is charged once. | `ServedDish`, `SourceKey` |
 | **VAT** | TVA | Prices are tax-inclusive. Food eaten in is 10 %, alcohol 20 %. | `Vat`, `DishKind` |
 | **Payment** | paiement | An amount paid on a bill. It may be split between several payments. | `Payment`, `PayBill` |
 | **Tip** | pourboire | Added to a payment; it does not reduce the balance. | `Payment::$tipCents` |
 | **Balance** | reste à payer | What is still due. At zero the bill is paid. | `Bill::balanceCents()` |
-| **Free the table** | libérer la table | The guests are gone: the table is free again. It follows the payment of the bill. | `FreeTable`, `BillPaid` |
+| **Free the table** | libérer la table | The guests of the visit are gone: the table is free again. It follows the payment of the bill of that visit, and only if those guests are still there. | `FreeTable`, `BillPaid` |
 
 ## How the contexts talk
 

@@ -31,7 +31,7 @@ Each context names the evening differently.
 
 | Evening | Front of house | Kitchen | Billing |
 | --- | --- | --- | --- |
-| Who is here | `Table` (`table-4`, label, guest count) | `partyRef` on a ticket | `coverRef` on a bill |
+| Who is here | `Table` (`table-4`, label, guest count) and the visit of the guests who sit there | `partyRef` on a ticket | `coverRef` on a bill (the visit) |
 | What was asked for | `TableOrder` of lines copied from `MenuItem`s (name, price at the time of the order, description, allergens, availability) | `KitchenTicket` of dishes (station, cooking time, course, no price) | `Bill` lines built from the dishes that were served, at the price of their order line |
 | Out of stock | Menu item `available: false` | `Dish` declared 86 | — |
 | Money | Price on the menu, kept on the line once ordered | Not present | VAT-inclusive totals, payments, tip |
@@ -39,6 +39,8 @@ Each context names the evening differently.
 They never call each other, and they do not share a class for the same concept. A context publishes an integration event (a type string and a payload). After the writer's transaction commits, each processor and projector runs in its own transaction and advances its own checkpoint. A failure in the kitchen cannot roll back an order. The shared modules are `SharedKernel` (contracts, buses, value types) and `EventStore`, a technical log: append-only `events` (`stream_id`, `version`, `type`, `payload`, `occurred_at`, `position`) with an expected version, plus a `checkpoints` table.
 
 The contexts find a dish of another by its **name**, which is unique in the menu and in the kitchen: on a short menu the name of a dish is its business key (a long menu would carry a code). A line of an order keeps the price of the menu at the time of the order, and that is the price the till charges.
+
+What the guests ordered, were served and owe belongs to their **visit**, never to the table: a table sees several in an evening. The till knows a visit as a cover, and a bill counts what was served before the request for it, by log position, so a dish served later, or to the next guests, is not on it.
 
 Prices on the bill are tax-inclusive. Food eaten in is 10% (`gross * 10 / 110`) and alcohol is 20% (`gross * 20 / 120`).
 
@@ -76,7 +78,7 @@ Inside a context:
 
 The contracts live in `SharedKernel`. Identifiers and names are types, not strings: a `TableId` is not a `BillId`, and each aggregate `id()` returns an `AggregateId`. They cast to string and serialize to JSON. Raw strings stay at the edges: SQL columns, event payloads and HTTP input.
 
-Ids the system generates are namespaced UUIDs (version 5): the namespace is derived per aggregate type, so a bill id is never an order id, and the name comes from the business fact. A bill id is the cover plus the position of the event that asked for it, so replaying that event finds the same bill. An order id is the table plus the `Idempotency-Key` header of `POST /tables/{tableId}/orders`: sending the same key again returns the same `tableOrderId` and places nothing twice. Without the header every request gets a fresh name. A kitchen ticket takes the id of its order, so its stream is `kitchen-ticket-<uuid>`.
+Ids the system generates are namespaced UUIDs (version 5): the namespace is derived per aggregate type, so a bill id is never an order id, and the name comes from the business fact. A visit id is the table plus the `Idempotency-Key` header of `POST /tables/{tableId}/guests`, as an order id is. A bill id is the cover plus the position of the event that asked for it, so replaying that event finds the same bill. An order id is the table plus the `Idempotency-Key` header of `POST /tables/{tableId}/orders`: sending the same key again returns the same `tableOrderId` and places nothing twice. Without the header every request gets a fresh name. A kitchen ticket takes the id of its order, so its stream is `kitchen-ticket-<uuid>`.
 
 A Pest test in `SharedKernel/tests/Unit/ContractsTest.php` walks every context and fails when a class misses its contract.
 
@@ -157,7 +159,7 @@ placed -> awaiting-kitchen --ticket opened / dishes added--> confirmed
 
 The waiter asks the guests, then `POST /orders/{id}/revisions` adds replacement lines and abandons the unavailable ones. `front_of_house.table_order_revised` makes the kitchen add the cookable lines to the same ticket (`kitchen.dishes_added`, which moves the ticket version), or open it if there was none. A replacement can be 86 too, and the loop starts again. If the guests give up, `POST /orders/{id}/cancel` abandons only the lines still unavailable: what is on the ticket is still cooked.
 
-A bill is paid before a revision: `billing.bill_paid` closes the order, and `ReviseOrder` is refused with a 412 (`The revision of the order is obsolete: the guests already paid and left.`). The saga reads the payment instead of the state of the table, because a free table seats new guests: only a log position tells whose bill it was. The same position keeps a late answer of the kitchen from undoing a revision made since. The table is freed by `billing.bill_paid` alone, so nobody leaves without paying.
+A bill is paid before a revision: `billing.bill_paid` closes the order, and `ReviseOrder` is refused with a 412 (`The revision of the order is obsolete: the guests already paid and left.`). The payment names the visit that paid, so it closes the orders of that visit and no other, and frees the table only if that visit is still the one sitting there: a payment heard late, or twice, says nothing of the guests who sit there now. The position of the order keeps a late answer of the kitchen from undoing a revision made since. The table is freed by `billing.bill_paid` alone, so nobody leaves without paying.
 
 ### One worker per stream
 
@@ -284,11 +286,11 @@ The kitchen screen catches up after the order's transaction commits, before the 
 | 2. Place a table order | `app/Providers/BoundedContexts/FrontOfHouse/Application/Command/PlaceTableOrderHandler.php#L31-L48` |
 | 3. Open a kitchen ticket | `app/Providers/BoundedContexts/Kitchen/Infrastructure/Processors/OpenKitchenTicketProcessor.php#L37-L58`, `app/Providers/BoundedContexts/Kitchen/Application/Command/ReceiveOrderHandler.php#L33-L52`, `app/Providers/BoundedContexts/Kitchen/Domain/KitchenTicket.php#L55-L65` |
 | 4. Fire, ready, kitchen screen | `app/Providers/BoundedContexts/Kitchen/Domain/KitchenTicket.php#L104-L153`, `app/Providers/BoundedContexts/Kitchen/Infrastructure/Projection/KitchenScreenProjector.php#L68-L117` |
-| 5. Queued pass, then serve | `app/Providers/BoundedContexts/FrontOfHouse/Infrastructure/Projection/ToServeProjector.php#L35-L61`, `app/Providers/BoundedContexts/FrontOfHouse/Infrastructure/Projection/ProjectToServeList.php#L10-L18`, `app/Providers/BoundedContexts/FrontOfHouse/Application/Command/ServeDishHandler.php#L27-L35` |
-| 6. Second order | `tests/Feature/FullServiceTest.php#L53-L68` |
+| 5. Queued pass, then serve | `app/Providers/BoundedContexts/FrontOfHouse/Infrastructure/Projection/ToServeProjector.php#L35-L61`, `app/Providers/BoundedContexts/FrontOfHouse/Infrastructure/Projection/ProjectToServeList.php#L10-L18`, `app/Providers/BoundedContexts/FrontOfHouse/Application/Command/ServeDishHandler.php#L27-L36` |
+| 6. Second order | `tests/Feature/FullServiceTest.php#L56-L70` |
 | 7. 86 the menu | `app/Providers/BoundedContexts/Kitchen/Domain/Dish.php#L35-L43`, `app/Providers/BoundedContexts/Kitchen/Application/Command/DeclareDishEightySixedHandler.php#L24-L32`, `app/Providers/BoundedContexts/FrontOfHouse/Infrastructure/Processors/MarkMenuItemUnavailableProcessor.php#L35-L58` |
 | 8. Bill, pay, free the table | `app/Providers/BoundedContexts/FrontOfHouse/Application/Command/RequestBillHandler.php#L24-L31`, `app/Providers/BoundedContexts/Billing/Infrastructure/Processors/RecordServedDishes.php#L35-L56`, `app/Providers/BoundedContexts/Billing/Application/Command/PrepareBillHandler.php#L27-L49`, `app/Providers/BoundedContexts/Billing/Domain/Bill.php#L48-L72`, `app/Providers/BoundedContexts/Billing/Application/Command/PayBillHandler.php#L24-L33`, `app/Providers/BoundedContexts/FrontOfHouse/Application/Command/FreeTableHandler.php#L27-L35` |
-| 9. Revise a partial order | `app/Providers/BoundedContexts/FrontOfHouse/Application/Command/ReviseOrderHandler.php#L36-L58`, `app/Providers/BoundedContexts/Kitchen/Domain/OrderAssessment.php#L20-L41`, `app/Providers/BoundedContexts/Kitchen/Domain/Dish.php#L35-L43`, `app/Providers/BoundedContexts/FrontOfHouse/Domain/OrderFulfilment.php#L66-L124`, `app/Providers/BoundedContexts/Kitchen/Domain/KitchenTicket.php#L86-L102` |
+| 9. Revise a partial order | `app/Providers/BoundedContexts/FrontOfHouse/Application/Command/ReviseOrderHandler.php#L32-L48`, `app/Providers/BoundedContexts/Kitchen/Domain/OrderAssessment.php#L20-L41`, `app/Providers/BoundedContexts/Kitchen/Domain/Dish.php#L35-L43`, `app/Providers/BoundedContexts/FrontOfHouse/Domain/OrderFulfilment.php#L68-L126`, `app/Providers/BoundedContexts/Kitchen/Domain/KitchenTicket.php#L86-L102` |
 | 10. A fact of the domain, a contract for the others | `app/Providers/BoundedContexts/Kitchen/Domain/Event/DishesAdded.php#L14-L46`, `app/Providers/BoundedContexts/Kitchen/Application/Integration/DishesAddedV1.php#L18-L55`, `app/Providers/Modules/EventStore/Infrastructure/ConventionContractPublisher.php#L30-L41`, `app/Providers/BoundedContexts/Kitchen/Infrastructure/EventStoreKitchenTicketRepository.php#L53-L71` |
 | Level 1 | `SeatGuestsHandler.php#L27-L35` and `FreeTableHandler.php#L27-L35` |
 | Level 2 | `ToServeProjector.php#L35-L61` and `ProjectToServeList.php#L10-L18` |
