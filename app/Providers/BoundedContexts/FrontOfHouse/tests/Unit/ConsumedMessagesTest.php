@@ -6,6 +6,7 @@ use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableOrderId;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\UnavailableLine;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\VisitId;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Consumed\BillingBillPaid;
+use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Consumed\FrontOfHouseTableOrderRevised;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Consumed\KitchenDishEightySixed;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Consumed\KitchenDishesAdded;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Consumed\KitchenLinesUnavailable;
@@ -37,6 +38,13 @@ describe('what the dining room reads of the others', function () {
 
     test('a dish eighty-sixed: its name', function () {
         expect(KitchenDishEightySixed::fromPayload(['dishName' => 'Steak frites'])->dishName)->toEqual(new DishName('Steak frites'));
+    });
+
+    test('an order revised, in its own words: which order and which revision', function () {
+        $message = FrontOfHouseTableOrderRevised::fromPayload(['tableOrderId' => 'order-1', 'tableId' => 'table-4', 'tableLabel' => 'Window 4', 'revision' => 2, 'lines' => []]);
+
+        expect($message->tableOrderId)->toEqual(new TableOrderId('order-1'))
+            ->and($message->revision)->toBe(2);
     });
 
     test('a bill paid: the cover of the till is a visit of the room', function () {

@@ -172,6 +172,7 @@ describe('the order fulfilment saga', function () {
                         'tableOrderId' => $this->id,
                         'tableId' => 'table-7',
                         'tableLabel' => 'Terrace 7',
+                        'revision' => 1,
                         'lines' => [['lineId' => "{$this->id}-3", 'name' => 'Creme brulee', 'quantity' => 1, 'course' => 'dessert', 'allergens' => ['dairy', 'eggs']]],
                     ]);
             });
@@ -237,6 +238,19 @@ describe('the order fulfilment saga', function () {
                 reviseWith($this->id, 'creme-brulee')
                     ->assertUnprocessable()
                     ->assertJson(['message' => 'Only an order awaiting a revision can be revised.']);
+            });
+
+            test('a second revision is refused until the dining room has seen the first, and the command writes the order only', function () {
+                reviseWith($this->id, 'creme-brulee')->assertOk();
+
+                expect(theFulfilmentOf($this->id)['status'])->toBe('awaiting-revision');
+                reviseWith($this->id, 'house-red')
+                    ->assertStatus(409)
+                    ->assertJson(['message' => 'A revision of this order is already waiting for the kitchen.']);
+
+                theKitchenAndTheDiningRoomCatchUp();
+
+                expect(theFulfilmentOf($this->id)['status'])->toBe('confirmed');
             });
 
             test('a revision with an item the menu refuses is turned down', function () {

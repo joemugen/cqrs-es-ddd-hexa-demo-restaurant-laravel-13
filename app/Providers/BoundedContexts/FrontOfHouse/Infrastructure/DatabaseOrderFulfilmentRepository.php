@@ -54,6 +54,7 @@ final class DatabaseOrderFulfilmentRepository implements OrderFulfilmentReposito
                 JSON_THROW_ON_ERROR,
             ),
             'request_position' => $fulfilment->requestPosition(),
+            'revisions_seen' => $fulfilment->revisionsSeen(),
         ]);
     }
 
@@ -70,6 +71,7 @@ final class DatabaseOrderFulfilmentRepository implements OrderFulfilmentReposito
                 json_decode((string) ($row->unavailable_lines ?? '[]'), true, 512, JSON_THROW_ON_ERROR),
             ),
             (int) $row->request_position,
+            (int) $row->revisions_seen,
         );
     }
 }

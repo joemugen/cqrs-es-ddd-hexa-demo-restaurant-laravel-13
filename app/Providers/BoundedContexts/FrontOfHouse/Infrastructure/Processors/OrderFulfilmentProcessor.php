@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Processors;
 
+use App\Providers\BoundedContexts\FrontOfHouse\Application\Command\ApplyOrderRevision;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\Command\BeginOrderFulfilment;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\Command\CloseOrdersOfVisit;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\Command\ConfirmOrder;
@@ -11,6 +12,7 @@ use App\Providers\BoundedContexts\FrontOfHouse\Application\Command\MarkOrderAwai
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Bus\FrontOfHouseCommandBus;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Consumed\BillingBillPaid;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Consumed\FrontOfHouseTableOrderPlaced;
+use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Consumed\FrontOfHouseTableOrderRevised;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Consumed\KitchenDishesAdded;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Consumed\KitchenLinesUnavailable;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Consumed\KitchenTicketOpened;
@@ -69,6 +71,7 @@ final class OrderFulfilmentProcessor implements Processor
             $message instanceof FrontOfHouseTableOrderPlaced => new BeginOrderFulfilment($message->tableOrderId, $message->tableId, $message->visitId, $event->position),
             $message instanceof KitchenTicketOpened,
             $message instanceof KitchenDishesAdded => new ConfirmOrder($message->tableOrderId),
+            $message instanceof FrontOfHouseTableOrderRevised => new ApplyOrderRevision($message->tableOrderId, $message->revision, $event->position),
             $message instanceof KitchenLinesUnavailable => new MarkOrderAwaitingRevision($message->tableOrderId, $message->lines, $message->orderPosition),
             $message instanceof BillingBillPaid => new CloseOrdersOfVisit($message->visitId),
             default => null,

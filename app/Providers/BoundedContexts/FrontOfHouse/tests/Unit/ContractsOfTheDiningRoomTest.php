@@ -52,14 +52,15 @@ describe('what the dining room tells the others', function () {
             ->and(TableOrderPlacedV1::fromPayload($contract->toPayload()))->toEqual($contract);
     });
 
-    test('an order revised: only the lines it adds', function () {
-        $contract = TableOrderRevisedV1::from(new TableOrderRevised(new TableOrderId('order-1'), new TableId('table-4'), new TableLabel('Window 4'), aSteakLine()));
+    test('an order revised: which revision it is, and only the lines it adds', function () {
+        $contract = TableOrderRevisedV1::from(new TableOrderRevised(new TableOrderId('order-1'), new TableId('table-4'), new TableLabel('Window 4'), 2, aSteakLine()));
 
         expect(publishedAs(TableOrderRevisedV1::class))->toBe('front_of_house.table_order_revised v1')
             ->and($contract->toPayload())->toBe([
                 'tableOrderId' => 'order-1',
                 'tableId' => 'table-4',
                 'tableLabel' => 'Window 4',
+                'revision' => 2,
                 'lines' => [['lineId' => 'order-1-1', 'name' => 'Steak frites', 'quantity' => 1, 'course' => 'main', 'allergens' => ['gluten']]],
             ])
             ->and(TableOrderRevisedV1::fromPayload($contract->toPayload()))->toEqual($contract);

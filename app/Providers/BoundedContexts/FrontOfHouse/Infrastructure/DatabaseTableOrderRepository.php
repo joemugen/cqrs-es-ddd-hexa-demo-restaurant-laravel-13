@@ -38,6 +38,7 @@ final class DatabaseTableOrderRepository implements TableOrderRepository
             DB::table(Tables::TABLE_ORDER_LINES)->where('table_order_id', (string) $id)->orderBy('id')->get()
                 ->map(fn (object $line): OrderLine => $this->line($line))
                 ->all(),
+            (int) $order->revisions,
         );
     }
 
@@ -46,10 +47,10 @@ final class DatabaseTableOrderRepository implements TableOrderRepository
      */
     public function save(TableOrder $order): void
     {
-        DB::table(Tables::TABLE_ORDERS)->insertOrIgnore([
-            'id' => (string) $order->id(),
+        DB::table(Tables::TABLE_ORDERS)->updateOrInsert(['id' => (string) $order->id()], [
             'table_id' => (string) $order->tableId(),
             'visit_id' => (string) $order->visitId(),
+            'revisions' => $order->revisions(),
         ]);
 
         foreach ($order->lines() as $line) {

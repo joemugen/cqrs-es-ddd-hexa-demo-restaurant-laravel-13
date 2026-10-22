@@ -32,6 +32,7 @@ final class OrderFulfilment implements AggregateRoot
         private ?string $reason,
         private array $unavailableLines,
         private int $requestPosition,
+        private int $revisionsSeen = 0,
     ) {}
 
     public static function begin(TableOrderId $id, TableId $tableId, VisitId $visitId, int $requestPosition): self
@@ -50,8 +51,9 @@ final class OrderFulfilment implements AggregateRoot
         ?string $reason,
         array $unavailableLines,
         int $requestPosition,
+        int $revisionsSeen = 0,
     ): self {
-        return new self($id, $tableId, $visitId, $status, $reason, $unavailableLines, $requestPosition);
+        return new self($id, $tableId, $visitId, $status, $reason, $unavailableLines, $requestPosition, $revisionsSeen);
     }
 
     public function confirm(): void
@@ -75,7 +77,13 @@ final class OrderFulfilment implements AggregateRoot
         $this->unavailableLines = $lines;
     }
 
-    public function ensureCanBeRevised(): void
+    /**
+     * The order may be revised while the kitchen has said that it cannot cook some lines, and once the dining room has seen
+     * the last revision that was made: two revisions cannot be in flight, since the first one is told to this saga by a fact.
+     *
+     * @param  int  $revisionsMade  how many times the order was revised, as the order counts them
+     */
+    public function ensureCanBeRevised(int $revisionsMade): void
     {
         if ($this->status === FulfilmentStatus::CLOSED) {
             throw new ObsoleteRevision;
@@ -84,15 +92,26 @@ final class OrderFulfilment implements AggregateRoot
         if ($this->status !== FulfilmentStatus::AWAITING_REVISION) {
             throw new FrontOfHouseException('Only an order awaiting a revision can be revised.');
         }
+
+        if ($revisionsMade !== $this->revisionsSeen) {
+            throw new FrontOfHouseException('A revision of this order is already waiting for the kitchen.', 409);
+        }
     }
 
-    public function revise(int $revisionPosition): void
+    /**
+     * The guests revised the order: the kitchen is asked again. A revision already seen, or one of an order that is over,
+     * changes nothing.
+     */
+    public function revise(int $revision, int $revisionPosition): void
     {
-        $this->ensureCanBeRevised();
+        if ($this->isOver() || $revision <= $this->revisionsSeen) {
+            return;
+        }
 
         $this->status = FulfilmentStatus::AWAITING_KITCHEN;
         $this->unavailableLines = [];
         $this->requestPosition = $revisionPosition;
+        $this->revisionsSeen = $revision;
     }
 
     public function cancel(string $reason): void
@@ -156,6 +175,11 @@ final class OrderFulfilment implements AggregateRoot
     public function unavailableLines(): array
     {
         return $this->unavailableLines;
+    }
+
+    public function revisionsSeen(): int
+    {
+        return $this->revisionsSeen;
     }
 
     public function requestPosition(): int

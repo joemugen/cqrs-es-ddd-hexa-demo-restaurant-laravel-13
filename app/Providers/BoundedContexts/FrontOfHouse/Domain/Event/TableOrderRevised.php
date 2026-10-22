@@ -22,6 +22,7 @@ final readonly class TableOrderRevised implements TypedDomainEvent
         public TableOrderId $tableOrderId,
         public TableId $tableId,
         public TableLabel $tableLabel,
+        public int $revision,
         public array $addedLines,
     ) {}
 }

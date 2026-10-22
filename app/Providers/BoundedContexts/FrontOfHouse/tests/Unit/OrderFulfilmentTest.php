@@ -97,7 +97,7 @@ describe('an order fulfilment', function () {
 
         test('an answer to an order older than the last revision is ignored', function () {
             $fulfilment = fulfilmentAwaitingRevision();
-            $fulfilment->revise(20);
+            $fulfilment->revise(1, 20);
 
             $fulfilment->awaitRevision([steakUnavailable()], ORDER_PLACED_AT);
 
@@ -116,33 +116,66 @@ describe('an order fulfilment', function () {
         });
     });
 
-    describe('when the dining room revises the order', function () {
+    describe('when the dining room made a revision', function () {
         test('awaits the kitchen again, and the lines that were unavailable are abandoned', function () {
             $fulfilment = fulfilmentAwaitingRevision();
 
-            $fulfilment->revise(20);
+            $fulfilment->revise(1, 20);
 
             expect($fulfilment->status())->toBe(FulfilmentStatus::AWAITING_KITCHEN)
                 ->and($fulfilment->unavailableLines())->toBe([])
-                ->and($fulfilment->requestPosition())->toBe(20);
+                ->and($fulfilment->requestPosition())->toBe(20)
+                ->and($fulfilment->revisionsSeen())->toBe(1);
         });
 
         test('can be revised again after the kitchen answered the revision', function () {
             $fulfilment = fulfilmentAwaitingRevision();
-            $fulfilment->revise(20);
+            $fulfilment->revise(1, 20);
             $fulfilment->awaitRevision([steakUnavailable()], 20);
 
-            $fulfilment->revise(30);
+            $fulfilment->revise(2, 30);
 
             expect($fulfilment->status())->toBe(FulfilmentStatus::AWAITING_KITCHEN)
-                ->and($fulfilment->requestPosition())->toBe(30);
+                ->and($fulfilment->requestPosition())->toBe(30)
+                ->and($fulfilment->revisionsSeen())->toBe(2);
         });
 
-        test('is not revised when nothing is unavailable', function () {
+        test('hearing a revision again does not undo the answer of the kitchen', function () {
+            $fulfilment = fulfilmentAwaitingRevision();
+            $fulfilment->revise(1, 20);
+            $fulfilment->awaitRevision([steakUnavailable()], 20);
+
+            $fulfilment->revise(1, 20);
+
+            expect($fulfilment->status())->toBe(FulfilmentStatus::AWAITING_REVISION);
+        });
+
+        test('leaves a cancelled or a closed order as it is', function () {
+            $cancelled = fulfilmentAwaitingRevision();
+            $cancelled->cancel('The guests gave up.');
+            $closed = fulfilmentAwaitingRevision();
+            $closed->close();
+
+            $cancelled->revise(1, 20);
+            $closed->revise(1, 20);
+
+            expect($cancelled->status())->toBe(FulfilmentStatus::CANCELLED)
+                ->and($closed->status())->toBe(FulfilmentStatus::CLOSED);
+        });
+    });
+
+    describe('before a revision is accepted', function () {
+        test('an order awaiting a revision can be revised', function () {
+            fulfilmentAwaitingRevision()->ensureCanBeRevised(0);
+
+            expect(true)->toBeTrue();
+        });
+
+        test('an order the kitchen is cooking cannot', function () {
             $fulfilment = fulfilmentAwaitingTheKitchen();
             $fulfilment->confirm();
 
-            expect(fn () => $fulfilment->revise(20))
+            expect(fn () => $fulfilment->ensureCanBeRevised(0))
                 ->toThrow(FrontOfHouseException::class, 'Only an order awaiting a revision can be revised.');
         });
 
@@ -150,8 +183,15 @@ describe('an order fulfilment', function () {
             $fulfilment = fulfilmentAwaitingRevision();
             $fulfilment->close();
 
-            expect(fn () => $fulfilment->revise(40))
+            expect(fn () => $fulfilment->ensureCanBeRevised(0))
                 ->toThrow(ObsoleteRevision::class, 'The revision of the order is obsolete: the guests already paid and left.');
+        });
+
+        test('is refused while the dining room has not seen the last revision, so two revisions cannot be in flight', function () {
+            $fulfilment = fulfilmentAwaitingRevision();
+
+            expect(fn () => $fulfilment->ensureCanBeRevised(1))
+                ->toThrow(FrontOfHouseException::class, 'A revision of this order is already waiting for the kitchen.');
         });
     });
 

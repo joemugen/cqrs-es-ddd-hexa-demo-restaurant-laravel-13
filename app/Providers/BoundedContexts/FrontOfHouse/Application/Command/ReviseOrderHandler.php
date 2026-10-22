@@ -29,20 +29,21 @@ final readonly class ReviseOrderHandler implements CommandHandler
         private ContractPublisher $contracts,
     ) {}
 
+    /**
+     * The command writes the order and nothing else: the saga that follows it learns of the revision from its fact.
+     */
     public function __invoke(ReviseOrder $command): OrderRevised
     {
-        $fulfilment = $this->fulfilments->get($command->tableOrderId);
-        $fulfilment->ensureCanBeRevised();
         $order = $this->orders->get($command->tableOrderId);
+        $this->fulfilments->get($command->tableOrderId)->ensureCanBeRevised($order->revisions());
+
         $order->revise(
-            $this->tables->get($fulfilment->tableId()),
+            $this->tables->get($order->tableId()),
             $this->menus->containing(array_map(fn (RequestedLine $line): MenuItemId => $line->menuItemId, $command->lines)),
             $command->lines,
         );
         $this->orders->save($order);
-
-        $fulfilment->revise(array_last($this->contracts->publish($order->releaseEvents())));
-        $this->fulfilments->save($fulfilment);
+        $this->contracts->publish($order->releaseEvents());
 
         return new OrderRevised($command->tableOrderId);
     }

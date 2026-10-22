@@ -21,14 +21,15 @@ final class TableOrder implements AggregateRoot
         private readonly TableId $tableId,
         private readonly VisitId $visitId,
         private array $lines,
+        private int $revisions = 0,
     ) {}
 
     /**
      * @param  list<OrderLine>  $lines
      */
-    public static function restore(TableOrderId $id, TableId $tableId, VisitId $visitId, array $lines): self
+    public static function restore(TableOrderId $id, TableId $tableId, VisitId $visitId, array $lines, int $revisions = 0): self
     {
-        return new self($id, $tableId, $visitId, $lines);
+        return new self($id, $tableId, $visitId, $lines, $revisions);
     }
 
     /**
@@ -65,7 +66,8 @@ final class TableOrder implements AggregateRoot
 
         $added = self::linesOf($this->id, count($this->lines), $menu, $requested);
         $this->lines = [...$this->lines, ...$added];
-        $this->recordThat(new TableOrderRevised($this->id, $this->tableId, $table->label(), $added));
+        $this->revisions++;
+        $this->recordThat(new TableOrderRevised($this->id, $this->tableId, $table->label(), $this->revisions, $added));
     }
 
     public function id(): TableOrderId
@@ -76,6 +78,14 @@ final class TableOrder implements AggregateRoot
     public function tableId(): TableId
     {
         return $this->tableId;
+    }
+
+    /**
+     * How many times the guests revised the order: the dining room compares it with what it has seen.
+     */
+    public function revisions(): int
+    {
+        return $this->revisions;
     }
 
     public function visitId(): VisitId

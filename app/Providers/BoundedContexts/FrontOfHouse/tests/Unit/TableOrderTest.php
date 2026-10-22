@@ -135,6 +135,8 @@ describe('TableOrder', function () {
             $order->revise(windowTable(), sampleMenu(), [new RequestedLine(new MenuItemId('green-salad'), 1, 'main')]);
 
             $revised = $order->releaseEvents();
+            expect($revised[0]->revision)->toBe(1)
+                ->and($order->revisions())->toBe(1);
 
             expect($revised)->toHaveCount(1)
                 ->and($revised[0])->toBeInstanceOf(TableOrderRevised::class)
@@ -148,6 +150,16 @@ describe('TableOrder', function () {
                     ],
                 ])
                 ->and($order->lines())->toHaveCount(3);
+        });
+
+        test('counts its revisions, from none', function () {
+            $order = seatedOrder();
+            expect($order->revisions())->toBe(0);
+
+            $order->revise(windowTable(), sampleMenu(), [new RequestedLine(new MenuItemId('green-salad'), 1, 'main')]);
+            $order->revise(windowTable(), sampleMenu(), [new RequestedLine(new MenuItemId('green-salad'), 1, 'main')]);
+
+            expect($order->revisions())->toBe(2);
         });
 
         test('is obsolete for a table that hosts other guests than the ones who ordered', function () {
