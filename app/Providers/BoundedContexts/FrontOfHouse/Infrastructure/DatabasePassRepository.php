@@ -11,7 +11,7 @@ use App\Providers\BoundedContexts\FrontOfHouse\Domain\DishName;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\FrontOfHouseException;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\LineId;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableId;
-use App\Providers\BoundedContexts\FrontOfHouse\Domain\TicketId;
+use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableOrderId;
 use Illuminate\Support\Facades\DB;
 
 final class DatabasePassRepository implements PassRepository
@@ -34,7 +34,7 @@ final class DatabasePassRepository implements PassRepository
             new TableId((string) $row->table_id),
             new DishName((string) $row->dish_name),
             (int) $row->quantity,
-            new TicketId((string) $row->ticket_id),
+            new TableOrderId((string) $row->table_order_id),
             new LineId((string) $row->line_id),
             $row->served_at !== null,
         );
@@ -43,7 +43,7 @@ final class DatabasePassRepository implements PassRepository
     public function save(DishAtThePass $dish): void
     {
         DB::table(Tables::PASS)->updateOrInsert(['id' => (string) $dish->id()], [
-            'ticket_id' => (string) $dish->ticketId(),
+            'table_order_id' => (string) $dish->tableOrderId(),
             'line_id' => (string) $dish->lineId(),
             'table_id' => (string) $dish->tableId(),
             'dish_name' => (string) $dish->dishName(),

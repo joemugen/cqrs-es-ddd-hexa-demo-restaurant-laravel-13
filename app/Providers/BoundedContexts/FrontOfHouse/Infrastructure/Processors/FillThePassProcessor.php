@@ -46,7 +46,7 @@ final class FillThePassProcessor implements Processor
                 $handled++;
                 Correlation::resume($event->correlationId);
                 Causation::resume($event->position);
-                $this->bus->dispatch(new PutDishAtThePass($message->ticketId, $message->lineId, $message->tableId, $message->dishName, $message->quantity));
+                $this->bus->dispatch(new PutDishAtThePass($message->tableOrderId, $message->lineId, $message->tableId, $message->dishName, $message->quantity));
             }
 
             $position = $event->position;

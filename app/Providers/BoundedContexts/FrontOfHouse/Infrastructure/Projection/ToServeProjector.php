@@ -45,9 +45,9 @@ final class ToServeProjector implements RebuildableProjector
 
             if ($message instanceof KitchenDishReady) {
                 DB::table(Tables::TO_SERVE)->insertOrIgnore([
-                    'id' => (string) DishAtThePassId::forLine($message->ticketId, $message->lineId),
+                    'id' => (string) DishAtThePassId::forLine($message->tableOrderId, $message->lineId),
                     'position' => $event->position,
-                    'ticket_id' => (string) $message->ticketId,
+                    'table_order_id' => (string) $message->tableOrderId,
                     'line_id' => (string) $message->lineId,
                     'table_id' => (string) $message->tableId,
                     'table_label' => (string) $message->tableLabel,

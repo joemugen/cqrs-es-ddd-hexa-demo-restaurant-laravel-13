@@ -34,13 +34,13 @@ final readonly class DishServedV1 implements IntegrationContract
         return new self(
             (string) $event->tableId,
             (string) $event->visitId,
-            (string) $event->ticketId,
+            (string) $event->tableOrderId,
             (string) $event->lineId,
             (string) $event->dishName,
             $event->quantity,
             $event->unitPriceCents,
             $event->kind,
-            $event->ticketId.':'.$event->lineId,
+            $event->tableOrderId.':'.$event->lineId,
         );
     }
 

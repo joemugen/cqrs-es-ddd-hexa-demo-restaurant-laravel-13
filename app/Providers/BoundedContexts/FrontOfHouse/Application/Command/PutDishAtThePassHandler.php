@@ -24,7 +24,7 @@ final readonly class PutDishAtThePassHandler implements CommandHandler
      */
     public function __invoke(PutDishAtThePass $command): DishPutAtThePass
     {
-        $id = DishAtThePassId::forLine($command->ticketId, $command->lineId);
+        $id = DishAtThePassId::forLine($command->tableOrderId, $command->lineId);
 
         if (! $this->passes->exists($id)) {
             $this->passes->save(new DishAtThePass(
@@ -32,7 +32,7 @@ final readonly class PutDishAtThePassHandler implements CommandHandler
                 $command->tableId,
                 $command->dishName,
                 $command->quantity,
-                $command->ticketId,
+                $command->tableOrderId,
                 $command->lineId,
                 false,
             ));

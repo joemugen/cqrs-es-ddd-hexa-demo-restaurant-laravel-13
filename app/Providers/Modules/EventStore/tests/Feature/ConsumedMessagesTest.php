@@ -26,7 +26,7 @@ describe('what a consumer reads of the log', function () {
         $message = app(ConsumedMessages::class)->read(aFactInTheLog('kitchen.dish_ready', aDishReadyPayload()), ToServeProjector::class);
 
         expect($message)->toBeInstanceOf(KitchenDishReady::class)
-            ->and((string) $message->ticketId)->toBe('order-1')
+            ->and((string) $message->tableOrderId)->toBe('order-1')
             ->and((string) $message->tableId)->toBe('table-4')
             ->and($message->quantity)->toBe(2);
     });

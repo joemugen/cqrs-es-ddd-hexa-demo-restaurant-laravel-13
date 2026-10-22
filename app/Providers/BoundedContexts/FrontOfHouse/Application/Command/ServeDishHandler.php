@@ -27,7 +27,7 @@ final readonly class ServeDishHandler implements CommandHandler
     public function __invoke(ServeDish $command): DishServed
     {
         $dish = $this->passes->find($command->toServeId);
-        $order = $this->orders->get(new TableOrderId((string) $dish->ticketId()));
+        $order = $this->orders->get(new TableOrderId((string) $dish->tableOrderId()));
         $dish->serve($order->line($dish->lineId()), $order->visitId());
         $this->passes->save($dish);
         $this->contracts->publish($dish->releaseEvents());

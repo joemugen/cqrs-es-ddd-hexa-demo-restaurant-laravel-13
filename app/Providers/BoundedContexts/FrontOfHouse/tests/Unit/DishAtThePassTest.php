@@ -10,12 +10,12 @@ use App\Providers\BoundedContexts\FrontOfHouse\Domain\LineId;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\MenuItemId;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\OrderLine;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableId;
-use App\Providers\BoundedContexts\FrontOfHouse\Domain\TicketId;
+use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableOrderId;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\VisitId;
 
 function aSaladAtThePass(): DishAtThePass
 {
-    return new DishAtThePass(new DishAtThePassId('1'), new TableId('table-4'), new DishName('Green salad'), 2, new TicketId('ticket-1'), new LineId('line-1'), false);
+    return new DishAtThePass(new DishAtThePassId('1'), new TableId('table-4'), new DishName('Green salad'), 2, new TableOrderId('order-1'), new LineId('line-1'), false);
 }
 
 function theSaladAsOrdered(): OrderLine
@@ -24,6 +24,10 @@ function theSaladAsOrdered(): OrderLine
 }
 
 describe('a dish at the pass', function () {
+    test('belongs to a line of an order of the room, which the kitchen calls a ticket', function () {
+        expect(aSaladAtThePass()->tableOrderId())->toEqual(new TableOrderId('order-1'));
+    });
+
     test('can be served once', function () {
         $dish = aSaladAtThePass();
 
@@ -40,7 +44,7 @@ describe('a dish at the pass', function () {
         $dish->serve(theSaladAsOrdered(), new VisitId('visit-1'));
 
         expect($dish->releaseEvents())->toEqual([
-            new DishServed(new TableId('table-4'), new VisitId('visit-1'), new DishName('Green salad'), 2, 1100, DishKind::FOOD, new TicketId('ticket-1'), new LineId('line-1')),
+            new DishServed(new TableId('table-4'), new VisitId('visit-1'), new DishName('Green salad'), 2, 1100, DishKind::FOOD, new TableOrderId('order-1'), new LineId('line-1')),
         ]);
     });
 

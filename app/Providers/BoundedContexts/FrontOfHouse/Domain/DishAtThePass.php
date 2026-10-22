@@ -17,7 +17,7 @@ final class DishAtThePass implements AggregateRoot
         private readonly TableId $tableId,
         private readonly DishName $dishName,
         private readonly int $quantity,
-        private readonly TicketId $ticketId,
+        private readonly TableOrderId $tableOrderId,
         private readonly LineId $lineId,
         private bool $served,
     ) {}
@@ -39,7 +39,7 @@ final class DishAtThePass implements AggregateRoot
             $this->quantity,
             $line->unitPriceCents,
             $line->kind,
-            $this->ticketId,
+            $this->tableOrderId,
             $this->lineId,
         ));
     }
@@ -64,9 +64,9 @@ final class DishAtThePass implements AggregateRoot
         return $this->quantity;
     }
 
-    public function ticketId(): TicketId
+    public function tableOrderId(): TableOrderId
     {
-        return $this->ticketId;
+        return $this->tableOrderId;
     }
 
     public function lineId(): LineId

@@ -4,7 +4,7 @@ use App\Providers\BoundedContexts\FrontOfHouse\Application\PassRepository;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\DishAtThePass;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\DishAtThePassId;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\LineId;
-use App\Providers\BoundedContexts\FrontOfHouse\Domain\TicketId;
+use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableOrderId;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\FrontOfHouseSeeder;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Projection\ToServeProjector;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Tables;
@@ -43,7 +43,9 @@ describe('the pass', function () {
         expect($waiting)->toHaveCount(1)
             ->and($waiting[0]['dishName'])->toBe('Green salad')
             ->and($waiting[0]['tableId'])->toBe('table-4')
-            ->and($waiting[0]['quantity'])->toBe(1);
+            ->and($waiting[0]['quantity'])->toBe(1)
+            ->and($waiting[0]['tableOrderId'])->toBe($ticketId)
+            ->and($waiting[0])->not->toHaveKey('ticketId');
     });
 
     test('serving a dish acknowledges the command and leaves the pass', function () {
@@ -128,9 +130,9 @@ describe('the pass', function () {
             [$ticket, $line] = theDishReadyAtThePass();
             $this->getJson('/api/front-of-house/to-serve')->assertExactJson([]);
 
-            $this->postJson('/api/front-of-house/to-serve/'.DishAtThePassId::forLine(new TicketId($ticket), new LineId($line)).'/serve')->assertOk();
+            $this->postJson('/api/front-of-house/to-serve/'.DishAtThePassId::forLine(new TableOrderId($ticket), new LineId($line)).'/serve')->assertOk();
 
-            $this->postJson('/api/front-of-house/to-serve/'.DishAtThePassId::forLine(new TicketId($ticket), new LineId($line)).'/serve')
+            $this->postJson('/api/front-of-house/to-serve/'.DishAtThePassId::forLine(new TableOrderId($ticket), new LineId($line)).'/serve')
                 ->assertUnprocessable()
                 ->assertJson(['message' => 'That dish has already left the pass.']);
         });
