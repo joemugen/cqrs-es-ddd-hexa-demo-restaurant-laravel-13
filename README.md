@@ -32,9 +32,9 @@ Each context names the evening differently.
 | Evening | Front of house | Kitchen | Billing |
 | --- | --- | --- | --- |
 | Who is here | `Table` (`table-4`, label, guest count) | `partyRef` on a ticket | `coverRef` on a bill |
-| What was asked for | `TableOrder` of `MenuItem`s (name, price, description, allergens, availability) | `KitchenTicket` of dishes (station, cooking time, course, no price) | `Bill` lines copied from dishes that were served |
+| What was asked for | `TableOrder` of lines copied from `MenuItem`s (name, price at the time of the order, description, allergens, availability) | `KitchenTicket` of dishes (station, cooking time, course, no price) | `Bill` lines built from the dishes that were served, at the price of their order line |
 | Out of stock | Menu item `available: false` | `Dish` declared 86 | — |
-| Money | Price on the menu | Not present | VAT-inclusive totals, payments, tip |
+| Money | Price on the menu, kept on the line once ordered | Not present | VAT-inclusive totals, payments, tip |
 
 They never call each other, and they do not share a class for the same concept. A context publishes an integration event (a type string and a payload). After the writer's transaction commits, each processor and projector runs in its own transaction and advances its own checkpoint. A failure in the kitchen cannot roll back an order. The shared modules are `SharedKernel` (contracts, buses, value types) and `EventStore`, a technical log: append-only `events` (`stream_id`, `version`, `type`, `payload`, `occurred_at`, `position`) with an expected version, plus a `checkpoints` table.
 

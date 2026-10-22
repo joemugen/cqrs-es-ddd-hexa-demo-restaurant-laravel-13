@@ -24,7 +24,7 @@ final readonly class OrderLine
     ) {}
 
     /**
-     * What the kitchen needs. The price stays on the menu.
+     * What the kitchen needs. The price stays on the line, for the till.
      *
      * @return array{lineId: string, name: string, quantity: int, course: string, allergens: list<string>}
      */
