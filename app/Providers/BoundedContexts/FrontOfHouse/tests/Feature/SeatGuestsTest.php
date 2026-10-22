@@ -4,6 +4,7 @@ use App\Providers\BoundedContexts\FrontOfHouse\Application\FloorPlan;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\TableRepository;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\Table;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableId;
+use App\Providers\BoundedContexts\FrontOfHouse\Domain\VisitId;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\FrontOfHouseSeeder;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Tables;
 use Illuminate\Support\Facades\DB;
@@ -16,10 +17,10 @@ describe('seating guests', function () {
     test('seating guests acknowledges the command and updates the floor plan', function () {
         $this->postJson('/api/front-of-house/tables/table-4/guests', [
             'guestCount' => 2,
-        ])->assertOk()->assertExactJson([
+        ])->assertOk()->assertJson([
             'tableId' => 'table-4',
             'accepted' => true,
-        ]);
+        ])->assertJsonStructure(['visitId']);
 
         $this->getJson('/api/front-of-house/floor-plan')
             ->assertOk()
@@ -64,6 +65,11 @@ describe('seating guests', function () {
                 throw new RuntimeException('Queries must not hydrate aggregates.');
             }
 
+            public function hosting(VisitId $visit): ?Table
+            {
+                throw new RuntimeException('Queries must not hydrate aggregates.');
+            }
+
             public function save(Table $table): void
             {
                 throw new RuntimeException('Queries must not hydrate aggregates.');
@@ -71,6 +77,21 @@ describe('seating guests', function () {
         });
 
         $this->getJson('/api/front-of-house/floor-plan')->assertOk();
+    });
+
+    describe('a visit', function () {
+        test('starts with the guests, is kept by the table until they leave, and is not shown by the floor plan', function () {
+            $visit = $this->postJson('/api/front-of-house/tables/table-4/guests', ['guestCount' => 2])->json('visitId');
+
+            expect(DB::table(Tables::TABLES)->where('id', 'table-4')->value('visit_id'))->toBe($visit);
+        });
+
+        test('seating again under the same key finds the same visit and does not seat twice', function () {
+            $first = $this->postJson('/api/front-of-house/tables/table-4/guests', ['guestCount' => 2], ['Idempotency-Key' => 'welcome-1'])->assertOk()->json('visitId');
+            $second = $this->postJson('/api/front-of-house/tables/table-4/guests', ['guestCount' => 2], ['Idempotency-Key' => 'welcome-1'])->assertOk()->json('visitId');
+
+            expect($second)->toBe($first);
+        });
     });
 
     describe('refusals', function () {

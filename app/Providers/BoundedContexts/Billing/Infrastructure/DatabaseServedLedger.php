@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\DB;
 
 final class DatabaseServedLedger implements ServedLedger
 {
-    public function record(CoverRef $coverRef, ServedDish $dish): void
+    public function record(CoverRef $coverRef, ServedDish $dish, int $position): void
     {
         DB::table(Tables::SERVED_ITEMS)->insertOrIgnore([
             'source_key' => (string) $dish->sourceKey,
@@ -22,14 +22,16 @@ final class DatabaseServedLedger implements ServedLedger
             'quantity' => $dish->quantity,
             'unit_price_cents' => $dish->unitPriceCents,
             'kind' => $dish->kind,
+            'position' => $position,
         ]);
     }
 
-    public function unbilled(CoverRef $coverRef): array
+    public function unbilled(CoverRef $coverRef, int $upToPosition): array
     {
         return DB::table(Tables::SERVED_ITEMS)
             ->where('cover_ref', (string) $coverRef)
             ->whereNull('bill_id')
+            ->where('position', '<=', $upToPosition)
             ->orderBy('source_key')
             ->get()
             ->map(fn (object $row): ServedDish => new ServedDish(

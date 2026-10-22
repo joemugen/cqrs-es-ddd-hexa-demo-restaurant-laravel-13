@@ -10,12 +10,13 @@ use App\Providers\BoundedContexts\FrontOfHouse\Domain\OrderFulfilment;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableId;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableOrderId;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\UnavailableLine;
+use App\Providers\BoundedContexts\FrontOfHouse\Domain\VisitId;
 
 const ORDER_PLACED_AT = 10;
 
 function fulfilmentAwaitingTheKitchen(): OrderFulfilment
 {
-    return OrderFulfilment::begin(new TableOrderId('order-1'), new TableId('table-7'), ORDER_PLACED_AT);
+    return OrderFulfilment::begin(new TableOrderId('order-1'), new TableId('table-7'), new VisitId('visit-1'), ORDER_PLACED_AT);
 }
 
 function steakUnavailable(): UnavailableLine
@@ -39,6 +40,7 @@ describe('an order fulfilment', function () {
         expect($fulfilment->status())->toBe(FulfilmentStatus::AWAITING_KITCHEN)
             ->and((string) $fulfilment->id())->toBe('order-1')
             ->and((string) $fulfilment->tableId())->toBe('table-7')
+            ->and($fulfilment->visitId())->toEqual(new VisitId('visit-1'))
             ->and($fulfilment->reason())->toBeNull()
             ->and($fulfilment->unavailableLines())->toBe([]);
     });
@@ -55,6 +57,7 @@ describe('an order fulfilment', function () {
         $fulfilment = OrderFulfilment::restore(
             new TableOrderId('order-1'),
             new TableId('table-7'),
+            new VisitId('visit-1'),
             FulfilmentStatus::CANCELLED,
             'The guests gave up.',
             [steakUnavailable()],
@@ -145,7 +148,7 @@ describe('an order fulfilment', function () {
 
         test('is refused once the guests paid and left', function () {
             $fulfilment = fulfilmentAwaitingRevision();
-            $fulfilment->close(30);
+            $fulfilment->close();
 
             expect(fn () => $fulfilment->revise(40))
                 ->toThrow(ObsoleteRevision::class, 'The revision of the order is obsolete: the guests already paid and left.');
@@ -187,30 +190,31 @@ describe('an order fulfilment', function () {
         });
     });
 
-    describe('when the bill is paid', function () {
+    describe('when the guests of the visit paid', function () {
         test('an order still awaiting a revision is closed: the guests left', function () {
             $fulfilment = fulfilmentAwaitingRevision();
 
-            $fulfilment->close(30);
+            $fulfilment->close();
 
             expect($fulfilment->status())->toBe(FulfilmentStatus::CLOSED);
-        });
-
-        test('a payment older than the order says nothing about it', function () {
-            $fulfilment = fulfilmentAwaitingRevision();
-
-            $fulfilment->close(ORDER_PLACED_AT - 1);
-
-            expect($fulfilment->status())->toBe(FulfilmentStatus::AWAITING_REVISION);
         });
 
         test('an order the kitchen is cooking is left alone', function () {
             $fulfilment = fulfilmentAwaitingTheKitchen();
             $fulfilment->confirm();
 
-            $fulfilment->close(30);
+            $fulfilment->close();
 
             expect($fulfilment->status())->toBe(FulfilmentStatus::CONFIRMED);
+        });
+
+        test('an order that was cancelled stays cancelled', function () {
+            $fulfilment = fulfilmentAwaitingRevision();
+            $fulfilment->cancel('The guests gave up.');
+
+            $fulfilment->close();
+
+            expect($fulfilment->status())->toBe(FulfilmentStatus::CANCELLED);
         });
     });
 });

@@ -11,12 +11,17 @@ use App\Providers\BoundedContexts\Billing\Domain\SourceKey;
 
 interface ServedLedger
 {
-    public function record(CoverRef $coverRef, ServedDish $dish): void;
+    /**
+     * @param  int  $position  where the dish was served in the log
+     */
+    public function record(CoverRef $coverRef, ServedDish $dish, int $position): void;
 
     /**
+     * What was served to a cover and is not on a bill, up to the position of the request of this one.
+     *
      * @return list<ServedDish>
      */
-    public function unbilled(CoverRef $coverRef): array;
+    public function unbilled(CoverRef $coverRef, int $upToPosition): array;
 
     /**
      * @param  list<SourceKey>  $sourceKeys

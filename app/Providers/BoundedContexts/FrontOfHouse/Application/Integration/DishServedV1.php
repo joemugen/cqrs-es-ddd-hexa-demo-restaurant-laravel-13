@@ -19,6 +19,7 @@ final readonly class DishServedV1 implements IntegrationContract
 {
     public function __construct(
         public string $tableId,
+        public string $visitId,
         public string $description,
         public int $quantity,
         public int $unitPriceCents,
@@ -30,6 +31,7 @@ final readonly class DishServedV1 implements IntegrationContract
     {
         return new self(
             (string) $event->tableId,
+            (string) $event->visitId,
             (string) $event->dishName,
             $event->quantity,
             $event->unitPriceCents,
@@ -42,6 +44,7 @@ final readonly class DishServedV1 implements IntegrationContract
     {
         return [
             'tableId' => $this->tableId,
+            'visitId' => $this->visitId,
             'description' => $this->description,
             'quantity' => $this->quantity,
             'unitPriceCents' => $this->unitPriceCents,
@@ -54,6 +57,7 @@ final readonly class DishServedV1 implements IntegrationContract
     {
         return new self(
             (string) $payload['tableId'],
+            (string) $payload['visitId'],
             (string) $payload['description'],
             (int) $payload['quantity'],
             (int) $payload['unitPriceCents'],

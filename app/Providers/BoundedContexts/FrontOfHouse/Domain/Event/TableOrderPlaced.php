@@ -8,6 +8,7 @@ use App\Providers\BoundedContexts\FrontOfHouse\Domain\OrderLine;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableId;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableLabel;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableOrderId;
+use App\Providers\BoundedContexts\FrontOfHouse\Domain\VisitId;
 use App\Providers\Modules\SharedKernel\Domain\TypedDomainEvent;
 
 /**
@@ -21,6 +22,7 @@ final readonly class TableOrderPlaced implements TypedDomainEvent
     public function __construct(
         public TableOrderId $tableOrderId,
         public TableId $tableId,
+        public VisitId $visitId,
         public TableLabel $tableLabel,
         public array $lines,
     ) {}

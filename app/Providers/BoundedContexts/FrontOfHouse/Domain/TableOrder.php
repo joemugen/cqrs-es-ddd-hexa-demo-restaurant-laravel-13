@@ -19,15 +19,16 @@ final class TableOrder implements AggregateRoot
     private function __construct(
         private readonly TableOrderId $id,
         private readonly TableId $tableId,
+        private readonly VisitId $visitId,
         private array $lines,
     ) {}
 
     /**
      * @param  list<OrderLine>  $lines
      */
-    public static function restore(TableOrderId $id, TableId $tableId, array $lines): self
+    public static function restore(TableOrderId $id, TableId $tableId, VisitId $visitId, array $lines): self
     {
-        return new self($id, $tableId, $lines);
+        return new self($id, $tableId, $visitId, $lines);
     }
 
     /**
@@ -35,16 +36,14 @@ final class TableOrder implements AggregateRoot
      */
     public static function place(TableOrderId $id, Table $table, Menu $menu, array $requested): self
     {
-        if (! $table->hasGuests()) {
-            throw new FrontOfHouseException('No order for a table without seated guests.');
-        }
+        $visit = $table->visit() ?? throw new FrontOfHouseException('No order for a table without seated guests.');
 
         if ($requested === []) {
             throw new FrontOfHouseException('An order needs at least one item.');
         }
 
-        $order = new self($id, $table->id(), self::linesOf($id, 0, $menu, $requested));
-        $order->recordThat(new TableOrderPlaced($id, $table->id(), $table->label(), $order->lines));
+        $order = new self($id, $table->id(), $visit, self::linesOf($id, 0, $menu, $requested));
+        $order->recordThat(new TableOrderPlaced($id, $table->id(), $visit, $table->label(), $order->lines));
 
         return $order;
     }
@@ -56,6 +55,10 @@ final class TableOrder implements AggregateRoot
      */
     public function revise(Table $table, Menu $menu, array $requested): void
     {
+        if (! $table->isHosting($this->visitId)) {
+            throw new ObsoleteRevision;
+        }
+
         if ($requested === []) {
             throw new FrontOfHouseException('A revision needs at least one item.');
         }
@@ -73,6 +76,11 @@ final class TableOrder implements AggregateRoot
     public function tableId(): TableId
     {
         return $this->tableId;
+    }
+
+    public function visitId(): VisitId
+    {
+        return $this->visitId;
     }
 
     /**

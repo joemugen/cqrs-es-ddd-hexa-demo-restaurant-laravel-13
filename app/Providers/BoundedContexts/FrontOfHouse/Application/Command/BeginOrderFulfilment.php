@@ -6,6 +6,7 @@ namespace App\Providers\BoundedContexts\FrontOfHouse\Application\Command;
 
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableId;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableOrderId;
+use App\Providers\BoundedContexts\FrontOfHouse\Domain\VisitId;
 use App\Providers\Modules\SharedKernel\Application\Command;
 
 /**
@@ -16,6 +17,7 @@ final readonly class BeginOrderFulfilment implements Command
     public function __construct(
         public TableOrderId $tableOrderId,
         public TableId $tableId,
+        public VisitId $visitId,
         public int $requestPosition,
     ) {}
 }

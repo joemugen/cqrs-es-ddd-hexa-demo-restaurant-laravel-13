@@ -26,11 +26,14 @@ final readonly class FreeTableHandler implements CommandHandler
      */
     public function __invoke(FreeTable $command): TableFreed
     {
-        $table = $this->tables->get($command->tableId);
-        $table->free();
-        $this->tables->save($table);
-        $this->floorPlan->sync($table);
+        $table = $this->tables->hosting($command->visitId);
 
-        return new TableFreed($command->tableId);
+        if ($table !== null) {
+            $table->free($command->visitId);
+            $this->tables->save($table);
+            $this->floorPlan->sync($table);
+        }
+
+        return new TableFreed($command->visitId);
     }
 }

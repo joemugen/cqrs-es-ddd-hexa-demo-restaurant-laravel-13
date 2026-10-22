@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Processors;
 
 use App\Providers\BoundedContexts\FrontOfHouse\Application\Command\BeginOrderFulfilment;
-use App\Providers\BoundedContexts\FrontOfHouse\Application\Command\CloseOrdersOfPaidTable;
+use App\Providers\BoundedContexts\FrontOfHouse\Application\Command\CloseOrdersOfVisit;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\Command\ConfirmOrder;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\Command\MarkOrderAwaitingRevision;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Bus\FrontOfHouseCommandBus;
@@ -24,8 +24,8 @@ use App\Providers\Modules\SharedKernel\Infrastructure\Correlation;
 
 /**
  * The saga of an order, as the dining room sees it. It starts when the order is placed. The kitchen cooks what it can
- * (confirmed) and names what it cannot (awaiting a revision, until the waiter revises or the guests give up). A paid
- * bill closes an order still awaiting a revision.
+ * (confirmed) and names what it cannot (awaiting a revision, until the waiter revises or the guests give up). The
+ * payment of a visit closes the orders of that visit that still await a revision.
  */
 final class OrderFulfilmentProcessor implements Processor
 {
@@ -66,11 +66,11 @@ final class OrderFulfilmentProcessor implements Processor
         $message = $this->messages->read($event, self::class);
 
         $command = match (true) {
-            $message instanceof FrontOfHouseTableOrderPlaced => new BeginOrderFulfilment($message->tableOrderId, $message->tableId, $event->position),
+            $message instanceof FrontOfHouseTableOrderPlaced => new BeginOrderFulfilment($message->tableOrderId, $message->tableId, $message->visitId, $event->position),
             $message instanceof KitchenTicketOpened,
             $message instanceof KitchenDishesAdded => new ConfirmOrder($message->tableOrderId),
             $message instanceof KitchenLinesUnavailable => new MarkOrderAwaitingRevision($message->tableOrderId, $message->lines, $message->orderPosition),
-            $message instanceof BillingBillPaid => new CloseOrdersOfPaidTable($message->tableId, $event->position),
+            $message instanceof BillingBillPaid => new CloseOrdersOfVisit($message->visitId),
             default => null,
         };
 

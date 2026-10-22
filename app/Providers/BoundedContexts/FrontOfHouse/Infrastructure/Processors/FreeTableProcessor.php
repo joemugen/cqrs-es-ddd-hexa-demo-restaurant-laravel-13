@@ -45,7 +45,7 @@ final class FreeTableProcessor implements Processor
                 $handled++;
                 Correlation::resume($event->correlationId);
                 Causation::resume($event->position);
-                $this->bus->dispatch(new FreeTable($message->tableId));
+                $this->bus->dispatch(new FreeTable($message->visitId));
             }
 
             $position = $event->position;

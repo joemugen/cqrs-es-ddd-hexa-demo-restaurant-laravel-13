@@ -11,6 +11,7 @@ use App\Providers\BoundedContexts\FrontOfHouse\Domain\OrderFulfilment;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableId;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableOrderId;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\UnavailableLine;
+use App\Providers\BoundedContexts\FrontOfHouse\Domain\VisitId;
 use Illuminate\Support\Facades\DB;
 
 final class DatabaseOrderFulfilmentRepository implements OrderFulfilmentRepository
@@ -31,10 +32,10 @@ final class DatabaseOrderFulfilmentRepository implements OrderFulfilmentReposito
         return $this->fulfilment($row);
     }
 
-    public function awaitingRevisionAt(TableId $tableId): array
+    public function awaitingRevisionOf(VisitId $visit): array
     {
         return DB::table(Tables::ORDER_FULFILMENTS)
-            ->where('table_id', (string) $tableId)
+            ->where('visit_id', (string) $visit)
             ->where('status', FulfilmentStatus::AWAITING_REVISION)
             ->get()
             ->map(fn (object $row): OrderFulfilment => $this->fulfilment($row))
@@ -45,6 +46,7 @@ final class DatabaseOrderFulfilmentRepository implements OrderFulfilmentReposito
     {
         DB::table(Tables::ORDER_FULFILMENTS)->updateOrInsert(['table_order_id' => (string) $fulfilment->id()], [
             'table_id' => (string) $fulfilment->tableId(),
+            'visit_id' => (string) $fulfilment->visitId(),
             'status' => $fulfilment->status(),
             'reason' => $fulfilment->reason(),
             'unavailable_lines' => json_encode(
@@ -60,6 +62,7 @@ final class DatabaseOrderFulfilmentRepository implements OrderFulfilmentReposito
         return OrderFulfilment::restore(
             new TableOrderId((string) $row->table_order_id),
             new TableId((string) $row->table_id),
+            new VisitId((string) $row->visit_id),
             (string) $row->status,
             $row->reason !== null ? (string) $row->reason : null,
             array_map(

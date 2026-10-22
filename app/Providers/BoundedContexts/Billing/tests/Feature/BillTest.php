@@ -23,16 +23,16 @@ describe('the till', function () {
     });
 
     test('asking for a bill before anything is served does not open one', function () {
-        $this->postJson('/api/front-of-house/tables/table-4/guests', ['guestCount' => 2])->assertOk();
+        $this->visit = $this->postJson('/api/front-of-house/tables/table-4/guests', ['guestCount' => 2])->assertOk()->json('visitId');
 
         $this->postJson('/api/front-of-house/tables/table-4/bill')
             ->assertExactJson(['tableId' => 'table-4', 'accepted' => true]);
 
-        $this->getJson('/api/billing/covers/table-4/bill')->assertNotFound();
+        $this->getJson("/api/billing/covers/{$this->visit}/bill")->assertNotFound();
     });
 
     test('the till bills what was served and ignores what is still in the kitchen', function () {
-        $this->postJson('/api/front-of-house/tables/table-4/guests', ['guestCount' => 2])->assertOk();
+        $this->visit = $this->postJson('/api/front-of-house/tables/table-4/guests', ['guestCount' => 2])->assertOk()->json('visitId');
         $this->postJson('/api/front-of-house/tables/table-4/orders', [
             'lines' => [
                 ['menuItemId' => 'green-salad', 'quantity' => 1, 'course' => 'starter'],
@@ -45,9 +45,9 @@ describe('the till', function () {
         $this->postJson('/api/front-of-house/tables/table-4/bill')
             ->assertExactJson(['tableId' => 'table-4', 'accepted' => true]);
 
-        $bill = $this->getJson('/api/billing/covers/table-4/bill')->assertOk()->json();
+        $bill = $this->getJson("/api/billing/covers/{$this->visit}/bill")->assertOk()->json();
 
-        expect($bill['coverRef'])->toBe('table-4')
+        expect($bill['coverRef'])->toBe($this->visit)
             ->and($bill['status'])->toBe('open')
             ->and($bill['lines'])->toHaveCount(1)
             ->and($bill['lines'][0])->toMatchArray([
@@ -65,7 +65,7 @@ describe('the till', function () {
     });
 
     test('a split payment keeps the table until the balance is gone, then the bill is immutable', function () {
-        $this->postJson('/api/front-of-house/tables/table-4/guests', ['guestCount' => 2])->assertOk();
+        $this->visit = $this->postJson('/api/front-of-house/tables/table-4/guests', ['guestCount' => 2])->assertOk()->json('visitId');
         $this->postJson('/api/front-of-house/tables/table-4/orders', [
             'lines' => [
                 ['menuItemId' => 'green-salad', 'quantity' => 1, 'course' => 'starter'],
@@ -74,14 +74,14 @@ describe('the till', function () {
         serveOnTheLatestTicket('starter', 'Green salad');
         $this->postJson('/api/front-of-house/tables/table-4/bill')->assertOk();
 
-        $billId = $this->getJson('/api/billing/covers/table-4/bill')->json()['billId'];
+        $billId = $this->getJson("/api/billing/covers/{$this->visit}/bill")->json()['billId'];
 
         $this->postJson("/api/billing/bills/{$billId}/payments", [
             'amountCents' => 600,
             'tipCents' => 0,
         ])->assertExactJson(['billId' => $billId, 'accepted' => true]);
 
-        $open = $this->getJson('/api/billing/covers/table-4/bill')->json();
+        $open = $this->getJson("/api/billing/covers/{$this->visit}/bill")->json();
         $table = collect($this->getJson('/api/front-of-house/floor-plan')->json())->firstWhere('tableId', 'table-4');
 
         expect($open['balanceCents'])->toBe(500)
@@ -94,7 +94,7 @@ describe('the till', function () {
             'tipCents' => 200,
         ])->assertOk();
 
-        $paid = $this->getJson('/api/billing/covers/table-4/bill')->json();
+        $paid = $this->getJson("/api/billing/covers/{$this->visit}/bill")->json();
         $freed = collect($this->getJson('/api/front-of-house/floor-plan')->json())->firstWhere('tableId', 'table-4');
 
         expect($paid['status'])->toBe('paid')
@@ -110,7 +110,7 @@ describe('the till', function () {
     });
 
     test('asking twice does not open a second bill', function () {
-        $this->postJson('/api/front-of-house/tables/table-4/guests', ['guestCount' => 2])->assertOk();
+        $this->visit = $this->postJson('/api/front-of-house/tables/table-4/guests', ['guestCount' => 2])->assertOk()->json('visitId');
         $this->postJson('/api/front-of-house/tables/table-4/orders', [
             'lines' => [
                 ['menuItemId' => 'green-salad', 'quantity' => 1, 'course' => 'starter'],
@@ -119,15 +119,15 @@ describe('the till', function () {
         serveOnTheLatestTicket('starter', 'Green salad');
 
         $this->postJson('/api/front-of-house/tables/table-4/bill')->assertOk();
-        $first = $this->getJson('/api/billing/covers/table-4/bill')->json()['billId'];
+        $first = $this->getJson("/api/billing/covers/{$this->visit}/bill")->json()['billId'];
         $this->postJson('/api/front-of-house/tables/table-4/bill')->assertOk();
-        $second = $this->getJson('/api/billing/covers/table-4/bill')->json()['billId'];
+        $second = $this->getJson("/api/billing/covers/{$this->visit}/bill")->json()['billId'];
 
         expect($second)->toBe($first);
     });
 
     test('the bill query does not load the bill aggregate', function () {
-        $this->postJson('/api/front-of-house/tables/table-4/guests', ['guestCount' => 2])->assertOk();
+        $this->visit = $this->postJson('/api/front-of-house/tables/table-4/guests', ['guestCount' => 2])->assertOk()->json('visitId');
         $this->postJson('/api/front-of-house/tables/table-4/orders', [
             'lines' => [
                 ['menuItemId' => 'green-salad', 'quantity' => 1, 'course' => 'starter'],
@@ -154,7 +154,7 @@ describe('the till', function () {
             }
         });
 
-        $this->getJson('/api/billing/covers/table-4/bill')->assertOk();
+        $this->getJson("/api/billing/covers/{$this->visit}/bill")->assertOk();
     });
 });
 
@@ -177,10 +177,10 @@ describe('the bill of a cover', function () {
         $dish = new ServedDish(new SourceKey('ticket-1:line-1'), 'Green salad', 1, 1100, DishKind::FOOD);
         $bills = app(BillRepository::class);
 
-        $bills->save(Bill::prepare(new BillId('zzzz-opened-first'), new CoverRef('table-4'), [$dish]));
-        $bills->save(Bill::prepare(new BillId('aaaa-opened-second'), new CoverRef('table-4'), [$dish]));
+        $bills->save(Bill::prepare(new BillId('zzzz-opened-first'), new CoverRef('visit-1'), [$dish]));
+        $bills->save(Bill::prepare(new BillId('aaaa-opened-second'), new CoverRef('visit-1'), [$dish]));
 
-        $this->getJson('/api/billing/covers/table-4/bill')
+        $this->getJson('/api/billing/covers/visit-1/bill')
             ->assertOk()
             ->assertJsonPath('billId', 'aaaa-opened-second');
     });

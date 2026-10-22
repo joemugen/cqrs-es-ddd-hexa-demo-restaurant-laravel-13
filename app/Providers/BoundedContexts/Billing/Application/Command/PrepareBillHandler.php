@@ -32,7 +32,7 @@ final readonly class PrepareBillHandler implements CommandHandler
             return new BillPrepared($open->id());
         }
 
-        $lines = $this->served->unbilled($command->coverRef);
+        $lines = $this->served->unbilled($command->coverRef, $command->requestPosition);
 
         if ($lines === []) {
             return null;

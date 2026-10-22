@@ -42,7 +42,7 @@ describe('the event log is append only', function (): void {
     });
 
     it('receives nothing but INSERT statements during a whole service in sync mode', function (): void {
-        $this->postJson('/api/front-of-house/tables/table-4/guests', ['guestCount' => 2])->assertOk();
+        $this->visit = $this->postJson('/api/front-of-house/tables/table-4/guests', ['guestCount' => 2])->assertOk()->json('visitId');
         $this->postJson('/api/front-of-house/tables/table-4/orders', ['lines' => [
             ['menuItemId' => 'green-salad', 'quantity' => 1, 'course' => 'starter'],
             ['menuItemId' => 'house-red', 'quantity' => 2, 'course' => 'drink'],
@@ -60,7 +60,7 @@ describe('the event log is append only', function (): void {
         }
         $this->postJson('/api/kitchen/dishes/dish-steak/eighty-six')->assertOk();
         $this->postJson('/api/front-of-house/tables/table-4/bill')->assertOk();
-        $bill = $this->getJson('/api/billing/covers/table-4/bill')->json();
+        $bill = $this->getJson("/api/billing/covers/{$this->visit}/bill")->json();
         $this->postJson("/api/billing/bills/{$bill['billId']}/payments", ['amountCents' => $bill['totalCents']])->assertOk();
 
         expect(count(loggedEvents()))->toBeGreaterThan(8)
@@ -69,7 +69,7 @@ describe('the event log is append only', function (): void {
 
     it('receives nothing but INSERT statements while workers consume it', function (): void {
         config(['consumption.mode' => 'worker']);
-        $this->postJson('/api/front-of-house/tables/table-4/guests', ['guestCount' => 2])->assertOk();
+        $this->visit = $this->postJson('/api/front-of-house/tables/table-4/guests', ['guestCount' => 2])->assertOk()->json('visitId');
         $this->postJson('/api/front-of-house/tables/table-4/orders', ['lines' => [
             ['menuItemId' => 'green-salad', 'quantity' => 1, 'course' => 'starter'],
         ]])->assertOk();
@@ -85,7 +85,7 @@ describe('the event log is append only', function (): void {
     it('never changes a row once written: after each step the earlier events are exactly as they were', function (): void {
         $snapshots = [];
 
-        $this->postJson('/api/front-of-house/tables/table-4/guests', ['guestCount' => 2])->assertOk();
+        $this->visit = $this->postJson('/api/front-of-house/tables/table-4/guests', ['guestCount' => 2])->assertOk()->json('visitId');
         $this->postJson('/api/front-of-house/tables/table-4/orders', ['lines' => [
             ['menuItemId' => 'green-salad', 'quantity' => 1, 'course' => 'starter'],
         ]])->assertOk();

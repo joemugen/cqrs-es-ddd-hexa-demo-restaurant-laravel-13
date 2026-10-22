@@ -59,7 +59,7 @@ describe('the order fulfilment saga', function () {
     beforeEach(function () {
         $this->seed(FrontOfHouseSeeder::class);
         $this->seed(KitchenSeeder::class);
-        $this->postJson('/api/front-of-house/tables/table-7/guests', ['guestCount' => 2])->assertOk();
+        $this->visit = $this->postJson('/api/front-of-house/tables/table-7/guests', ['guestCount' => 2])->assertOk()->json('visitId');
         $this->steak = ['menuItemId' => 'steak-frites', 'quantity' => 1, 'course' => 'main'];
         $this->salad = ['menuItemId' => 'green-salad', 'quantity' => 1, 'course' => 'starter'];
     });
@@ -315,7 +315,7 @@ describe('the order fulfilment saga', function () {
                 $this->postJson('/api/front-of-house/tables/table-7/bill')->assertOk();
                 runWorkers('billing');
 
-                $this->getJson('/api/billing/covers/table-7/bill')->assertNotFound();
+                $this->getJson("/api/billing/covers/{$this->visit}/bill")->assertNotFound();
             });
         });
 
@@ -342,7 +342,7 @@ describe('the order fulfilment saga', function () {
             });
 
             test('the revision is obsolete once the bill is paid: it is refused and the order is closed', function () {
-                $bill = $this->getJson('/api/billing/covers/table-7/bill')->json();
+                $bill = $this->getJson("/api/billing/covers/{$this->visit}/bill")->json();
                 $this->postJson("/api/billing/bills/{$bill['billId']}/payments", ['amountCents' => $bill['balanceCents']])->assertOk();
                 runWorkers('front-of-house');
 
@@ -353,16 +353,16 @@ describe('the order fulfilment saga', function () {
                 expect(theFulfilmentOf($this->id)['status'])->toBe('closed');
             });
 
-            test('is refused even before the dining room has heard of the payment, because the table is already free', function () {
+            test('is refused even before the dining room has heard of the payment, because the table no longer hosts those guests', function () {
                 DB::table(Tables::TABLES)
                     ->where('id', 'table-7')
-                    ->update(['guest_count' => 0]);
+                    ->update(['guest_count' => 0, 'visit_id' => null]);
 
                 reviseWith($this->id, 'house-red')->assertStatus(412);
             });
 
             test('a payment the dining room hears twice closes the order once', function () {
-                $bill = $this->getJson('/api/billing/covers/table-7/bill')->json();
+                $bill = $this->getJson("/api/billing/covers/{$this->visit}/bill")->json();
                 $this->postJson("/api/billing/bills/{$bill['billId']}/payments", ['amountCents' => $bill['balanceCents']])->assertOk();
                 runWorkers('front-of-house');
 
@@ -373,10 +373,10 @@ describe('the order fulfilment saga', function () {
             });
 
             test('the payment of the previous guests does not close the order of the next ones', function () {
-                $bill = $this->getJson('/api/billing/covers/table-7/bill')->json();
+                $bill = $this->getJson("/api/billing/covers/{$this->visit}/bill")->json();
                 $this->postJson("/api/billing/bills/{$bill['billId']}/payments", ['amountCents' => $bill['balanceCents']])->assertOk();
                 runWorkers('front-of-house');
-                $this->postJson('/api/front-of-house/tables/table-7/guests', ['guestCount' => 2])->assertOk();
+                $this->visit = $this->postJson('/api/front-of-house/tables/table-7/guests', ['guestCount' => 2])->assertOk()->json('visitId');
                 $this->postJson('/api/kitchen/dishes/dish-brulee/eighty-six')->assertOk();
                 $next = $this->postJson('/api/front-of-house/tables/table-7/orders', ['lines' => [
                     ['menuItemId' => 'creme-brulee', 'quantity' => 1, 'course' => 'dessert'],

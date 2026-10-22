@@ -11,6 +11,7 @@ use App\Providers\BoundedContexts\FrontOfHouse\Domain\MenuItemId;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\OrderLine;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableId;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\TicketId;
+use App\Providers\BoundedContexts\FrontOfHouse\Domain\VisitId;
 
 function aSaladAtThePass(): DishAtThePass
 {
@@ -26,30 +27,30 @@ describe('a dish at the pass', function () {
     test('can be served once', function () {
         $dish = aSaladAtThePass();
 
-        $dish->serve(theSaladAsOrdered());
+        $dish->serve(theSaladAsOrdered(), new VisitId('visit-1'));
 
         expect($dish->isServed())->toBeTrue();
-        expect(fn () => $dish->serve(theSaladAsOrdered()))
+        expect(fn () => $dish->serve(theSaladAsOrdered(), new VisitId('visit-1')))
             ->toThrow(FrontOfHouseException::class, 'That dish has already left the pass.');
     });
 
     test('records that it was served, with the price and the kind of the line as it was ordered', function () {
         $dish = aSaladAtThePass();
 
-        $dish->serve(theSaladAsOrdered());
+        $dish->serve(theSaladAsOrdered(), new VisitId('visit-1'));
 
         expect($dish->releaseEvents())->toEqual([
-            new DishServed(new TableId('table-4'), new DishName('Green salad'), 2, 1100, DishKind::FOOD, new TicketId('ticket-1'), new LineId('line-1')),
+            new DishServed(new TableId('table-4'), new VisitId('visit-1'), new DishName('Green salad'), 2, 1100, DishKind::FOOD, new TicketId('ticket-1'), new LineId('line-1')),
         ]);
     });
 
     test('records nothing when it was already served', function () {
         $dish = aSaladAtThePass();
-        $dish->serve(theSaladAsOrdered());
+        $dish->serve(theSaladAsOrdered(), new VisitId('visit-1'));
         $dish->releaseEvents();
 
         try {
-            $dish->serve(theSaladAsOrdered());
+            $dish->serve(theSaladAsOrdered(), new VisitId('visit-1'));
         } catch (FrontOfHouseException) {
         }
 

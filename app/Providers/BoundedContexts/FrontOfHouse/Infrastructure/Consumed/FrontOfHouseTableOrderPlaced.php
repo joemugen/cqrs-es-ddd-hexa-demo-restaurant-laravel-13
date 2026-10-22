@@ -6,6 +6,7 @@ namespace App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Consumed;
 
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableId;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableOrderId;
+use App\Providers\BoundedContexts\FrontOfHouse\Domain\VisitId;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\ConsumedEvents;
 use App\Providers\Modules\SharedKernel\Application\Publication\ConsumedMessage;
 use App\Providers\Modules\SharedKernel\Application\Publication\Consumes;
@@ -19,10 +20,11 @@ final readonly class FrontOfHouseTableOrderPlaced implements ConsumedMessage
     public function __construct(
         public TableOrderId $tableOrderId,
         public TableId $tableId,
+        public VisitId $visitId,
     ) {}
 
     public static function fromPayload(array $payload): static
     {
-        return new self(new TableOrderId((string) $payload['tableOrderId']), new TableId((string) $payload['tableId']));
+        return new self(new TableOrderId((string) $payload['tableOrderId']), new TableId((string) $payload['tableId']), new VisitId((string) $payload['visitId']));
     }
 }

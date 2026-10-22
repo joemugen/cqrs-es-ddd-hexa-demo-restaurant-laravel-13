@@ -25,7 +25,7 @@ final readonly class FrontOfHouseDishServed implements ConsumedMessage
     public static function fromPayload(array $payload): static
     {
         return new self(
-            new CoverRef((string) $payload['tableId']),
+            new CoverRef((string) $payload['visitId']),
             new ServedDish(
                 sourceKey: new SourceKey((string) $payload['sourceKey']),
                 description: (string) $payload['description'],

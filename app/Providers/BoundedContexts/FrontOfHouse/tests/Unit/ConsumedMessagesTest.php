@@ -2,9 +2,9 @@
 
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\DishName;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\LineId;
-use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableId;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableOrderId;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\UnavailableLine;
+use App\Providers\BoundedContexts\FrontOfHouse\Domain\VisitId;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Consumed\BillingBillPaid;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Consumed\KitchenDishEightySixed;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Consumed\KitchenDishesAdded;
@@ -39,7 +39,7 @@ describe('what the dining room reads of the others', function () {
         expect(KitchenDishEightySixed::fromPayload(['dishName' => 'Steak frites'])->dishName)->toEqual(new DishName('Steak frites'));
     });
 
-    test('a bill paid: the cover of the till is a table of the room', function () {
-        expect(BillingBillPaid::fromPayload(['coverRef' => 'table-4', 'billId' => 'bill-1'])->tableId)->toEqual(new TableId('table-4'));
+    test('a bill paid: the cover of the till is a visit of the room', function () {
+        expect(BillingBillPaid::fromPayload(['coverRef' => 'visit-1', 'billId' => 'bill-1'])->visitId)->toEqual(new VisitId('visit-1'));
     });
 });

@@ -16,14 +16,15 @@ final class Table implements AggregateRoot
         private readonly TableId $id,
         private readonly TableLabel $label,
         private int $guestCount,
+        private ?VisitId $visit,
     ) {}
 
-    public static function restore(TableId $id, TableLabel $label, int $guestCount): self
+    public static function restore(TableId $id, TableLabel $label, int $guestCount, ?VisitId $visit = null): self
     {
-        return new self($id, $label, $guestCount);
+        return new self($id, $label, $guestCount, $visit);
     }
 
-    public function seat(int $guestCount): void
+    public function seat(VisitId $visit, int $guestCount): void
     {
         if ($guestCount < 1) {
             throw new FrontOfHouseException('Seat at least one guest.');
@@ -34,6 +35,7 @@ final class Table implements AggregateRoot
         }
 
         $this->guestCount = $guestCount;
+        $this->visit = $visit;
     }
 
     public function requestBill(): void
@@ -42,12 +44,31 @@ final class Table implements AggregateRoot
             throw new FrontOfHouseException('This table has no guests to bill.');
         }
 
-        $this->recordThat(new BillRequested($this->id));
+        $this->recordThat(new BillRequested($this->id, $this->visit));
     }
 
-    public function free(): void
+    /**
+     * The guests of a visit are gone. A payment the table hears late, or twice, says nothing of the guests who sit there
+     * now.
+     */
+    public function free(VisitId $visit): void
     {
+        if (! $this->isHosting($visit)) {
+            return;
+        }
+
         $this->guestCount = 0;
+        $this->visit = null;
+    }
+
+    public function isHosting(VisitId $visit): bool
+    {
+        return $this->visit !== null && $this->visit->equals($visit);
+    }
+
+    public function visit(): ?VisitId
+    {
+        return $this->visit;
     }
 
     public function hasGuests(): bool

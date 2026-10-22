@@ -10,8 +10,10 @@ test('a service runs from the welcome to the departure', function () {
     $this->seed(FrontOfHouseSeeder::class);
     $this->seed(KitchenSeeder::class);
 
-    $this->postJson('/api/front-of-house/tables/table-4/guests', ['guestCount' => 2])
-        ->assertExactJson(['tableId' => 'table-4', 'accepted' => true]);
+    $seating = $this->postJson('/api/front-of-house/tables/table-4/guests', ['guestCount' => 2])
+        ->assertJson(['tableId' => 'table-4', 'accepted' => true])
+        ->assertJsonStructure(['visitId']);
+    $this->visit = $seating->json('visitId');
 
     $seated = collect($this->getJson('/api/front-of-house/floor-plan')->json())->firstWhere('tableId', 'table-4');
     expect($seated)->toMatchArray(['guestCount' => 2, 'status' => 'occupied', 'label' => 'Window 4']);
@@ -80,7 +82,7 @@ test('a service runs from the welcome to the departure', function () {
     $this->postJson('/api/front-of-house/tables/table-4/bill')
         ->assertExactJson(['tableId' => 'table-4', 'accepted' => true]);
 
-    $bill = $this->getJson('/api/billing/covers/table-4/bill')->assertOk()->json();
+    $bill = $this->getJson("/api/billing/covers/{$this->visit}/bill")->assertOk()->json();
     expect($bill['lines'])->toHaveCount(4)
         ->and($bill['foodGrossCents'])->toBe(5500)
         ->and($bill['alcoholGrossCents'])->toBe(1200)
@@ -92,14 +94,14 @@ test('a service runs from the welcome to the departure', function () {
     $this->postJson("/api/billing/bills/{$bill['billId']}/payments", ['amountCents' => 4000])->assertOk();
     $stillSeated = collect($this->getJson('/api/front-of-house/floor-plan')->json())->firstWhere('tableId', 'table-4');
     expect($stillSeated['status'])->toBe('occupied')
-        ->and($this->getJson('/api/billing/covers/table-4/bill')->json()['balanceCents'])->toBe(2700);
+        ->and($this->getJson("/api/billing/covers/{$this->visit}/bill")->json()['balanceCents'])->toBe(2700);
 
     $this->postJson("/api/billing/bills/{$bill['billId']}/payments", [
         'amountCents' => 2700,
         'tipCents' => 500,
     ])->assertOk();
 
-    $paid = $this->getJson('/api/billing/covers/table-4/bill')->json();
+    $paid = $this->getJson("/api/billing/covers/{$this->visit}/bill")->json();
     $freed = collect($this->getJson('/api/front-of-house/floor-plan')->json())->firstWhere('tableId', 'table-4');
 
     expect($paid['status'])->toBe('paid')

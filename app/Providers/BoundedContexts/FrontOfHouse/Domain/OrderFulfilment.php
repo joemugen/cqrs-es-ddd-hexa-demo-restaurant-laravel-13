@@ -11,7 +11,7 @@ use App\Providers\Modules\SharedKernel\Domain\RecordsEvents;
 /**
  * The state of the saga that follows an order after the dining room placed it. The kitchen cooks what it can; for the
  * lines it cannot, the order awaits a revision from the waiter, who asks the guests. A revision asks the kitchen again.
- * The guests may give up (cancelled), or pay and leave first (closed).
+ * The guests may give up (cancelled), or pay and leave first (closed: the order belongs to their visit).
  *
  * Each answer of the kitchen names the request it answers by its position in the log, so an answer that reaches us late
  * cannot undo a revision made since.
@@ -27,15 +27,16 @@ final class OrderFulfilment implements AggregateRoot
     private function __construct(
         private readonly TableOrderId $id,
         private readonly TableId $tableId,
+        private readonly VisitId $visitId,
         private string $status,
         private ?string $reason,
         private array $unavailableLines,
         private int $requestPosition,
     ) {}
 
-    public static function begin(TableOrderId $id, TableId $tableId, int $requestPosition): self
+    public static function begin(TableOrderId $id, TableId $tableId, VisitId $visitId, int $requestPosition): self
     {
-        return new self($id, $tableId, FulfilmentStatus::AWAITING_KITCHEN, null, [], $requestPosition);
+        return new self($id, $tableId, $visitId, FulfilmentStatus::AWAITING_KITCHEN, null, [], $requestPosition);
     }
 
     /**
@@ -44,12 +45,13 @@ final class OrderFulfilment implements AggregateRoot
     public static function restore(
         TableOrderId $id,
         TableId $tableId,
+        VisitId $visitId,
         string $status,
         ?string $reason,
         array $unavailableLines,
         int $requestPosition,
     ): self {
-        return new self($id, $tableId, $status, $reason, $unavailableLines, $requestPosition);
+        return new self($id, $tableId, $visitId, $status, $reason, $unavailableLines, $requestPosition);
     }
 
     public function confirm(): void
@@ -114,11 +116,11 @@ final class OrderFulfilment implements AggregateRoot
     }
 
     /**
-     * The bill of the table is paid: the guests left without revising. A payment older than the order is not theirs.
+     * The guests of the visit paid and left: an order that still awaits a revision will never get one.
      */
-    public function close(int $paymentPosition): void
+    public function close(): void
     {
-        if ($this->status === FulfilmentStatus::AWAITING_REVISION && $paymentPosition > $this->requestPosition) {
+        if ($this->status === FulfilmentStatus::AWAITING_REVISION) {
             $this->status = FulfilmentStatus::CLOSED;
         }
     }
@@ -131,6 +133,11 @@ final class OrderFulfilment implements AggregateRoot
     public function tableId(): TableId
     {
         return $this->tableId;
+    }
+
+    public function visitId(): VisitId
+    {
+        return $this->visitId;
     }
 
     public function status(): string

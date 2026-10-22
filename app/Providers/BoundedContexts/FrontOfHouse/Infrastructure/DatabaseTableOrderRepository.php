@@ -13,6 +13,7 @@ use App\Providers\BoundedContexts\FrontOfHouse\Domain\OrderLine;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableId;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableOrder;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableOrderId;
+use App\Providers\BoundedContexts\FrontOfHouse\Domain\VisitId;
 use Illuminate\Support\Facades\DB;
 
 final class DatabaseTableOrderRepository implements TableOrderRepository
@@ -33,6 +34,7 @@ final class DatabaseTableOrderRepository implements TableOrderRepository
         return TableOrder::restore(
             $id,
             new TableId((string) $order->table_id),
+            new VisitId((string) $order->visit_id),
             DB::table(Tables::TABLE_ORDER_LINES)->where('table_order_id', (string) $id)->orderBy('id')->get()
                 ->map(fn (object $line): OrderLine => $this->line($line))
                 ->all(),
@@ -47,6 +49,7 @@ final class DatabaseTableOrderRepository implements TableOrderRepository
         DB::table(Tables::TABLE_ORDERS)->insertOrIgnore([
             'id' => (string) $order->id(),
             'table_id' => (string) $order->tableId(),
+            'visit_id' => (string) $order->visitId(),
         ]);
 
         foreach ($order->lines() as $line) {

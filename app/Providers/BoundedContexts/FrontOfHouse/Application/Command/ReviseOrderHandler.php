@@ -10,7 +10,6 @@ use App\Providers\BoundedContexts\FrontOfHouse\Application\OrderFulfilmentReposi
 use App\Providers\BoundedContexts\FrontOfHouse\Application\TableOrderRepository;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\TableRepository;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\MenuItemId;
-use App\Providers\BoundedContexts\FrontOfHouse\Domain\ObsoleteRevision;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\RequestedLine;
 use App\Providers\Modules\EventStore\Application\ContractPublisher;
 use App\Providers\Modules\SharedKernel\Application\Bus\Attribute\AsCommandHandler;
@@ -30,22 +29,13 @@ final readonly class ReviseOrderHandler implements CommandHandler
         private ContractPublisher $contracts,
     ) {}
 
-    /**
-     * The guests who left are not asked again, even before the dining room has heard that their bill is paid.
-     */
     public function __invoke(ReviseOrder $command): OrderRevised
     {
         $fulfilment = $this->fulfilments->get($command->tableOrderId);
         $fulfilment->ensureCanBeRevised();
-        $table = $this->tables->get($fulfilment->tableId());
-
-        if (! $table->hasGuests()) {
-            throw new ObsoleteRevision;
-        }
-
         $order = $this->orders->get($command->tableOrderId);
         $order->revise(
-            $table,
+            $this->tables->get($fulfilment->tableId()),
             $this->menus->containing(array_map(fn (RequestedLine $line): MenuItemId => $line->menuItemId, $command->lines)),
             $command->lines,
         );

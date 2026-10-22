@@ -23,7 +23,7 @@ final readonly class BeginOrderFulfilmentHandler implements CommandHandler
     public function __invoke(BeginOrderFulfilment $command): FulfilmentBegun
     {
         if (! $this->fulfilments->exists($command->tableOrderId)) {
-            $this->fulfilments->save(OrderFulfilment::begin($command->tableOrderId, $command->tableId, $command->requestPosition));
+            $this->fulfilments->save(OrderFulfilment::begin($command->tableOrderId, $command->tableId, $command->visitId, $command->requestPosition));
         }
 
         return new FulfilmentBegun($command->tableOrderId);

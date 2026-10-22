@@ -44,7 +44,7 @@ final class RecordServedDishes implements Processor
                 $handled++;
                 Correlation::resume($event->correlationId);
                 Causation::resume($event->position);
-                $this->served->record($message->coverRef, $message->dish);
+                $this->served->record($message->coverRef, $message->dish, $event->position);
             }
 
             $position = $event->position;

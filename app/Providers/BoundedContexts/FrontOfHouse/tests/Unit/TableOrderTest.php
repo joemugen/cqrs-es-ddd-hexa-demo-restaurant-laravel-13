@@ -8,12 +8,14 @@ use App\Providers\BoundedContexts\FrontOfHouse\Domain\LineId;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\Menu;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\MenuItem;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\MenuItemId;
+use App\Providers\BoundedContexts\FrontOfHouse\Domain\ObsoleteRevision;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\RequestedLine;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\Table;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableId;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableLabel;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableOrder;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableOrderId;
+use App\Providers\BoundedContexts\FrontOfHouse\Domain\VisitId;
 
 function sampleMenu(): Menu
 {
@@ -30,7 +32,7 @@ function seatedOrder(): TableOrder
 {
     return TableOrder::place(
         new TableOrderId('order-1'),
-        Table::restore(new TableId('table-4'), new TableLabel('Window 4'), 2),
+        Table::restore(new TableId('table-4'), new TableLabel('Window 4'), 2, new VisitId('visit-1')),
         sampleMenu(),
         [
             new RequestedLine(new MenuItemId('green-salad'), 1, 'starter'),
@@ -41,7 +43,7 @@ function seatedOrder(): TableOrder
 
 describe('TableOrder', function () {
     test('a seated table can place an order', function () {
-        $seated = Table::restore(new TableId('table-4'), new TableLabel('Window 4'), 2);
+        $seated = Table::restore(new TableId('table-4'), new TableLabel('Window 4'), 2, new VisitId('visit-1'));
 
         $order = TableOrder::place(new TableOrderId('order-1'), $seated, sampleMenu(), [
             new RequestedLine(new MenuItemId('green-salad'), 1, 'starter'),
@@ -58,6 +60,10 @@ describe('TableOrder', function () {
         ])->and($order->forTheKitchen()[0])->not->toHaveKey('unitPriceCents');
     });
 
+    test('belongs to the visit of the guests who ordered', function () {
+        expect(seatedOrder()->visitId())->toEqual(new VisitId('visit-1'));
+    });
+
     test('a table without guests cannot order', function () {
         $table = Table::restore(new TableId('table-4'), new TableLabel('Window 4'), 0);
 
@@ -67,14 +73,14 @@ describe('TableOrder', function () {
     });
 
     test('an empty order is refused', function () {
-        $table = Table::restore(new TableId('table-4'), new TableLabel('Window 4'), 2);
+        $table = Table::restore(new TableId('table-4'), new TableLabel('Window 4'), 2, new VisitId('visit-1'));
 
         expect(fn () => TableOrder::place(new TableOrderId('order-1'), $table, sampleMenu(), []))
             ->toThrow(FrontOfHouseException::class, 'An order needs at least one item.');
     });
 
     test('an unavailable item is refused', function () {
-        $table = Table::restore(new TableId('table-4'), new TableLabel('Window 4'), 2);
+        $table = Table::restore(new TableId('table-4'), new TableLabel('Window 4'), 2, new VisitId('visit-1'));
 
         expect(fn () => TableOrder::place(new TableOrderId('order-1'), $table, sampleMenu(), [
             new RequestedLine(new MenuItemId('steak-frites'), 1, 'main'),
@@ -97,6 +103,7 @@ describe('TableOrder', function () {
             ->and($placed[0])->toBeInstanceOf(TableOrderPlaced::class)
             ->and((string) $placed[0]->tableOrderId)->toBe('order-1')
             ->and((string) $placed[0]->tableId)->toBe('table-4')
+            ->and((string) $placed[0]->visitId)->toBe('visit-1')
             ->and((string) $placed[0]->tableLabel)->toBe('Window 4')
             ->and($placed[0]->lines)->toHaveCount(2);
     });
@@ -118,7 +125,7 @@ describe('TableOrder', function () {
     describe('when revised', function () {
         function windowTable(): Table
         {
-            return Table::restore(new TableId('table-4'), new TableLabel('Window 4'), 2);
+            return Table::restore(new TableId('table-4'), new TableLabel('Window 4'), 2, new VisitId('visit-1'));
         }
 
         test('the added lines go on after the lines already placed, and are recorded', function () {
@@ -141,6 +148,21 @@ describe('TableOrder', function () {
                     ],
                 ])
                 ->and($order->lines())->toHaveCount(3);
+        });
+
+        test('is obsolete for a table that hosts other guests than the ones who ordered', function () {
+            $order = seatedOrder();
+            $nextGuests = Table::restore(new TableId('table-4'), new TableLabel('Window 4'), 2, new VisitId('visit-2'));
+
+            expect(fn () => $order->revise($nextGuests, sampleMenu(), [new RequestedLine(new MenuItemId('green-salad'), 1, 'main')]))
+                ->toThrow(ObsoleteRevision::class, 'The revision of the order is obsolete: the guests already paid and left.');
+        });
+
+        test('is obsolete for a table the guests left', function () {
+            $empty = Table::restore(new TableId('table-4'), new TableLabel('Window 4'), 0);
+
+            expect(fn () => seatedOrder()->revise($empty, sampleMenu(), [new RequestedLine(new MenuItemId('green-salad'), 1, 'main')]))
+                ->toThrow(ObsoleteRevision::class);
         });
 
         test('an empty revision is refused', function () {

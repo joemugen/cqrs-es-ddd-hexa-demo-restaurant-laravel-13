@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Providers\BoundedContexts\FrontOfHouse\Application;
 
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\OrderFulfilment;
-use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableId;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableOrderId;
+use App\Providers\BoundedContexts\FrontOfHouse\Domain\VisitId;
 
 interface OrderFulfilmentRepository
 {
@@ -17,7 +17,7 @@ interface OrderFulfilmentRepository
     /**
      * @return list<OrderFulfilment>
      */
-    public function awaitingRevisionAt(TableId $tableId): array;
+    public function awaitingRevisionOf(VisitId $visit): array;
 
     public function save(OrderFulfilment $fulfilment): void;
 }

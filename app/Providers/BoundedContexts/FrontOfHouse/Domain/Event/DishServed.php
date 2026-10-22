@@ -8,6 +8,7 @@ use App\Providers\BoundedContexts\FrontOfHouse\Domain\DishName;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\LineId;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableId;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\TicketId;
+use App\Providers\BoundedContexts\FrontOfHouse\Domain\VisitId;
 use App\Providers\Modules\SharedKernel\Domain\TypedDomainEvent;
 
 /**
@@ -17,6 +18,7 @@ final readonly class DishServed implements TypedDomainEvent
 {
     public function __construct(
         public TableId $tableId,
+        public VisitId $visitId,
         public DishName $dishName,
         public int $quantity,
         public int $unitPriceCents,

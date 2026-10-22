@@ -11,7 +11,7 @@ describe('the till in worker mode', function () {
     });
 
     test('bills every dish served before the bill was asked for, even when all of it is waiting for one pass', function () {
-        $this->postJson('/api/front-of-house/tables/table-4/guests', ['guestCount' => 2])->assertOk();
+        $this->visit = $this->postJson('/api/front-of-house/tables/table-4/guests', ['guestCount' => 2])->assertOk()->json('visitId');
         $this->postJson('/api/front-of-house/tables/table-4/orders', ['lines' => [
             ['menuItemId' => 'green-salad', 'quantity' => 1, 'course' => 'starter'],
             ['menuItemId' => 'steak-frites', 'quantity' => 1, 'course' => 'main'],
@@ -36,7 +36,7 @@ describe('the till in worker mode', function () {
         // The three served dishes and the bill request are all still unread by the till.
         $this->artisan('billing:consume', ['--stop-when-empty' => true])->assertSuccessful();
 
-        $this->getJson('/api/billing/covers/table-4/bill')
+        $this->getJson("/api/billing/covers/{$this->visit}/bill")
             ->assertOk()
             ->assertJsonPath('totalCents', 4500)
             ->assertJsonCount(3, 'lines');

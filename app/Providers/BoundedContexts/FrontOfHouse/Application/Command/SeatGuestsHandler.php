@@ -27,10 +27,10 @@ final readonly class SeatGuestsHandler implements CommandHandler
     public function __invoke(SeatGuests $command): TableSeated
     {
         $table = $this->tables->get($command->tableId);
-        $table->seat($command->guestCount);
+        $table->seat($command->visitId, $command->guestCount);
         $this->tables->save($table);
         $this->floorPlan->sync($table);
 
-        return new TableSeated($command->tableId);
+        return new TableSeated($command->tableId, $command->visitId);
     }
 }

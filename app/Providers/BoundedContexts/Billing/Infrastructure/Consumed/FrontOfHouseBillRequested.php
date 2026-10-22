@@ -19,6 +19,6 @@ final readonly class FrontOfHouseBillRequested implements ConsumedMessage
 
     public static function fromPayload(array $payload): static
     {
-        return new self(new CoverRef((string) $payload['tableId']));
+        return new self(new CoverRef((string) $payload['visitId']));
     }
 }

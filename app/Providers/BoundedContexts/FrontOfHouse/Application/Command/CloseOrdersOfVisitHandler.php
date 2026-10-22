@@ -10,22 +10,22 @@ use App\Providers\Modules\SharedKernel\Application\Bus\Attribute\AsCommandHandle
 use App\Providers\Modules\SharedKernel\Application\CommandHandler;
 
 /**
- * @implements CommandHandler<CloseOrdersOfPaidTable, OrdersClosed>
+ * @implements CommandHandler<CloseOrdersOfVisit, OrdersClosed>
  */
-#[AsCommandHandler(CloseOrdersOfPaidTable::class)]
-final readonly class CloseOrdersOfPaidTableHandler implements CommandHandler
+#[AsCommandHandler(CloseOrdersOfVisit::class)]
+final readonly class CloseOrdersOfVisitHandler implements CommandHandler
 {
     public function __construct(
         private OrderFulfilmentRepository $fulfilments,
     ) {}
 
-    public function __invoke(CloseOrdersOfPaidTable $command): OrdersClosed
+    public function __invoke(CloseOrdersOfVisit $command): OrdersClosed
     {
-        foreach ($this->fulfilments->awaitingRevisionAt($command->tableId) as $fulfilment) {
-            $fulfilment->close($command->paymentPosition);
+        foreach ($this->fulfilments->awaitingRevisionOf($command->visitId) as $fulfilment) {
+            $fulfilment->close();
             $this->fulfilments->save($fulfilment);
         }
 
-        return new OrdersClosed($command->tableId);
+        return new OrdersClosed($command->visitId);
     }
 }
