@@ -7,9 +7,9 @@ use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableId;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableLabel;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\VisitId;
 
-function aFreeTable(): Table
+function aFreeTable(int $visitsSeated = 0): Table
 {
-    return Table::restore(new TableId('table-4'), new TableLabel('Window 4'), 0);
+    return Table::restore(new TableId('table-4'), new TableLabel('Window 4'), 0, null, $visitsSeated);
 }
 
 function anOccupiedTable(string $visit = 'visit-1'): Table
@@ -22,21 +22,28 @@ describe('a table', function () {
         test('starts a visit, which is the guests of the table until they leave', function () {
             $table = aFreeTable();
 
-            $table->seat(new VisitId('visit-1'), 2);
+            $visit = $table->seat(2);
 
             expect($table->hasGuests())->toBeTrue()
-                ->and($table->visit())->toEqual(new VisitId('visit-1'))
-                ->and($table->isHosting(new VisitId('visit-1')))->toBeTrue()
+                ->and($table->visit())->toEqual($visit)
+                ->and($table->isHosting($visit))->toBeTrue()
                 ->and($table->isHosting(new VisitId('visit-2')))->toBeFalse();
         });
 
+        test('names the visit after the table and the visits it has seated, so a replay cannot name it twice', function () {
+            $table = aFreeTable(visitsSeated: 2);
+
+            expect($table->seat(2))->toEqual(VisitId::forSeating(new TableId('table-4'), 3))
+                ->and($table->visitsSeated())->toBe(3);
+        });
+
         test('cannot seat guests where there are some already', function () {
-            expect(fn () => anOccupiedTable()->seat(new VisitId('visit-2'), 2))
+            expect(fn () => anOccupiedTable()->seat(2))
                 ->toThrow(FrontOfHouseException::class, 'This table already has guests.');
         });
 
         test('seats at least one guest', function () {
-            expect(fn () => aFreeTable()->seat(new VisitId('visit-1'), 0))
+            expect(fn () => aFreeTable()->seat(0))
                 ->toThrow(FrontOfHouseException::class, 'Seat at least one guest.');
         });
     });

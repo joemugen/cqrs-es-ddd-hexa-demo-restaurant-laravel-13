@@ -17,14 +17,18 @@ final class Table implements AggregateRoot
         private readonly TableLabel $label,
         private int $guestCount,
         private ?VisitId $visit,
+        private int $visitsSeated,
     ) {}
 
-    public static function restore(TableId $id, TableLabel $label, int $guestCount, ?VisitId $visit = null): self
+    public static function restore(TableId $id, TableLabel $label, int $guestCount, ?VisitId $visit = null, int $visitsSeated = 0): self
     {
-        return new self($id, $label, $guestCount, $visit);
+        return new self($id, $label, $guestCount, $visit, $visitsSeated);
     }
 
-    public function seat(VisitId $visit, int $guestCount): void
+    /**
+     * The guests who sit down start a visit, which the table names after how many it has seated.
+     */
+    public function seat(int $guestCount): VisitId
     {
         if ($guestCount < 1) {
             throw new FrontOfHouseException('Seat at least one guest.');
@@ -35,7 +39,9 @@ final class Table implements AggregateRoot
         }
 
         $this->guestCount = $guestCount;
-        $this->visit = $visit;
+        $this->visitsSeated++;
+
+        return $this->visit = VisitId::forSeating($this->id, $this->visitsSeated);
     }
 
     public function requestBill(): void
@@ -69,6 +75,11 @@ final class Table implements AggregateRoot
     public function visit(): ?VisitId
     {
         return $this->visit;
+    }
+
+    public function visitsSeated(): int
+    {
+        return $this->visitsSeated;
     }
 
     public function hasGuests(): bool

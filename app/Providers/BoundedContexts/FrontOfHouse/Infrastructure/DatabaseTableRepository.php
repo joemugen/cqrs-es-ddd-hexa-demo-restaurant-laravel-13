@@ -37,6 +37,7 @@ final class DatabaseTableRepository implements TableRepository
         DB::table(Tables::TABLES)->where('id', (string) $table->id())->update([
             'guest_count' => $table->guestCount(),
             'visit_id' => $table->visit() === null ? null : (string) $table->visit(),
+            'visits_seated' => $table->visitsSeated(),
         ]);
     }
 
@@ -47,6 +48,7 @@ final class DatabaseTableRepository implements TableRepository
             new TableLabel((string) $row->label),
             (int) $row->guest_count,
             $row->visit_id !== null ? new VisitId((string) $row->visit_id) : null,
+            (int) $row->visits_seated,
         );
     }
 }
