@@ -14,6 +14,7 @@ use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableId;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableOrder;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableOrderId;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\VisitId;
+use App\Providers\Modules\SharedKernel\Domain\ConcurrencyConflict;
 use Illuminate\Support\Facades\DB;
 
 final class DatabaseTableOrderRepository implements TableOrderRepository
@@ -47,11 +48,7 @@ final class DatabaseTableOrderRepository implements TableOrderRepository
      */
     public function save(TableOrder $order): void
     {
-        DB::table(Tables::TABLE_ORDERS)->updateOrInsert(['id' => (string) $order->id()], [
-            'table_id' => (string) $order->tableId(),
-            'visit_id' => (string) $order->visitId(),
-            'revisions' => $order->revisions(),
-        ]);
+        $this->write($order);
 
         foreach ($order->lines() as $line) {
             DB::table(Tables::TABLE_ORDER_LINES)->insertOrIgnore([
@@ -65,6 +62,38 @@ final class DatabaseTableOrderRepository implements TableOrderRepository
                 'kind' => $line->kind,
                 'allergens' => json_encode($line->allergens, JSON_THROW_ON_ERROR),
             ]);
+        }
+    }
+
+    /**
+     * The order is written only if nobody revised it since it was read: the revisions it had then are its version, so the
+     * guard holds with any database, not only with a writer at a time.
+     */
+    private function write(TableOrder $order): void
+    {
+        $row = [
+            'table_id' => (string) $order->tableId(),
+            'visit_id' => (string) $order->visitId(),
+            'revisions' => $order->revisions(),
+        ];
+
+        $written = DB::table(Tables::TABLE_ORDERS)
+            ->where('id', (string) $order->id())
+            ->where('revisions', $order->revisionsWhenLoaded())
+            ->update($row);
+
+        if ($written > 0) {
+            return;
+        }
+
+        if (! $this->exists($order->id())) {
+            DB::table(Tables::TABLE_ORDERS)->insert(['id' => (string) $order->id()] + $row);
+
+            return;
+        }
+
+        if ((int) DB::table(Tables::TABLE_ORDERS)->where('id', (string) $order->id())->value('revisions') !== $order->revisionsWhenLoaded()) {
+            throw new ConcurrencyConflict("Order {$order->id()} was revised since it was read.");
         }
     }
 
