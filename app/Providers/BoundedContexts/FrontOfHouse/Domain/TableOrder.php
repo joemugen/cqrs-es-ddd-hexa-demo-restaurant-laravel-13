@@ -83,6 +83,17 @@ final class TableOrder implements AggregateRoot
         return $this->lines;
     }
 
+    public function line(LineId $id): OrderLine
+    {
+        foreach ($this->lines as $line) {
+            if ($line->lineId->equals($id)) {
+                return $line;
+            }
+        }
+
+        throw new FrontOfHouseException('That line is not on this order.');
+    }
+
     /**
      * What the kitchen needs. The price stays on the menu.
      *

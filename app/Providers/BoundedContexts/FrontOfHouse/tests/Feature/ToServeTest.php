@@ -4,8 +4,10 @@ use App\Providers\BoundedContexts\FrontOfHouse\Application\PassRepository;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\DishAtThePass;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\DishAtThePassId;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\FrontOfHouseSeeder;
+use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Tables;
 use App\Providers\BoundedContexts\Kitchen\Infrastructure\KitchenSeeder;
 use App\Providers\Modules\EventStore\Domain\EventStore;
+use Illuminate\Support\Facades\DB;
 
 describe('the pass', function () {
     beforeEach(function () {
@@ -85,5 +87,20 @@ describe('the pass', function () {
         });
 
         $this->getJson('/api/front-of-house/to-serve')->assertOk();
+    });
+
+    test('the guests are billed the price they ordered at, not the one on the menu when the dish is served', function () {
+        $screen = $this->getJson('/api/kitchen/screen')->json();
+        $this->postJson("/api/kitchen/tickets/{$screen[0]['ticketId']}/fire", ['course' => 'starter'])->assertOk();
+        $this->postJson("/api/kitchen/tickets/{$screen[0]['ticketId']}/lines/{$screen[0]['lines'][0]['lineId']}/ready")->assertOk();
+        DB::table(Tables::MENU_ITEMS)->where('id', 'green-salad')->update(['price_cents' => 1500]);
+
+        $this->postJson('/api/front-of-house/to-serve/'.$this->getJson('/api/front-of-house/to-serve')->json()[0]['id'].'/serve')->assertOk();
+
+        $served = collect(app(EventStore::class)->readAllFrom(0))
+            ->first(fn ($event) => $event->type->is('front_of_house.dish_served'));
+
+        expect($served->payload['unitPriceCents'])->toBe(1100)
+            ->and($served->payload['kind'])->toBe('food');
     });
 });

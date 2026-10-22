@@ -4,6 +4,7 @@ use App\Providers\BoundedContexts\FrontOfHouse\Domain\DishName;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\Event\TableOrderPlaced;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\Event\TableOrderRevised;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\FrontOfHouseException;
+use App\Providers\BoundedContexts\FrontOfHouse\Domain\LineId;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\Menu;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\MenuItem;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\MenuItemId;
@@ -98,6 +99,20 @@ describe('TableOrder', function () {
             ->and((string) $placed[0]->tableId)->toBe('table-4')
             ->and((string) $placed[0]->tableLabel)->toBe('Window 4')
             ->and($placed[0]->lines)->toHaveCount(2);
+    });
+
+    describe('a line of the order', function () {
+        test('is found by its id, with the price it was ordered at', function () {
+            $line = seatedOrder()->line(new LineId('order-1-2'));
+
+            expect($line->quantity)->toBe(2)
+                ->and($line->unitPriceCents)->toBe(1100);
+        });
+
+        test('is unknown when the order never had it', function () {
+            expect(fn () => seatedOrder()->line(new LineId('order-1-9')))
+                ->toThrow(FrontOfHouseException::class, 'That line is not on this order.');
+        });
     });
 
     describe('when revised', function () {

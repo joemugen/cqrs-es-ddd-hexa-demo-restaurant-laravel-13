@@ -22,7 +22,10 @@ final class DishAtThePass implements AggregateRoot
         private bool $served,
     ) {}
 
-    public function serve(MenuItem $item): void
+    /**
+     * The guests are billed what they ordered at: the price and the kind come from their line, not from the menu of the moment.
+     */
+    public function serve(OrderLine $line): void
     {
         if ($this->served) {
             throw new FrontOfHouseException('That dish has already left the pass.');
@@ -33,8 +36,8 @@ final class DishAtThePass implements AggregateRoot
             $this->tableId,
             $this->dishName,
             $this->quantity,
-            $item->priceCents(),
-            $item->kind(),
+            $line->unitPriceCents,
+            $line->kind,
             $this->ticketId,
             $this->lineId,
         ));
