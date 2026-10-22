@@ -155,13 +155,12 @@ describe('a dish served late', function () {
     test('is on a bill of its visit, or is not served, when the guests had already paid and left', function () {
         cookedFor('table-4', 'creme-brulee', 'dessert');
         cookedFor('table-4', 'green-salad', 'starter');
-        $this->postJson('/api/front-of-house/to-serve/'.collect($this->getJson('/api/front-of-house/to-serve')->json())->firstWhere('dishName', 'Green salad')['id'].'/serve')->assertOk();
+        $waiting = collect($this->getJson('/api/front-of-house/to-serve')->json());
+        $this->postJson('/api/front-of-house/to-serve/'.$waiting->firstWhere('dishName', 'Green salad')['id'].'/serve')->assertOk();
         $this->postJson('/api/front-of-house/tables/table-4/bill')->assertOk();
         theGuestsPayTheirBill($this->visit);
 
-        foreach ($this->getJson('/api/front-of-house/to-serve')->json() as $dish) {
-            $this->postJson("/api/front-of-house/to-serve/{$dish['id']}/serve");
-        }
+        $this->postJson('/api/front-of-house/to-serve/'.$waiting->firstWhere('dishName', 'Creme brulee')['id'].'/serve')->assertStatus(409);
 
         expect(theServedDishesOnNoBill())->toBe([]);
     });

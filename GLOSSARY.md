@@ -101,7 +101,7 @@ These words are technical, but they are the ones of the code and of the discussi
 | **Position** | Where a fact sits in the event log. It is the clock all contexts share, and what decides a late reading. | `StoredEvent::$position` |
 | **Saga** | What follows an order between the room and the kitchen, through the facts they publish, with no one in charge. | `OrderFulfilment`, `OrderFulfilmentProcessor` |
 | **Idempotency key** | Sent with an order: the same key places it once. | `Idempotency-Key` |
-| **If-Match** | Sent with `fire` or `ready`: the version of the ticket the cook saw. If it moved, the command is refused. | `ETag`, `If-Match` |
+| **If-Match** | Sent with `fire` or `ready`: the version of the ticket the cook saw. If it moved, the command is refused; without it, or with `*`, the kitchen does not check. Sent with a payment: the version of the bill the guests saw, which is required (`*` or nothing is a 428), and refused (412) when the bill changed. | `ETag`, `If-Match`, `Bill::pay()` |
 
 ## Keeping it true
 
