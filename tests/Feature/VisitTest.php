@@ -3,6 +3,7 @@
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\FrontOfHouseSeeder;
 use App\Providers\BoundedContexts\Kitchen\Infrastructure\KitchenSeeder;
 use App\Providers\Modules\EventStore\Domain\CheckpointStore;
+use Illuminate\Support\Facades\DB;
 
 function cookedFor(string $table, string $item, string $course): string
 {
@@ -117,4 +118,50 @@ describe('a visit of a table', function () {
             ->assertStatus(412)
             ->assertJson(['message' => 'The revision of the order is obsolete: the guests already paid and left.']);
     });
+});
+
+function theServedDishesOnNoBill(): array
+{
+    return DB::table('billing_served_items')->whereNull('bill_id')->pluck('description')->all();
+}
+
+function theGuestsPayTheirBill(string $visit): void
+{
+    $bill = test()->getJson("/api/billing/covers/{$visit}/bill")->assertOk()->json();
+    test()->postJson("/api/billing/bills/{$bill['billId']}/payments", ['amountCents' => $bill['balanceCents']])->assertOk();
+}
+
+describe('a dish served late', function () {
+    beforeEach(function () {
+        $this->seed(FrontOfHouseSeeder::class);
+        $this->seed(KitchenSeeder::class);
+        $this->visit = $this->postJson('/api/front-of-house/tables/table-4/guests', ['guestCount' => 2])->assertOk()->json('visitId');
+    });
+
+    test('is on a bill of its visit, or was not served: once the guests have paid, no dish served to them is owed by nobody', function () {
+        cookedFor('table-4', 'green-salad', 'starter');
+        everythingAtThePassIsServed();
+        $this->postJson('/api/front-of-house/tables/table-4/bill')->assertOk();
+        cookedFor('table-4', 'creme-brulee', 'dessert');
+        everythingAtThePassIsServed();
+
+        $this->postJson('/api/front-of-house/tables/table-4/bill');
+        theGuestsPayTheirBill($this->visit);
+
+        expect(theServedDishesOnNoBill())->toBe([]);
+    })->skip('waiting for the business rule of the dish served after the bill was requested');
+
+    test('is on a bill of its visit, or is not served, when the guests had already paid and left', function () {
+        cookedFor('table-4', 'creme-brulee', 'dessert');
+        cookedFor('table-4', 'green-salad', 'starter');
+        $this->postJson('/api/front-of-house/to-serve/'.collect($this->getJson('/api/front-of-house/to-serve')->json())->firstWhere('dishName', 'Green salad')['id'].'/serve')->assertOk();
+        $this->postJson('/api/front-of-house/tables/table-4/bill')->assertOk();
+        theGuestsPayTheirBill($this->visit);
+
+        foreach ($this->getJson('/api/front-of-house/to-serve')->json() as $dish) {
+            $this->postJson("/api/front-of-house/to-serve/{$dish['id']}/serve");
+        }
+
+        expect(theServedDishesOnNoBill())->toBe([]);
+    })->skip('waiting for the business rule of the dish served after the bill was requested');
 });
