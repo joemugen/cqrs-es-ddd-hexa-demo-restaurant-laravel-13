@@ -93,6 +93,8 @@ describe('what the dining room tells the others', function () {
             ->and($contract->toPayload())->toBe([
                 'tableId' => 'table-4',
                 'visitId' => 'visit-1',
+                'tableOrderId' => 'ticket-1',
+                'lineId' => 'line-1',
                 'description' => 'Green salad',
                 'quantity' => 2,
                 'unitPriceCents' => 1100,

@@ -4,20 +4,23 @@ declare(strict_types=1);
 
 namespace App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Projection;
 
+use App\Providers\BoundedContexts\FrontOfHouse\Domain\DishAtThePassId;
+use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Consumed\FrontOfHouseDishServed;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Consumed\KitchenDishReady;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Tables;
 use App\Providers\Modules\EventStore\Application\ConsumedMessages;
 use App\Providers\Modules\EventStore\Domain\CheckpointStore;
 use App\Providers\Modules\EventStore\Domain\EventStore;
 use App\Providers\Modules\SharedKernel\Application\Consumption\RunsOnQueue;
-use App\Providers\Modules\SharedKernel\Application\Projector;
+use App\Providers\Modules\SharedKernel\Application\RebuildableProjector;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Level 2: a queued projector. The pass can lag behind the kitchen.
+ * Level 2: a queued projector. The list to serve is a reading of the pass: it can lag behind the kitchen, and it can be
+ * rebuilt from the log. It decides nothing, the pass does.
  */
 #[RunsOnQueue(ProjectToServeList::class)]
-final class ToServeProjector implements Projector
+final class ToServeProjector implements RebuildableProjector
 {
     public const CHECKPOINT = 'foh.to-serve';
 
@@ -42,6 +45,8 @@ final class ToServeProjector implements Projector
 
             if ($message instanceof KitchenDishReady) {
                 DB::table(Tables::TO_SERVE)->insertOrIgnore([
+                    'id' => (string) DishAtThePassId::forLine($message->ticketId, $message->lineId),
+                    'position' => $event->position,
                     'ticket_id' => (string) $message->ticketId,
                     'line_id' => (string) $message->lineId,
                     'table_id' => (string) $message->tableId,
@@ -52,11 +57,23 @@ final class ToServeProjector implements Projector
                 $applied++;
             }
 
+            if ($message instanceof FrontOfHouseDishServed) {
+                DB::table(Tables::TO_SERVE)->where('id', (string) $message->dishAtThePassId)->delete();
+                $applied++;
+            }
+
             $position = $event->position;
         }
 
         $this->checkpoints->put(self::CHECKPOINT, $position);
 
         return $applied;
+    }
+
+    public function rebuild(): void
+    {
+        DB::table(Tables::TO_SERVE)->delete();
+        $this->checkpoints->put(self::CHECKPOINT, 0);
+        $this->consume();
     }
 }

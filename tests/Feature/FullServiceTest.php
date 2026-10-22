@@ -113,5 +113,6 @@ test('a service runs from the welcome to the departure', function () {
         ->assertUnprocessable()
         ->assertJson(['message' => 'A paid bill cannot be changed.']);
 
-    expect(DB::table(Tables::TO_SERVE)->whereNull('served_at')->count())->toBe(0);
+    $this->artisan('queue:work', ['--stop-when-empty' => true, '--max-jobs' => 20, '--memory' => 2048])->assertSuccessful();
+    expect(DB::table(Tables::TO_SERVE)->count())->toBe(0);
 });

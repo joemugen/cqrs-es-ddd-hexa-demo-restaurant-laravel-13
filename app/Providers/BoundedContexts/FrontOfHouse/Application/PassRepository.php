@@ -9,6 +9,8 @@ use App\Providers\BoundedContexts\FrontOfHouse\Domain\DishAtThePassId;
 
 interface PassRepository
 {
+    public function exists(DishAtThePassId $id): bool;
+
     public function find(DishAtThePassId $id): DishAtThePass;
 
     public function save(DishAtThePass $dish): void;

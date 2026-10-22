@@ -27,8 +27,7 @@ final class ListToServeHandler implements QueryHandler
     public function __invoke(ListToServe $query): ToServeView
     {
         return new ToServeView(DB::table(Tables::TO_SERVE)
-            ->whereNull('served_at')
-            ->orderBy('id')
+            ->orderBy('position')
             ->get()
             ->map(fn (object $row): ToServeEntry => new ToServeEntry(
                 new DishAtThePassId((string) $row->id),

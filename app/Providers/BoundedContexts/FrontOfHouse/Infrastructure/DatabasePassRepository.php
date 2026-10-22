@@ -16,9 +16,14 @@ use Illuminate\Support\Facades\DB;
 
 final class DatabasePassRepository implements PassRepository
 {
+    public function exists(DishAtThePassId $id): bool
+    {
+        return DB::table(Tables::PASS)->where('id', (string) $id)->exists();
+    }
+
     public function find(DishAtThePassId $id): DishAtThePass
     {
-        $row = DB::table(Tables::TO_SERVE)->where('id', (string) $id)->first();
+        $row = DB::table(Tables::PASS)->where('id', (string) $id)->first();
 
         if ($row === null) {
             throw new FrontOfHouseException("Nothing at the pass with id {$id}.", 404);
@@ -37,7 +42,12 @@ final class DatabasePassRepository implements PassRepository
 
     public function save(DishAtThePass $dish): void
     {
-        DB::table(Tables::TO_SERVE)->where('id', (string) $dish->id())->update([
+        DB::table(Tables::PASS)->updateOrInsert(['id' => (string) $dish->id()], [
+            'ticket_id' => (string) $dish->ticketId(),
+            'line_id' => (string) $dish->lineId(),
+            'table_id' => (string) $dish->tableId(),
+            'dish_name' => (string) $dish->dishName(),
+            'quantity' => $dish->quantity(),
             'served_at' => $dish->isServed() ? now() : null,
         ]);
     }
