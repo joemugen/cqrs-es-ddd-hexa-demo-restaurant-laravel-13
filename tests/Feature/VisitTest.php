@@ -123,7 +123,7 @@ describe('a visit of a table', function () {
 
 function theServedDishesOnNoBill(): array
 {
-    return DB::table('billing_served_items')->whereNull('bill_id')->pluck('description')->all();
+    return DB::table('billing_served_items')->whereNull('bill_id')->whereNull('written_off_at')->pluck('description')->all();
 }
 
 function theGuestsPayTheirBill(string $visit): void
@@ -150,7 +150,7 @@ describe('a dish served late', function () {
         theGuestsPayTheirBill($this->visit);
 
         expect(theServedDishesOnNoBill())->toBe([]);
-    })->skip('waiting for the business rule of the dish served after the bill was requested');
+    });
 
     test('is on a bill of its visit, or is not served, when the guests had already paid and left', function () {
         cookedFor('table-4', 'creme-brulee', 'dessert');

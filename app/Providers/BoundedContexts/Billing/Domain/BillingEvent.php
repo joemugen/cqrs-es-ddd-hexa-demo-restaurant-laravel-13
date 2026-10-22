@@ -10,4 +10,6 @@ namespace App\Providers\BoundedContexts\Billing\Domain;
 final class BillingEvent
 {
     public const BILL_PAID = 'billing.bill_paid';
+
+    public const DISH_WRITTEN_OFF = 'billing.dish_written_off';
 }

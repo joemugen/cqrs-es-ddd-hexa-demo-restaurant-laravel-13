@@ -5,6 +5,7 @@ use App\Providers\BoundedContexts\Billing\Domain\BillId;
 use App\Providers\BoundedContexts\Billing\Domain\BillingException;
 use App\Providers\BoundedContexts\Billing\Domain\CoverRef;
 use App\Providers\BoundedContexts\Billing\Domain\Event\BillPaid;
+use App\Providers\BoundedContexts\Billing\Domain\Event\DishWrittenOff;
 use App\Providers\BoundedContexts\Billing\Domain\ServedDish;
 use App\Providers\BoundedContexts\Billing\Domain\SourceKey;
 use App\Providers\BoundedContexts\Billing\Domain\Vat;
@@ -121,6 +122,31 @@ describe('Bill', function () {
             $bill->pay(1100, 0, ExpectedVersion::of(2));
 
             expect($bill->balanceCents())->toBe(1100);
+        });
+    });
+
+    describe('when a dish is served after it was paid', function () {
+        test('does not change the bill, and says the loss as a fact: the dish is written off', function () {
+            $bill = Bill::prepare(new BillId('bill-1'), new CoverRef('visit-1'), [servedDish('Green salad', 1100, 1, 'food')]);
+            $bill->pay(1100, 0, ExpectedVersion::of(1));
+            $bill->releaseEvents();
+
+            $bill->receive(servedDish('Creme brulee', 1100, 2, 'food'));
+
+            expect($bill->lines())->toHaveCount(1)
+                ->and($bill->version())->toBe(1)
+                ->and($bill->totalCents())->toBe(1100)
+                ->and($bill->releaseEvents())->toEqual([
+                    new DishWrittenOff(new BillId('bill-1'), new CoverRef('visit-1'), new SourceKey('ticket-1:creme-brulee'), 'Creme brulee', 2, 2200),
+                ]);
+        });
+
+        test('records nothing when the bill is still open: the dish goes on it', function () {
+            $bill = Bill::prepare(new BillId('bill-1'), new CoverRef('visit-1'), [servedDish('Green salad', 1100, 1, 'food')]);
+
+            $bill->receive(servedDish('Creme brulee', 1100, 1, 'food'));
+
+            expect($bill->releaseEvents())->toBe([]);
         });
     });
 

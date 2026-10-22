@@ -1,14 +1,18 @@
 <?php
 
 use App\Providers\BoundedContexts\Billing\Application\BillRepository;
+use App\Providers\BoundedContexts\Billing\Application\Command\RecordServedDish;
 use App\Providers\BoundedContexts\Billing\Domain\Bill;
 use App\Providers\BoundedContexts\Billing\Domain\BillId;
 use App\Providers\BoundedContexts\Billing\Domain\CoverRef;
 use App\Providers\BoundedContexts\Billing\Domain\DishKind;
 use App\Providers\BoundedContexts\Billing\Domain\ServedDish;
 use App\Providers\BoundedContexts\Billing\Domain\SourceKey;
+use App\Providers\BoundedContexts\Billing\Infrastructure\Bus\BillingCommandBus;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\FrontOfHouseSeeder;
 use App\Providers\BoundedContexts\Kitchen\Infrastructure\KitchenSeeder;
+use App\Providers\Modules\EventStore\Domain\EventStore;
+use Illuminate\Support\Facades\DB;
 
 describe('the till', function () {
     beforeEach(function () {
@@ -191,6 +195,27 @@ describe('the till', function () {
         expect($second)->toBe($first);
     });
 
+    test('a dish that comes out after the bill was paid is written off, said as a fact and not left on no bill', function () {
+        $this->visit = $this->postJson('/api/front-of-house/tables/table-4/guests', ['guestCount' => 2])->assertOk()->json('visitId');
+        $this->postJson('/api/front-of-house/tables/table-4/orders', ['lines' => [['menuItemId' => 'green-salad', 'quantity' => 1, 'course' => 'starter']]])->assertOk();
+        serveOnTheLatestTicket('starter', 'Green salad');
+        $this->postJson('/api/front-of-house/tables/table-4/bill')->assertOk();
+        $bill = $this->getJson("/api/billing/covers/{$this->visit}/bill")->json();
+        $this->postJson("/api/billing/bills/{$bill['billId']}/payments", ['amountCents' => $bill['balanceCents']], ['If-Match' => '"'.$bill['version'].'"'])->assertOk();
+
+        $late = new RecordServedDish(new CoverRef($this->visit), new ServedDish(new SourceKey('order-2:line-1'), 'Creme brulee', 2, 1100, DishKind::FOOD), 99);
+        app(BillingCommandBus::class)->dispatch($late);
+        app(BillingCommandBus::class)->dispatch($late);
+
+        $written = collect(app(EventStore::class)->readAllFrom(0))->filter(fn ($event) => $event->type->is('billing.dish_written_off'));
+
+        expect($written)->toHaveCount(1)
+            ->and($written->first()->payload)->toMatchArray(['coverRef' => $this->visit, 'billId' => $bill['billId'], 'description' => 'Creme brulee', 'amountCents' => 2200])
+            ->and($this->getJson("/api/billing/covers/{$this->visit}/bill")->json())->toMatchArray(['status' => 'paid', 'totalCents' => 1100, 'version' => 1])
+            ->and(DB::table('billing_served_items')->whereNull('bill_id')->whereNull('written_off_at')->count())->toBe(0)
+            ->and(DB::table('billing_served_items')->whereNotNull('written_off_at')->pluck('source_key')->all())->toBe(['order-2:line-1']);
+    });
+
     test('the bill query does not load the bill aggregate', function () {
         $this->visit = $this->postJson('/api/front-of-house/tables/table-4/guests', ['guestCount' => 2])->assertOk()->json('visitId');
         $this->postJson('/api/front-of-house/tables/table-4/orders', [
@@ -214,6 +239,11 @@ describe('the till', function () {
             }
 
             public function openFor(CoverRef $coverRef): ?Bill
+            {
+                throw new RuntimeException('Queries must not hydrate aggregates.');
+            }
+
+            public function latestFor(CoverRef $coverRef): ?Bill
             {
                 throw new RuntimeException('Queries must not hydrate aggregates.');
             }

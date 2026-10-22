@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Providers\BoundedContexts\Billing\Domain;
 
 use App\Providers\BoundedContexts\Billing\Domain\Event\BillPaid;
+use App\Providers\BoundedContexts\Billing\Domain\Event\DishWrittenOff;
 use App\Providers\Modules\SharedKernel\Domain\AggregateRoot;
 use App\Providers\Modules\SharedKernel\Domain\ExpectedVersion;
 use App\Providers\Modules\SharedKernel\Domain\PreconditionFailed;
@@ -50,12 +51,15 @@ final class Bill implements AggregateRoot
 
     /**
      * Asking for the bill freezes nothing: a dish served afterwards goes on the bill that is still open, which moves to its
-     * next version. A dish told twice is on the bill once.
+     * next version. A dish told twice is on the bill once. Once the bill is paid it is immutable: a dish that comes out
+     * after that is written off, and the loss is a fact.
      */
     public function receive(ServedDish $dish): void
     {
         if ($this->paid) {
-            throw new BillingException('A paid bill cannot be changed.');
+            $this->recordThat(new DishWrittenOff($this->id, $this->coverRef, $dish->sourceKey, $dish->description, $dish->quantity, $dish->grossCents()));
+
+            return;
         }
 
         foreach ($this->lines as $line) {

@@ -15,4 +15,9 @@ interface BillRepository
     public function save(Bill $bill): void;
 
     public function openFor(CoverRef $coverRef): ?Bill;
+
+    /**
+     * The last bill of the cover, open or paid.
+     */
+    public function latestFor(CoverRef $coverRef): ?Bill;
 }

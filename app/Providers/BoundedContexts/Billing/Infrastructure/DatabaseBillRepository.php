@@ -80,6 +80,17 @@ final class DatabaseBillRepository implements BillRepository
         return $row === null ? null : $this->bill($row);
     }
 
+    public function latestFor(CoverRef $coverRef): ?Bill
+    {
+        $row = DB::table(Tables::BILLS)
+            ->where('cover_ref', (string) $coverRef)
+            ->orderByDesc('sequence')
+            ->orderByDesc('id')
+            ->first();
+
+        return $row === null ? null : $this->bill($row);
+    }
+
     private function bill(object $row): Bill
     {
         $lines = DB::table(Tables::BILL_LINES)
