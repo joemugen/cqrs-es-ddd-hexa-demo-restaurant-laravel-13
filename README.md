@@ -168,9 +168,16 @@ In `sync` mode the process that appended the fact consumes it, one at a time: fi
 ### What the log guarantees
 
 - **Append only.** `events` only receives inserts, a mistake is answered by a new fact. A test records every statement of a whole service, in both modes.
-- **In order, per consumer.** A consumer reads past its checkpoint by position and writes the checkpoint with its effects in one transaction, so a failed pass starts again at the same place and skips nothing.
+- **In order, per consumer.** A consumer reads past its checkpoint by position and writes the checkpoint with its effects in one transaction, so a failed pass starts again at the same place. With SQLite it skips nothing, see below.
 - **At least once.** After a failure a consumer may see an event twice, so each one is idempotent.
 - **No order between consumers.** A consumer that needs another to be up to date says so in code, as `PrepareBillProcessor` does for the ledger of served dishes.
+
+### What holds because of SQLite
+
+Two guarantees come from the database, not from the code, and hold with SQLite only (one writer at a time, `transaction_mode: IMMEDIATE`).
+
+- **The position as a checkpoint.** `events.position` is auto-incremented. With several writers, a transaction can commit after another that took a higher position, and a consumer that already passed it skips the event for good. A server database needs the appends serialized (an advisory lock around the append) or a consumer that waits for the gaps.
+- **Aggregates saved as their state.** `Bill`, `TableOrder`, `Table` and `OrderFulfilment` have no version and no lock: two `PayBill` or two `ReviseOrder` that read the same state are serialized only because the writers are. A server database needs a version column checked on save, or a lock on the row. The ticket of the kitchen, rebuilt from its events, is safe either way: its append checks the expected version.
 
 ## A fact of the domain is not a contract
 
