@@ -20,7 +20,7 @@ The metaphor stays the same. The menu is not the kitchen ticket. A guest reads a
 The base post separates three ways to keep a write model and a read model apart. This restaurant uses all three.
 
 1. **Same transaction.** Seating guests updates the table and the floor-plan screen together. `SeatGuestsHandler` loads the table, lets it decide, saves it, and syncs the floor plan. The command bus wraps the handler in one transaction, so the two writes commit together.
-2. **Asynchronous projector.** When a dish is ready, a queued job folds that fact into the "to serve" list and advances a checkpoint. Until a worker runs, the pass is behind the kitchen. The screen can lag. `php artisan projections:run to-serve` catches the same list up in process.
+2. **Asynchronous projector.** When a dish is ready, a queued job folds that fact into the "to serve" list and advances a checkpoint, and takes a dish off it when it is served. Until a worker runs, the list is behind the kitchen. The list can lag and can be rebuilt from the log; it decides nothing. `php artisan projections:run to-serve` catches the same list up in process.
 3. **Event stream.** A kitchen ticket is the stream. `KitchenTicketRepository` appends with the version it loaded. A conflicting version is refused. The kitchen screen folds the stream and can be rebuilt. It does not decide. The processor that opens a ticket is not a projection: it runs once and is not replayed.
 
 A command is a message: intent and data, no rules. The aggregate decides. The handler loads, delegates, saves, and returns only a typed acknowledgement such as `TableOrderPlaced`, which serializes to `{"tableOrderId": "…", "accepted": true}`. A query reads a read model and does not hydrate the aggregate.
@@ -50,7 +50,7 @@ Prices on the bill are tax-inclusive. Food eaten in is 10% (`gross * 10 / 110`) 
 2. `PlaceTableOrder` publishes `TableOrderPlaced`. The payload has no price.
 3. A processor opens a `KitchenTicket` in the event store (version checked on every save).
 4. The kitchen fires a course and marks a dish ready. The kitchen screen is a projection of that stream.
-5. Front of house projects a queued "to serve" list. `ServeDish` publishes `DishServed`.
+5. A processor puts each ready dish at the pass, the write model where the room decides what was served, and a queued projector keeps a "to serve" list of it. `ServeDish` decides on the pass, never on the list, and publishes `DishServed`.
 6. A second order on the same table (the desserts) opens a second ticket.
 7. The kitchen declares the steak 86. The menu marks that item unavailable. A new order is refused. The steak already on a ticket can still be cooked.
 8. `RequestBill` asks the till to prepare a `Bill` from served dishes only. `PayBill` may be split, and a tip does not reduce the balance. A paid bill is immutable. `BillPaid` frees the table, and the floor plan moves with it.
@@ -276,7 +276,7 @@ To catch the pass up without a worker:
 php artisan projections:run to-serve
 ```
 
-The kitchen screen catches up after the order's transaction commits, before the HTTP response returns, and it can be rebuilt from the stream. The processors (open a ticket, mark the menu 86, record a served dish, prepare a bill, free a table) keep their own checkpoints and are not rebuilt. Only the pass waits for a worker.
+The kitchen screen catches up after the order's transaction commits, before the HTTP response returns, and it can be rebuilt from the stream. The list to serve can be rebuilt too, without bringing back a dish already served. The processors (receive an order, put a dish at the pass, mark the menu 86, record a served dish, prepare a bill, free a table) keep their own checkpoints and are not rebuilt. Only the list waits for a worker.
 
 ## Where to read
 
@@ -286,12 +286,12 @@ The kitchen screen catches up after the order's transaction commits, before the 
 | 2. Place a table order | `app/Providers/BoundedContexts/FrontOfHouse/Application/Command/PlaceTableOrderHandler.php#L31-L48` |
 | 3. Open a kitchen ticket | `app/Providers/BoundedContexts/Kitchen/Infrastructure/Processors/OpenKitchenTicketProcessor.php#L37-L58`, `app/Providers/BoundedContexts/Kitchen/Application/Command/ReceiveOrderHandler.php#L33-L52`, `app/Providers/BoundedContexts/Kitchen/Domain/KitchenTicket.php#L55-L65` |
 | 4. Fire, ready, kitchen screen | `app/Providers/BoundedContexts/Kitchen/Domain/KitchenTicket.php#L104-L153`, `app/Providers/BoundedContexts/Kitchen/Infrastructure/Projection/KitchenScreenProjector.php#L68-L117` |
-| 5. Queued pass, then serve | `app/Providers/BoundedContexts/FrontOfHouse/Infrastructure/Projection/ToServeProjector.php#L35-L61`, `app/Providers/BoundedContexts/FrontOfHouse/Infrastructure/Projection/ProjectToServeList.php#L10-L18`, `app/Providers/BoundedContexts/FrontOfHouse/Application/Command/ServeDishHandler.php#L27-L36` |
+| 5. Queued pass, then serve | `app/Providers/BoundedContexts/FrontOfHouse/Infrastructure/Projection/ToServeProjector.php#L38-L71`, `app/Providers/BoundedContexts/FrontOfHouse/Infrastructure/Projection/ProjectToServeList.php#L10-L18`, `app/Providers/BoundedContexts/FrontOfHouse/Application/Command/ServeDishHandler.php#L27-L36` |
 | 6. Second order | `tests/Feature/FullServiceTest.php#L56-L70` |
 | 7. 86 the menu | `app/Providers/BoundedContexts/Kitchen/Domain/Dish.php#L35-L43`, `app/Providers/BoundedContexts/Kitchen/Application/Command/DeclareDishEightySixedHandler.php#L24-L32`, `app/Providers/BoundedContexts/FrontOfHouse/Infrastructure/Processors/MarkMenuItemUnavailableProcessor.php#L35-L58` |
 | 8. Bill, pay, free the table | `app/Providers/BoundedContexts/FrontOfHouse/Application/Command/RequestBillHandler.php#L24-L31`, `app/Providers/BoundedContexts/Billing/Infrastructure/Processors/RecordServedDishes.php#L35-L56`, `app/Providers/BoundedContexts/Billing/Application/Command/PrepareBillHandler.php#L27-L49`, `app/Providers/BoundedContexts/Billing/Domain/Bill.php#L48-L72`, `app/Providers/BoundedContexts/Billing/Application/Command/PayBillHandler.php#L24-L33`, `app/Providers/BoundedContexts/FrontOfHouse/Application/Command/FreeTableHandler.php#L27-L35` |
 | 9. Revise a partial order | `app/Providers/BoundedContexts/FrontOfHouse/Application/Command/ReviseOrderHandler.php#L32-L48`, `app/Providers/BoundedContexts/Kitchen/Domain/OrderAssessment.php#L20-L41`, `app/Providers/BoundedContexts/Kitchen/Domain/Dish.php#L35-L43`, `app/Providers/BoundedContexts/FrontOfHouse/Domain/OrderFulfilment.php#L68-L126`, `app/Providers/BoundedContexts/Kitchen/Domain/KitchenTicket.php#L86-L102` |
 | 10. A fact of the domain, a contract for the others | `app/Providers/BoundedContexts/Kitchen/Domain/Event/DishesAdded.php#L14-L46`, `app/Providers/BoundedContexts/Kitchen/Application/Integration/DishesAddedV1.php#L18-L55`, `app/Providers/Modules/EventStore/Infrastructure/ConventionContractPublisher.php#L30-L41`, `app/Providers/BoundedContexts/Kitchen/Infrastructure/EventStoreKitchenTicketRepository.php#L53-L71` |
 | Level 1 | `SeatGuestsHandler.php#L27-L35` and `FreeTableHandler.php#L27-L35` |
-| Level 2 | `ToServeProjector.php#L35-L61` and `ProjectToServeList.php#L10-L18` |
+| Level 2 | `ToServeProjector.php#L38-L71` and `ProjectToServeList.php#L10-L18` |
 | Level 3 | `app/Providers/Modules/EventStore/Infrastructure/DatabaseEventStore.php#L23-L74`, `app/Providers/BoundedContexts/Kitchen/Infrastructure/EventStoreKitchenTicketRepository.php#L53-L71`, `app/Providers/Modules/EventStore/Infrastructure/InProcessAfterAppend.php#L53-L60` |

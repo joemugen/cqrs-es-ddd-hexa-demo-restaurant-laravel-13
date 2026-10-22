@@ -55,8 +55,8 @@ Sources: [Wikipedia](https://en.wikipedia.org/wiki/86_(term)), [Snopes](https://
 
 | Term | FR | Meaning | In the code |
 | --- | --- | --- | --- |
-| **Pass** | passe | The counter where the kitchen puts the dishes that are ready and where the room takes them. | `DishAtThePass` |
-| **To serve** | à servir | The list of dishes waiting at the pass. It can lag behind the kitchen until a worker catches it up. | `ToServeProjector`, `GET /to-serve` |
+| **Pass** | passe | The counter where the kitchen puts the dishes that are ready and where the room takes them. It is where the room decides what was served. | `DishAtThePass`, `FillThePassProcessor` |
+| **To serve** | à servir | The list of dishes waiting at the pass, a reading of it. It can lag behind the kitchen until a worker catches it up, and it can be rebuilt. | `ToServeProjector`, `GET /to-serve` |
 | **Serve** | servir | Take a dish from the pass to the table. Only what was served is billed. | `ServeDish`, `DishServed` |
 
 ## The order that does not go through
