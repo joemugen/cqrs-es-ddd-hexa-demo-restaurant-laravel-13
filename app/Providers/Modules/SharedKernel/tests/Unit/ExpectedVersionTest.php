@@ -1,8 +1,9 @@
 <?php
 
-use App\Providers\Modules\SharedKernel\Domain\ExpectedVersion;
+use App\Providers\Modules\SharedKernel\Application\Concurrency\ExpectedVersion;
+use App\Providers\Modules\SharedKernel\Application\Concurrency\PreconditionFailed;
+use App\Providers\Modules\SharedKernel\Application\Concurrency\StaleVersion;
 use App\Providers\Modules\SharedKernel\Domain\InvalidValue;
-use App\Providers\Modules\SharedKernel\Domain\PreconditionFailed;
 
 describe('an expected version', function (): void {
     describe('read from an If-Match header', function (): void {
@@ -37,7 +38,7 @@ describe('an expected version', function (): void {
             try {
                 ExpectedVersion::fromIfMatch('"2"')?->ensureMatches(5);
             } catch (PreconditionFailed $failure) {
-                expect($failure->status())->toBe(412)
+                expect($failure)->toBeInstanceOf(StaleVersion::class)
                     ->and($failure->getMessage())->toBe('The resource changed since you read it: it is at version 5, not 2.');
 
                 return;

@@ -6,7 +6,7 @@ namespace App\Providers\BoundedContexts\FrontOfHouse\Infrastructure;
 
 use App\Providers\BoundedContexts\FrontOfHouse\Application\MenuRepository;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\DishName;
-use App\Providers\BoundedContexts\FrontOfHouse\Domain\FrontOfHouseException;
+use App\Providers\BoundedContexts\FrontOfHouse\Domain\FrontOfHouseNotFound;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\Menu;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\MenuItem;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\MenuItemId;
@@ -34,7 +34,7 @@ final class DatabaseMenuRepository implements MenuRepository
         $row = DB::table(Tables::MENU_ITEMS)->where('name', (string) $name)->first();
 
         if ($row === null) {
-            throw new FrontOfHouseException("Unknown menu item {$name}.", 404);
+            throw new FrontOfHouseNotFound("Unknown menu item {$name}.");
         }
 
         return $this->item($row);

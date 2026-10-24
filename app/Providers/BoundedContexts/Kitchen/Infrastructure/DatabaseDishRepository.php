@@ -8,7 +8,7 @@ use App\Providers\BoundedContexts\Kitchen\Application\DishRepository;
 use App\Providers\BoundedContexts\Kitchen\Domain\Dish;
 use App\Providers\BoundedContexts\Kitchen\Domain\DishId;
 use App\Providers\BoundedContexts\Kitchen\Domain\DishName;
-use App\Providers\BoundedContexts\Kitchen\Domain\KitchenException;
+use App\Providers\BoundedContexts\Kitchen\Domain\KitchenNotFound;
 use Illuminate\Support\Facades\DB;
 
 final class DatabaseDishRepository implements DishRepository
@@ -18,7 +18,7 @@ final class DatabaseDishRepository implements DishRepository
         $row = DB::table(Tables::DISHES)->where('id', (string) $id)->first();
 
         if ($row === null) {
-            throw new KitchenException("Unknown dish {$id}.", 404);
+            throw new KitchenNotFound("Unknown dish {$id}.");
         }
 
         return $this->dish($row);

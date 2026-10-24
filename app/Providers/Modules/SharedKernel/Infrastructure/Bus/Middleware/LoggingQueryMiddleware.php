@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace App\Providers\Modules\SharedKernel\Infrastructure\Bus\Middleware;
 
 use App\Providers\Modules\SharedKernel\Application\Bus\QueryMiddleware;
+use App\Providers\Modules\SharedKernel\Application\Exception\Refusal;
 use App\Providers\Modules\SharedKernel\Application\Query;
 use App\Providers\Modules\SharedKernel\Application\QueryResponse;
 use App\Providers\Modules\SharedKernel\Domain\DomainException;
 use App\Providers\Modules\SharedKernel\Infrastructure\Correlation;
+use App\Providers\Modules\SharedKernel\Infrastructure\Http\RefusalStatuses;
 use Closure;
 use Illuminate\Support\Facades\Log;
 use Throwable;
@@ -25,8 +27,8 @@ final class LoggingQueryMiddleware implements QueryMiddleware
 
         try {
             $response = $next($query);
-        } catch (DomainException $refusal) {
-            Log::info('Query refused', $this->context($query, $start, ['reason' => $refusal->getMessage(), 'status' => $refusal->status()]));
+        } catch (DomainException|Refusal $refusal) {
+            Log::info('Query refused', $this->context($query, $start, ['reason' => $refusal->getMessage(), 'status' => app(RefusalStatuses::class)->of($refusal)]));
 
             throw $refusal;
         } catch (Throwable $failure) {

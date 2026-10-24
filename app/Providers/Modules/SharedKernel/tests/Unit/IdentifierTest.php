@@ -2,6 +2,7 @@
 
 use App\Providers\Modules\SharedKernel\Domain\Identifier;
 use App\Providers\Modules\SharedKernel\Domain\InvalidValue;
+use App\Providers\Modules\SharedKernel\Domain\RuleViolation;
 
 final readonly class TestingIdentifier extends Identifier {}
 
@@ -29,11 +30,11 @@ describe('an identifier', function (): void {
             ->toThrow(InvalidValue::class, 'An identifier may only contain letters, digits, dashes and underscores.');
     })->with(['table 4', 'table/4', 'tâble', 'a:b', "id\n"]);
 
-    it('is refused with a 422', function (): void {
+    it('is refused as a rule violation', function (): void {
         try {
             new TestingIdentifier('');
         } catch (InvalidValue $exception) {
-            expect($exception->status())->toBe(422);
+            expect($exception)->toBeInstanceOf(RuleViolation::class);
         }
     });
 });

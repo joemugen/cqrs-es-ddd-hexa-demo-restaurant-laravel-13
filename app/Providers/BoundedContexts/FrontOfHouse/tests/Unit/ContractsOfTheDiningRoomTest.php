@@ -2,6 +2,7 @@
 
 use App\Providers\BoundedContexts\FrontOfHouse\Application\Integration\BillRequestedV1;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\Integration\DishServedV1;
+use App\Providers\BoundedContexts\FrontOfHouse\Application\Integration\TableFreedV1;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\Integration\TableOrderCancelledV1;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\Integration\TableOrderClosedV1;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\Integration\TableOrderPlacedV1;
@@ -10,6 +11,7 @@ use App\Providers\BoundedContexts\FrontOfHouse\Domain\DishKind;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\DishName;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\Event\BillRequested;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\Event\DishServed;
+use App\Providers\BoundedContexts\FrontOfHouse\Domain\Event\TableFreed;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\Event\TableOrderCancelled;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\Event\TableOrderClosed;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\Event\TableOrderPlaced;
@@ -86,6 +88,14 @@ describe('what the dining room tells the others', function () {
         expect(publishedAs(TableOrderClosedV1::class))->toBe('front_of_house.table_order_closed v1')
             ->and($contract->toPayload())->toBe(['tableOrderId' => 'order-1', 'tableId' => 'table-4'])
             ->and(TableOrderClosedV1::fromPayload($contract->toPayload()))->toEqual($contract);
+    });
+
+    test('a table freed: which table, and the visit that left it', function () {
+        $contract = TableFreedV1::from(new TableFreed(new TableId('table-4'), new VisitId('visit-1')));
+
+        expect(publishedAs(TableFreedV1::class))->toBe('front_of_house.table_freed v1')
+            ->and($contract->toPayload())->toBe(['tableId' => 'table-4', 'visitId' => 'visit-1'])
+            ->and(TableFreedV1::fromPayload($contract->toPayload()))->toEqual($contract);
     });
 
     test('a bill requested: which table', function () {

@@ -5,13 +5,14 @@ declare(strict_types=1);
 namespace App\Providers\BoundedContexts\FrontOfHouse\Infrastructure;
 
 use App\Providers\BoundedContexts\FrontOfHouse\Application\OrderFulfilmentRepository;
-use App\Providers\BoundedContexts\FrontOfHouse\Domain\FrontOfHouseException;
+use App\Providers\BoundedContexts\FrontOfHouse\Domain\FrontOfHouseNotFound;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\FulfilmentStatus;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\OrderFulfilment;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableId;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableOrderId;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\UnavailableLine;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\VisitId;
+use App\Providers\Modules\SharedKernel\Application\Concurrency\ConcurrencyConflict;
 use Illuminate\Support\Facades\DB;
 
 final class DatabaseOrderFulfilmentRepository implements OrderFulfilmentRepository
@@ -26,7 +27,7 @@ final class DatabaseOrderFulfilmentRepository implements OrderFulfilmentReposito
         $row = DB::table(Tables::ORDER_FULFILMENTS)->where('table_order_id', (string) $id)->first();
 
         if ($row === null) {
-            throw new FrontOfHouseException("Unknown order {$id}.", 404);
+            throw new FrontOfHouseNotFound("Unknown order {$id}.");
         }
 
         return $this->fulfilment($row);
@@ -42,9 +43,12 @@ final class DatabaseOrderFulfilmentRepository implements OrderFulfilmentReposito
             ->all();
     }
 
+    /**
+     * The order is written only if nobody saved it since it was read, whoever they are: the room over HTTP or a processor.
+     */
     public function save(OrderFulfilment $fulfilment): void
     {
-        DB::table(Tables::ORDER_FULFILMENTS)->updateOrInsert(['table_order_id' => (string) $fulfilment->id()], [
+        $row = [
             'table_id' => (string) $fulfilment->tableId(),
             'visit_id' => (string) $fulfilment->visitId(),
             'status' => $fulfilment->status(),
@@ -55,7 +59,21 @@ final class DatabaseOrderFulfilmentRepository implements OrderFulfilmentReposito
             ),
             'request_position' => $fulfilment->requestPosition(),
             'revisions_seen' => $fulfilment->revisionsSeen(),
-        ]);
+            'version' => $fulfilment->version() + 1,
+        ];
+
+        $written = DB::table(Tables::ORDER_FULFILMENTS)
+            ->where('table_order_id', (string) $fulfilment->id())
+            ->where('version', $fulfilment->version())
+            ->update($row);
+
+        if ($written === 0 && $this->exists($fulfilment->id())) {
+            throw new ConcurrencyConflict("Order {$fulfilment->id()} was changed since it was read.");
+        }
+
+        if ($written === 0) {
+            DB::table(Tables::ORDER_FULFILMENTS)->insert(['table_order_id' => (string) $fulfilment->id()] + $row);
+        }
     }
 
     private function fulfilment(object $row): OrderFulfilment
@@ -72,6 +90,7 @@ final class DatabaseOrderFulfilmentRepository implements OrderFulfilmentReposito
             ),
             (int) $row->request_position,
             (int) $row->revisions_seen,
+            (int) $row->version,
         );
     }
 }

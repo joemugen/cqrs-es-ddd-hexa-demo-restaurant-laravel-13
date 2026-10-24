@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace App\Providers\BoundedContexts\Kitchen\Application\Command;
 
-use App\Providers\BoundedContexts\Kitchen\Application\Command\Response\TicketCancellationNoted;
+use App\Providers\BoundedContexts\Kitchen\Application\Command\Response\CancelTicketAccepted;
 use App\Providers\BoundedContexts\Kitchen\Application\KitchenTicketRepository;
 use App\Providers\Modules\SharedKernel\Application\Bus\Attribute\AsCommandHandler;
 use App\Providers\Modules\SharedKernel\Application\CommandHandler;
 
 /**
- * @implements CommandHandler<CancelTicket, TicketCancellationNoted>
+ * @implements CommandHandler<CancelTicket, CancelTicketAccepted>
  */
 #[AsCommandHandler(CancelTicket::class)]
 final readonly class CancelTicketHandler implements CommandHandler
@@ -20,7 +20,7 @@ final readonly class CancelTicketHandler implements CommandHandler
     /**
      * An order that never got a ticket has nothing to cancel.
      */
-    public function __invoke(CancelTicket $command): TicketCancellationNoted
+    public function __invoke(CancelTicket $command): CancelTicketAccepted
     {
         if ($this->tickets->exists($command->ticketId)) {
             $ticket = $this->tickets->get($command->ticketId);
@@ -28,6 +28,6 @@ final readonly class CancelTicketHandler implements CommandHandler
             $this->tickets->save($ticket);
         }
 
-        return new TicketCancellationNoted($command->ticketId);
+        return new CancelTicketAccepted($command->ticketId);
     }
 }

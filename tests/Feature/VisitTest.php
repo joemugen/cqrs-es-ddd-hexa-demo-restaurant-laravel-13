@@ -1,5 +1,8 @@
 <?php
 
+use App\Providers\BoundedContexts\FrontOfHouse\Application\Command\CloseOrder;
+use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableOrderId;
+use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Bus\FrontOfHouseCommandBus;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\FrontOfHouseSeeder;
 use App\Providers\BoundedContexts\Kitchen\Infrastructure\KitchenSeeder;
 use App\Providers\Modules\EventStore\Domain\CheckpointStore;
@@ -191,5 +194,35 @@ describe('a dish served late', function () {
 
         expect(collect($this->getJson('/api/kitchen/screen')->json())->pluck('ticketId')->all())->not->toContain($dessert)
             ->and($this->getJson('/api/front-of-house/to-serve')->json())->toBe([]);
+    });
+});
+
+describe('closing one order', function () {
+    beforeEach(function () {
+        $this->seed(FrontOfHouseSeeder::class);
+        $this->seed(KitchenSeeder::class);
+        $this->postJson('/api/front-of-house/tables/table-4/guests', ['guestCount' => 2])->assertOk();
+    });
+
+    test('closes that order alone: the other orders of the visit stay open', function () {
+        $closed = $this->postJson('/api/front-of-house/tables/table-4/orders', ['lines' => [['menuItemId' => 'green-salad', 'quantity' => 1, 'course' => 'starter']]])->json('tableOrderId');
+        $open = $this->postJson('/api/front-of-house/tables/table-4/orders', ['lines' => [['menuItemId' => 'steak-frites', 'quantity' => 1, 'course' => 'main']]])->json('tableOrderId');
+
+        app(FrontOfHouseCommandBus::class)->dispatch(new CloseOrder(new TableOrderId($closed)));
+
+        expect(DB::table('foh_order_fulfilments')->where('table_order_id', $closed)->value('status'))->toBe('closed')
+            ->and(DB::table('foh_order_fulfilments')->where('table_order_id', $open)->value('status'))->not->toBe('closed');
+    });
+
+    test('is idempotent: closing it again, or an order nobody knows, says nothing', function () {
+        $id = $this->postJson('/api/front-of-house/tables/table-4/orders', ['lines' => [['menuItemId' => 'green-salad', 'quantity' => 1, 'course' => 'starter']]])->json('tableOrderId');
+        $bus = app(FrontOfHouseCommandBus::class);
+        $bus->dispatch(new CloseOrder(new TableOrderId($id)));
+        $closedEvents = DB::table('events')->where('type', 'front_of_house.table_order_closed')->count();
+
+        $bus->dispatch(new CloseOrder(new TableOrderId($id)));
+        $bus->dispatch(new CloseOrder(new TableOrderId('nobody-knows-this-one')));
+
+        expect(DB::table('events')->where('type', 'front_of_house.table_order_closed')->count())->toBe($closedEvents)->toBe(1);
     });
 });

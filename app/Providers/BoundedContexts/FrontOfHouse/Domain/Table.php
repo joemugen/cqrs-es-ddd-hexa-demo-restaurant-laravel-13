@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Providers\BoundedContexts\FrontOfHouse\Domain;
 
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\Event\BillRequested;
+use App\Providers\BoundedContexts\FrontOfHouse\Domain\Event\TableFreed;
 use App\Providers\Modules\SharedKernel\Domain\AggregateRoot;
 use App\Providers\Modules\SharedKernel\Domain\RecordsEvents;
 
@@ -69,6 +70,15 @@ final class Table implements AggregateRoot
 
         $this->guestCount = 0;
         $this->visit = null;
+        $this->recordThat(new TableFreed($this->id, $visit));
+    }
+
+    /**
+     * Guests who sit there may order; a table that was freed takes no order.
+     */
+    public function acceptsOrders(): bool
+    {
+        return $this->visit !== null;
     }
 
     public function isHosting(VisitId $visit): bool

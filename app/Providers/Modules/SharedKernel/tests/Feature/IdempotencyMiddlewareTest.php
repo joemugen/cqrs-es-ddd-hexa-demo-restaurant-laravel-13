@@ -11,6 +11,7 @@ use App\Providers\Modules\SharedKernel\Domain\InvalidValue;
 use App\Providers\Modules\SharedKernel\Infrastructure\Bus\Middleware\IdempotencyMiddleware;
 use App\Providers\Modules\SharedKernel\Infrastructure\Bus\Middleware\TransactionMiddleware;
 use App\Providers\Modules\SharedKernel\Infrastructure\Bus\MiddlewareCommandBus;
+use App\Providers\Modules\SharedKernel\Infrastructure\Http\RefusalStatuses;
 use App\Providers\Modules\SharedKernel\Infrastructure\Tables as SharedKernelTables;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -92,7 +93,7 @@ describe('idempotency middleware', function (): void {
                 ringUp('steak', 'checkout-1');
                 $this->fail('The reused key should have been refused.');
             } catch (IdempotencyKeyReused $refusal) {
-                expect($refusal->status())->toBe(422)
+                expect(app(RefusalStatuses::class)->of($refusal))->toBe(422)
                     ->and($refusal->getMessage())->toBe('This Idempotency-Key was already used with another request.');
             }
 

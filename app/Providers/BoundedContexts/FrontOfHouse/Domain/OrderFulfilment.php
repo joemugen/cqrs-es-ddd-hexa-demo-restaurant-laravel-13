@@ -34,6 +34,7 @@ final class OrderFulfilment implements AggregateRoot
         private array $unavailableLines,
         private int $requestPosition,
         private int $revisionsSeen = 0,
+        private readonly int $version = 0,
     ) {}
 
     public static function begin(TableOrderId $id, TableId $tableId, VisitId $visitId, int $requestPosition): self
@@ -53,8 +54,9 @@ final class OrderFulfilment implements AggregateRoot
         array $unavailableLines,
         int $requestPosition,
         int $revisionsSeen = 0,
+        int $version = 0,
     ): self {
-        return new self($id, $tableId, $visitId, $status, $reason, $unavailableLines, $requestPosition, $revisionsSeen);
+        return new self($id, $tableId, $visitId, $status, $reason, $unavailableLines, $requestPosition, $revisionsSeen, $version);
     }
 
     public function confirm(): void
@@ -95,7 +97,7 @@ final class OrderFulfilment implements AggregateRoot
         }
 
         if ($revisionsMade !== $this->revisionsSeen) {
-            throw new FrontOfHouseException('A revision of this order is already waiting for the kitchen.', 409);
+            throw new RevisionAlreadyWaiting;
         }
     }
 
@@ -185,6 +187,14 @@ final class OrderFulfilment implements AggregateRoot
     public function revisionsSeen(): int
     {
         return $this->revisionsSeen;
+    }
+
+    /**
+     * How many times the order was saved when it was read: a save writes only if it is still so.
+     */
+    public function version(): int
+    {
+        return $this->version;
     }
 
     public function requestPosition(): int

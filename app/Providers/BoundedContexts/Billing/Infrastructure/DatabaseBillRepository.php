@@ -7,25 +7,30 @@ namespace App\Providers\BoundedContexts\Billing\Infrastructure;
 use App\Providers\BoundedContexts\Billing\Application\BillRepository;
 use App\Providers\BoundedContexts\Billing\Domain\Bill;
 use App\Providers\BoundedContexts\Billing\Domain\BillId;
-use App\Providers\BoundedContexts\Billing\Domain\BillingException;
+use App\Providers\BoundedContexts\Billing\Domain\BillingNotFound;
 use App\Providers\BoundedContexts\Billing\Domain\BillStatus;
 use App\Providers\BoundedContexts\Billing\Domain\CoverRef;
 use App\Providers\BoundedContexts\Billing\Domain\Payment;
 use App\Providers\BoundedContexts\Billing\Domain\ServedDish;
 use App\Providers\BoundedContexts\Billing\Domain\SourceKey;
-use App\Providers\Modules\SharedKernel\Domain\ConcurrencyConflict;
-use App\Providers\Modules\SharedKernel\Domain\PreconditionFailed;
+use App\Providers\Modules\SharedKernel\Application\Concurrency\ConcurrencyConflict;
+use App\Providers\Modules\SharedKernel\Application\Concurrency\PreconditionFailed;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 
 final class DatabaseBillRepository implements BillRepository
 {
+    public function exists(BillId $id): bool
+    {
+        return DB::table(Tables::BILLS)->where('id', (string) $id)->exists();
+    }
+
     public function get(BillId $id): Bill
     {
         $row = DB::table(Tables::BILLS)->where('id', (string) $id)->first();
 
         if ($row === null) {
-            throw new BillingException("Unknown bill {$id}.", 404);
+            throw new BillingNotFound("Unknown bill {$id}.");
         }
 
         return $this->bill($row);

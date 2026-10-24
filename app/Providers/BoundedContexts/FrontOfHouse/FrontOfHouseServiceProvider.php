@@ -10,6 +10,9 @@ use App\Providers\BoundedContexts\FrontOfHouse\Application\OrderFulfilmentReposi
 use App\Providers\BoundedContexts\FrontOfHouse\Application\PassRepository;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\TableOrderRepository;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\TableRepository;
+use App\Providers\BoundedContexts\FrontOfHouse\Domain\ObsoleteRevision;
+use App\Providers\BoundedContexts\FrontOfHouse\Domain\RevisionAlreadyWaiting;
+use App\Providers\BoundedContexts\FrontOfHouse\Domain\VisitIsClosed;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Bus\FrontOfHouseCommandBus;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Bus\FrontOfHouseQueryBus;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Console\ConsumeFrontOfHouseEvents;
@@ -21,6 +24,7 @@ use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\DatabasePassReposi
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\DatabaseTableOrderRepository;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\DatabaseTableRepository;
 use App\Providers\Modules\EventStore\Infrastructure\EventConsumption;
+use App\Providers\Modules\SharedKernel\Infrastructure\Http\RefusalStatuses;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 
@@ -48,6 +52,12 @@ final class FrontOfHouseServiceProvider extends ServiceProvider
         $this->commands([RunProjections::class, ConsumeFrontOfHouseEvents::class]);
 
         $this->app->make(EventConsumption::class)->subscribe(__NAMESPACE__);
+
+        $this->app->make(RefusalStatuses::class)->register([
+            VisitIsClosed::class => 409,
+            RevisionAlreadyWaiting::class => 409,
+            ObsoleteRevision::class => 412,
+        ]);
 
         Route::middleware('api')
             ->prefix((string) config('front_of_house.route_prefix'))

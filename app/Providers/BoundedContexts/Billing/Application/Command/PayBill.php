@@ -6,7 +6,7 @@ namespace App\Providers\BoundedContexts\Billing\Application\Command;
 
 use App\Providers\BoundedContexts\Billing\Domain\BillId;
 use App\Providers\Modules\SharedKernel\Application\Command;
-use App\Providers\Modules\SharedKernel\Domain\ExpectedVersion;
+use App\Providers\Modules\SharedKernel\Application\Concurrency\ExpectedVersion;
 
 final readonly class PayBill implements Command
 {

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Providers\BoundedContexts\FrontOfHouse\Application\Command;
 
-use App\Providers\BoundedContexts\FrontOfHouse\Application\Command\Response\OrderRevised;
+use App\Providers\BoundedContexts\FrontOfHouse\Application\Command\Response\ReviseOrderAccepted;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\MenuRepository;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\OrderFulfilmentRepository;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\TableOrderRepository;
@@ -16,7 +16,7 @@ use App\Providers\Modules\SharedKernel\Application\Bus\Attribute\AsCommandHandle
 use App\Providers\Modules\SharedKernel\Application\CommandHandler;
 
 /**
- * @implements CommandHandler<ReviseOrder, OrderRevised>
+ * @implements CommandHandler<ReviseOrder, ReviseOrderAccepted>
  */
 #[AsCommandHandler(ReviseOrder::class)]
 final readonly class ReviseOrderHandler implements CommandHandler
@@ -32,7 +32,7 @@ final readonly class ReviseOrderHandler implements CommandHandler
     /**
      * The command writes the order and nothing else: the saga that follows it learns of the revision from its fact.
      */
-    public function __invoke(ReviseOrder $command): OrderRevised
+    public function __invoke(ReviseOrder $command): ReviseOrderAccepted
     {
         $order = $this->orders->get($command->tableOrderId);
         $this->fulfilments->get($command->tableOrderId)->ensureCanBeRevised($order->revisions());
@@ -45,6 +45,6 @@ final readonly class ReviseOrderHandler implements CommandHandler
         $this->orders->save($order);
         $this->contracts->publish($order->releaseEvents());
 
-        return new OrderRevised($command->tableOrderId);
+        return new ReviseOrderAccepted($command->tableOrderId);
     }
 }

@@ -16,4 +16,6 @@ final class Tables
     public const PAYMENTS = 'billing_payments';
 
     public const SERVED_ITEMS = 'billing_served_items';
+
+    public const COVER_LEDGERS = 'billing_cover_ledgers';
 }

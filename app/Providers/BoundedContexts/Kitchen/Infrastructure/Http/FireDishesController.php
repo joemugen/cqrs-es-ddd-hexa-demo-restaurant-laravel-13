@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace App\Providers\BoundedContexts\Kitchen\Infrastructure\Http;
 
 use App\Providers\BoundedContexts\Kitchen\Application\Command\FireDishes;
-use App\Providers\BoundedContexts\Kitchen\Application\Command\Response\CourseFired;
+use App\Providers\BoundedContexts\Kitchen\Application\Command\Response\FireDishesAccepted;
 use App\Providers\BoundedContexts\Kitchen\Domain\KitchenTicketId;
 use App\Providers\BoundedContexts\Kitchen\Infrastructure\Bus\KitchenCommandBus;
-use App\Providers\Modules\SharedKernel\Domain\ExpectedVersion;
+use App\Providers\Modules\SharedKernel\Application\Concurrency\ExpectedVersion;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use LogicException;
@@ -27,8 +27,8 @@ final class FireDishesController
             expectedVersion: ExpectedVersion::fromIfMatch($request->header('If-Match')),
         ));
 
-        if (! $fired instanceof CourseFired) {
-            throw new LogicException('The handler of this command answers with a CourseFired.');
+        if (! $fired instanceof FireDishesAccepted) {
+            throw new LogicException('The handler of this command answers with a FireDishesAccepted.');
         }
 
         return response()->json($fired)->header('ETag', '"'.$fired->version.'"');

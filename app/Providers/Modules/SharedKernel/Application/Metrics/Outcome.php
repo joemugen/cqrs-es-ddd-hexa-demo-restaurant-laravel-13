@@ -4,9 +4,10 @@ declare(strict_types=1);
 
 namespace App\Providers\Modules\SharedKernel\Application\Metrics;
 
-use App\Providers\Modules\SharedKernel\Domain\ConcurrencyConflict;
+use App\Providers\Modules\SharedKernel\Application\Concurrency\ConcurrencyConflict;
+use App\Providers\Modules\SharedKernel\Application\Concurrency\PreconditionFailed;
+use App\Providers\Modules\SharedKernel\Application\Exception\Refusal;
 use App\Providers\Modules\SharedKernel\Domain\DomainException;
-use App\Providers\Modules\SharedKernel\Domain\PreconditionFailed;
 use Throwable;
 
 enum Outcome: string
@@ -22,7 +23,7 @@ enum Outcome: string
         return match (true) {
             $failure instanceof ConcurrencyConflict => self::Conflict,
             $failure instanceof PreconditionFailed => self::PreconditionFailed,
-            $failure instanceof DomainException => self::Refused,
+            $failure instanceof DomainException, $failure instanceof Refusal => self::Refused,
             default => self::Failure,
         };
     }

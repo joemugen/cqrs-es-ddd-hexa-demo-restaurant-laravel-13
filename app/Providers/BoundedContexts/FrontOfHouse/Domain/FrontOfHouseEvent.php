@@ -20,4 +20,6 @@ final class FrontOfHouseEvent
     public const TABLE_ORDER_CANCELLED = 'front_of_house.table_order_cancelled';
 
     public const TABLE_ORDER_CLOSED = 'front_of_house.table_order_closed';
+
+    public const TABLE_FREED = 'front_of_house.table_freed';
 }

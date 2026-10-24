@@ -6,7 +6,7 @@ namespace App\Providers\BoundedContexts\Kitchen\Application\Command;
 
 use App\Providers\BoundedContexts\Kitchen\Domain\KitchenTicketId;
 use App\Providers\Modules\SharedKernel\Application\Command;
-use App\Providers\Modules\SharedKernel\Domain\ExpectedVersion;
+use App\Providers\Modules\SharedKernel\Application\Concurrency\ExpectedVersion;
 
 final readonly class FireDishes implements Command
 {

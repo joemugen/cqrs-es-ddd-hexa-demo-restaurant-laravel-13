@@ -7,7 +7,7 @@ namespace App\Providers\Modules\SharedKernel\Infrastructure\Bus\Middleware;
 use App\Providers\Modules\SharedKernel\Application\Bus\CommandMiddleware;
 use App\Providers\Modules\SharedKernel\Application\Command;
 use App\Providers\Modules\SharedKernel\Application\CommandResponse;
-use App\Providers\Modules\SharedKernel\Domain\ConcurrencyConflict;
+use App\Providers\Modules\SharedKernel\Application\Concurrency\ConcurrencyConflict;
 use Closure;
 
 /**

@@ -2,7 +2,8 @@
 
 use App\Providers\Modules\SharedKernel\Application\Command;
 use App\Providers\Modules\SharedKernel\Application\CommandResponse;
-use App\Providers\Modules\SharedKernel\Domain\ConcurrencyConflict;
+use App\Providers\Modules\SharedKernel\Application\Concurrency\ConcurrencyConflict;
+use App\Providers\Modules\SharedKernel\Application\Concurrency\StaleVersion;
 use App\Providers\Modules\SharedKernel\Infrastructure\Bus\Middleware\RetryOnConflict;
 
 final readonly class Reserve implements Command {}
@@ -72,6 +73,6 @@ describe('retrying on a version conflict', function (): void {
     });
 
     it('renders as a 409', function (): void {
-        expect((new ConcurrencyConflict('changed'))->status())->toBe(409);
+        expect(new ConcurrencyConflict('changed'))->toBeInstanceOf(StaleVersion::class);
     });
 });

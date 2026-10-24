@@ -69,7 +69,7 @@ Sources: [Wikipedia](https://en.wikipedia.org/wiki/86_(term)), [Snopes](https://
 | **Confirmed** | confirmée | The kitchen cooks what the order asks. | `FulfilmentStatus::CONFIRMED` |
 | **Awaiting revision** | en attente de révision | Some lines are unavailable; the waiter must go back to the guests. | `FulfilmentStatus::AWAITING_REVISION` |
 | **Cancelled** | annulée | The guests gave up the lines that were unavailable. What is already on the ticket is still cooked. | `CancelOrder`, `FulfilmentStatus::CANCELLED` |
-| **Closed** | clôturée | The guests paid and left: the payment closes the visit and every order of it that is not over. A revision is then **obsolete** and refused, nothing more is served, and the kitchen cancels what it still cooks. | `FulfilmentStatus::CLOSED`, `ObsoleteRevision` |
+| **Closed** | clôturée | The guests paid and left: freeing the table ends the visit and closes every order of it that is not over. A revision is then **obsolete** and refused, nothing more is served, and the kitchen cancels what it still cooks. | `FulfilmentStatus::CLOSED`, `ObsoleteRevision` |
 | **Abandoned line** | ligne abandonnée | A line given up for good: replaced by a revision, or dropped by a cancellation. | `abandonedLines` |
 
 The guests do not leave without paying: the table is freed by the payment of its bill and by nothing else.
@@ -82,7 +82,8 @@ The guests do not leave without paying: the table is freed by the payment of its
 | **Bill** | addition | What a cover owes for the dishes that were served to it. Asking for it freezes nothing: a dish served afterwards goes on the open bill, which moves to its next version. Open until its balance is gone, then paid and immutable. A cover has one open bill at a time. | `Bill`, `BillStatus` |
 | **Version of a bill** | version de l'addition | Which note the guests saw: it grows each time a dish joins the bill. A payment is of a version, and is refused when the bill changed since. | `Bill::version()`, `If-Match` |
 | **Served dish** | plat servi | A line of the bill. Its source (order and line) makes sure a dish is charged once. | `ServedDish`, `SourceKey` |
-| **Written off** | passé en perte | A dish that the till receives after the bill of its cover was paid, even one served before the payment that the till read late: nobody can be charged, and the loss is a fact of the till. | `DishWrittenOff`, `billing.dish_written_off` |
+| **Ledger** | registre du couvert | What was served to a cover and where each dish stands: waiting for a bill, on one bill, or written off. It decides where a dish goes, so a dish is never charged twice, and the bill follows what it says. It is not the last word on a dish placed on a bill paid a moment before it heard of it: the bill writes that dish off, and the ledger still says "on the bill". | `CoverLedger`, `Placement` |
+| **Written off** | passé en perte | A dish that comes out after the bill of its cover was paid, even one that the ledger placed on a bill paid a moment before it heard of it: nobody can be charged, and the loss is a fact of the till. | `DishWrittenOff`, `billing.dish_written_off` |
 | **VAT** | TVA | Prices are tax-inclusive. Food eaten in is 10 %, alcohol 20 %. | `Vat`, `DishKind` |
 | **Payment** | paiement | An amount paid on a bill. It may be split between several payments. | `Payment`, `PayBill` |
 | **Tip** | pourboire | Added to a payment; it does not reduce the balance. | `Payment::$tipCents` |

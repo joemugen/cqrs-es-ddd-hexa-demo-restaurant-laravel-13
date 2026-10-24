@@ -5,14 +5,14 @@ declare(strict_types=1);
 namespace App\Providers\BoundedContexts\Kitchen\Infrastructure;
 
 use App\Providers\BoundedContexts\Kitchen\Application\KitchenTicketRepository;
-use App\Providers\BoundedContexts\Kitchen\Domain\KitchenException;
+use App\Providers\BoundedContexts\Kitchen\Domain\KitchenNotFound;
 use App\Providers\BoundedContexts\Kitchen\Domain\KitchenTicket;
 use App\Providers\BoundedContexts\Kitchen\Domain\KitchenTicketId;
 use App\Providers\Modules\EventStore\Application\ContractPublisher;
 use App\Providers\Modules\EventStore\Domain\EventStore;
 use App\Providers\Modules\EventStore\Domain\OptimisticConcurrencyException;
 use App\Providers\Modules\EventStore\Domain\StoredEvent;
-use App\Providers\Modules\SharedKernel\Domain\ConcurrencyConflict;
+use App\Providers\Modules\SharedKernel\Application\Concurrency\ConcurrencyConflict;
 use App\Providers\Modules\SharedKernel\Domain\RecordedEvent;
 use App\Providers\Modules\SharedKernel\Domain\RecordedEvents;
 use App\Providers\Modules\SharedKernel\Domain\StreamId;
@@ -37,7 +37,7 @@ final class EventStoreKitchenTicketRepository implements KitchenTicketRepository
         $history = $this->events->readStream($this->stream($id));
 
         if ($history === []) {
-            throw new KitchenException("Unknown kitchen ticket {$id}.", 404);
+            throw new KitchenNotFound("Unknown kitchen ticket {$id}.");
         }
 
         return KitchenTicket::fromHistory($id, new RecordedEvents(array_map(

@@ -5,7 +5,7 @@ use App\Providers\BoundedContexts\Kitchen\Application\KitchenTicketRepository;
 use App\Providers\BoundedContexts\Kitchen\Domain\KitchenTicket;
 use App\Providers\BoundedContexts\Kitchen\Domain\KitchenTicketId;
 use App\Providers\BoundedContexts\Kitchen\Infrastructure\KitchenSeeder;
-use App\Providers\Modules\SharedKernel\Domain\ConcurrencyConflict;
+use App\Providers\Modules\SharedKernel\Application\Concurrency\ConcurrencyConflict;
 
 /**
  * A repository that conflicts on its first $conflicts saves, then behaves.
