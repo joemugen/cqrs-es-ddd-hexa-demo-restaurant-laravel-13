@@ -1,6 +1,7 @@
 <?php
 
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\Event\BillRequested;
+use App\Providers\BoundedContexts\FrontOfHouse\Domain\Event\TableFreed;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\FrontOfHouseException;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\Table;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableId;
@@ -65,6 +66,17 @@ describe('a table', function () {
         });
     });
 
+    describe('when it is asked whether it takes orders', function () {
+        test('takes them while guests sit there, and not once it is free', function () {
+            $table = anOccupiedTable();
+            expect($table->acceptsOrders())->toBeTrue();
+
+            $table->free(new VisitId('visit-1'));
+
+            expect($table->acceptsOrders())->toBeFalse();
+        });
+    });
+
     describe('when the guests of a visit are gone', function () {
         test('is free again', function () {
             $table = anOccupiedTable();
@@ -73,6 +85,22 @@ describe('a table', function () {
 
             expect($table->hasGuests())->toBeFalse()
                 ->and($table->visit())->toBeNull();
+        });
+
+        test('says that it is free, and of which visit: what belongs to that visit is over', function () {
+            $table = anOccupiedTable();
+
+            $table->free(new VisitId('visit-1'));
+
+            expect($table->releaseEvents())->toEqual([new TableFreed(new TableId('table-4'), new VisitId('visit-1'))]);
+        });
+
+        test('says nothing when it is told about guests who are not the ones sitting there', function () {
+            $table = anOccupiedTable('visit-2');
+
+            $table->free(new VisitId('visit-1'));
+
+            expect($table->releaseEvents())->toBe([]);
         });
 
         test('stays with the guests who sit there now when it is told that the previous ones paid', function () {

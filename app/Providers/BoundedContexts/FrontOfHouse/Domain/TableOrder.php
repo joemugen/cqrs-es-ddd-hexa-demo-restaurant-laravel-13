@@ -41,7 +41,11 @@ final class TableOrder implements AggregateRoot
      */
     public static function place(TableOrderId $id, Table $table, Menu $menu, array $requested): self
     {
-        $visit = $table->visit() ?? throw new FrontOfHouseException('No order for a table without seated guests.');
+        if (! $table->acceptsOrders()) {
+            throw new FrontOfHouseException('No order for a table without seated guests.');
+        }
+
+        $visit = $table->visit();
 
         if ($requested === []) {
             throw new FrontOfHouseException('An order needs at least one item.');

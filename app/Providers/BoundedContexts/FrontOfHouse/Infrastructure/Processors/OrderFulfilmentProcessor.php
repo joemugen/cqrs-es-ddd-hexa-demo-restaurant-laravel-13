@@ -13,7 +13,7 @@ use App\Providers\BoundedContexts\FrontOfHouse\Application\OrderFulfilmentReposi
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\OrderFulfilment;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\VisitId;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Bus\FrontOfHouseCommandBus;
-use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Consumed\BillingBillPaid;
+use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Consumed\FrontOfHouseTableFreed;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Consumed\FrontOfHouseTableOrderPlaced;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Consumed\FrontOfHouseTableOrderRevised;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Consumed\KitchenDishesAdded;
@@ -30,8 +30,9 @@ use App\Providers\Modules\SharedKernel\Infrastructure\Correlation;
 /**
  * The saga of an order, as the dining room sees it. It starts when the order is placed. The kitchen cooks what it can
  * (confirmed) and names what it cannot (awaiting a revision, until the waiter revises or the guests give up). The
- * payment of a visit closes the orders of that visit that are not over: one command, and one transaction, for each of
- * them, since a command decides on one aggregate. Closing an order twice says nothing, so the payment may be heard again.
+ * visit being over, once its table is freed, closes the orders of that visit that are not over: one command, and one
+ * transaction, for each of them, since a command decides on one aggregate. Nothing can be ordered for a visit that is over, so
+ * the list of its orders is complete. Closing an order twice says nothing, so the fact may be heard again.
  */
 final class OrderFulfilmentProcessor implements Processor
 {
@@ -78,7 +79,7 @@ final class OrderFulfilmentProcessor implements Processor
             $message instanceof KitchenDishesAdded => [new ConfirmOrder($message->tableOrderId)],
             $message instanceof FrontOfHouseTableOrderRevised => [new ApplyOrderRevision($message->tableOrderId, $message->revision, $event->position)],
             $message instanceof KitchenLinesUnavailable => [new MarkOrderAwaitingRevision($message->tableOrderId, $message->lines, $message->orderPosition)],
-            $message instanceof BillingBillPaid => $this->closingEachOpenOrderOf($message->visitId),
+            $message instanceof FrontOfHouseTableFreed => $this->closingEachOpenOrderOf($message->visitId),
             default => [],
         };
 
