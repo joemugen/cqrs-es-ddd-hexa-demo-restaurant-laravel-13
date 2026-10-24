@@ -5,14 +5,14 @@ declare(strict_types=1);
 namespace App\Providers\BoundedContexts\Billing\Application\Command;
 
 use App\Providers\BoundedContexts\Billing\Application\BillRepository;
-use App\Providers\BoundedContexts\Billing\Application\Command\Response\ServedDishRecorded;
+use App\Providers\BoundedContexts\Billing\Application\Command\Response\RecordServedDishAccepted;
 use App\Providers\BoundedContexts\Billing\Application\ServedLedger;
 use App\Providers\Modules\EventStore\Application\ContractPublisher;
 use App\Providers\Modules\SharedKernel\Application\Bus\Attribute\AsCommandHandler;
 use App\Providers\Modules\SharedKernel\Application\CommandHandler;
 
 /**
- * @implements CommandHandler<RecordServedDish, ServedDishRecorded>
+ * @implements CommandHandler<RecordServedDish, RecordServedDishAccepted>
  */
 #[AsCommandHandler(RecordServedDish::class)]
 final readonly class RecordServedDishHandler implements CommandHandler
@@ -23,10 +23,10 @@ final readonly class RecordServedDishHandler implements CommandHandler
         private ContractPublisher $contracts,
     ) {}
 
-    public function __invoke(RecordServedDish $command): ServedDishRecorded
+    public function __invoke(RecordServedDish $command): RecordServedDishAccepted
     {
         if (! $this->served->record($command->coverRef, $command->dish, $command->position)) {
-            return new ServedDishRecorded($command->dish->sourceKey);
+            return new RecordServedDishAccepted($command->dish->sourceKey);
         }
 
         $bill = $this->bills->latestFor($command->coverRef);
@@ -40,6 +40,6 @@ final readonly class RecordServedDishHandler implements CommandHandler
             $this->contracts->publish($bill->releaseEvents());
         }
 
-        return new ServedDishRecorded($command->dish->sourceKey);
+        return new RecordServedDishAccepted($command->dish->sourceKey);
     }
 }

@@ -10,7 +10,7 @@ namespace App\Providers\Modules\SharedKernel\Application;
  *     #[AsCommandHandler(SeatGuests::class)]
  *     final readonly class SeatGuestsHandler implements CommandHandler
  *     {
- *         public function __invoke(SeatGuests $command): TableSeated
+ *         public function __invoke(SeatGuests $command): SeatGuestsAccepted
  *     }
  *
  * PHP cannot put a parameter type on an interface method and narrow it, so the contract is the attribute:

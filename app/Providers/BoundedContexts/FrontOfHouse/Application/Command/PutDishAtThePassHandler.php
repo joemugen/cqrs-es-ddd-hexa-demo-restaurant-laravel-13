@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Providers\BoundedContexts\FrontOfHouse\Application\Command;
 
-use App\Providers\BoundedContexts\FrontOfHouse\Application\Command\Response\DishPutAtThePass;
+use App\Providers\BoundedContexts\FrontOfHouse\Application\Command\Response\PutDishAtThePassAccepted;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\PassRepository;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\DishAtThePass;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\DishAtThePassId;
@@ -12,7 +12,7 @@ use App\Providers\Modules\SharedKernel\Application\Bus\Attribute\AsCommandHandle
 use App\Providers\Modules\SharedKernel\Application\CommandHandler;
 
 /**
- * @implements CommandHandler<PutDishAtThePass, DishPutAtThePass>
+ * @implements CommandHandler<PutDishAtThePass, PutDishAtThePassAccepted>
  */
 #[AsCommandHandler(PutDishAtThePass::class)]
 final readonly class PutDishAtThePassHandler implements CommandHandler
@@ -22,7 +22,7 @@ final readonly class PutDishAtThePassHandler implements CommandHandler
     /**
      * A dish is put once: hearing again that it is ready must not make a dish that was served wait again.
      */
-    public function __invoke(PutDishAtThePass $command): DishPutAtThePass
+    public function __invoke(PutDishAtThePass $command): PutDishAtThePassAccepted
     {
         $id = DishAtThePassId::forLine($command->tableOrderId, $command->lineId);
 
@@ -38,6 +38,6 @@ final readonly class PutDishAtThePassHandler implements CommandHandler
             ));
         }
 
-        return new DishPutAtThePass($id);
+        return new PutDishAtThePassAccepted($id);
     }
 }

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Providers\BoundedContexts\Kitchen\Infrastructure\Http;
 
 use App\Providers\BoundedContexts\Kitchen\Application\Command\MarkDishReady;
-use App\Providers\BoundedContexts\Kitchen\Application\Command\Response\DishMarkedReady;
+use App\Providers\BoundedContexts\Kitchen\Application\Command\Response\MarkDishReadyAccepted;
 use App\Providers\BoundedContexts\Kitchen\Domain\KitchenTicketId;
 use App\Providers\BoundedContexts\Kitchen\Domain\LineId;
 use App\Providers\BoundedContexts\Kitchen\Infrastructure\Bus\KitchenCommandBus;
@@ -24,8 +24,8 @@ final class MarkDishReadyController
             ExpectedVersion::fromIfMatch($request->header('If-Match')),
         ));
 
-        if (! $ready instanceof DishMarkedReady) {
-            throw new LogicException('The handler of this command answers with a DishMarkedReady.');
+        if (! $ready instanceof MarkDishReadyAccepted) {
+            throw new LogicException('The handler of this command answers with a MarkDishReadyAccepted.');
         }
 
         return response()->json($ready)->header('ETag', '"'.$ready->version.'"');

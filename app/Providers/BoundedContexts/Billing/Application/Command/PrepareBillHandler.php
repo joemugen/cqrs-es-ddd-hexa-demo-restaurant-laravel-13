@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Providers\BoundedContexts\Billing\Application\Command;
 
 use App\Providers\BoundedContexts\Billing\Application\BillRepository;
-use App\Providers\BoundedContexts\Billing\Application\Command\Response\BillPrepared;
+use App\Providers\BoundedContexts\Billing\Application\Command\Response\PrepareBillAccepted;
 use App\Providers\BoundedContexts\Billing\Application\ServedLedger;
 use App\Providers\BoundedContexts\Billing\Domain\Bill;
 use App\Providers\BoundedContexts\Billing\Domain\ServedDish;
@@ -14,7 +14,7 @@ use App\Providers\Modules\SharedKernel\Application\Bus\Attribute\AsCommandHandle
 use App\Providers\Modules\SharedKernel\Application\CommandHandler;
 
 /**
- * @implements CommandHandler<PrepareBill, BillPrepared>
+ * @implements CommandHandler<PrepareBill, PrepareBillAccepted>
  */
 #[AsCommandHandler(PrepareBill::class)]
 final readonly class PrepareBillHandler implements CommandHandler
@@ -24,12 +24,12 @@ final readonly class PrepareBillHandler implements CommandHandler
         private ServedLedger $served,
     ) {}
 
-    public function __invoke(PrepareBill $command): ?BillPrepared
+    public function __invoke(PrepareBill $command): ?PrepareBillAccepted
     {
         $open = $this->bills->openFor($command->coverRef);
 
         if ($open !== null) {
-            return new BillPrepared($open->id());
+            return new PrepareBillAccepted($open->id());
         }
 
         $lines = $this->served->unbilled($command->coverRef);
@@ -45,6 +45,6 @@ final readonly class PrepareBillHandler implements CommandHandler
             $bill->lines(),
         ));
 
-        return new BillPrepared($bill->id());
+        return new PrepareBillAccepted($bill->id());
     }
 }

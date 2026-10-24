@@ -23,7 +23,7 @@ The base post separates three ways to keep a write model and a read model apart.
 2. **Asynchronous projector.** When a dish is ready, a queued job folds that fact into the "to serve" list and advances a checkpoint, and takes a dish off it when it is served. Until a worker runs, the list is behind the kitchen. The list can lag and can be rebuilt from the log; it decides nothing. `php artisan projections:run to-serve` catches the same list up in process.
 3. **Event stream.** A kitchen ticket is the stream. `KitchenTicketRepository` appends with the version it loaded. A conflicting version is refused. The kitchen screen folds the stream and can be rebuilt. It does not decide. The processor that opens a ticket is not a projection: it runs once and is not replayed.
 
-A command is a message: intent and data, no rules. The aggregate decides. The handler loads, delegates, saves, and returns only a typed acknowledgement such as `TableOrderPlaced`, which serializes to `{"tableOrderId": "…", "accepted": true}`. A query reads a read model and does not hydrate the aggregate.
+A command is a message: intent and data, no rules. The aggregate decides. The handler loads, delegates, saves, and returns only a typed acknowledgement named after the command, such as `PlaceTableOrderAccepted`, which serializes to `{"tableOrderId": "…", "accepted": true}`. It says "your command was accepted", never "a fact happened": the fact (`TableOrderPlaced`) is a different object, recorded by the aggregate and published on the bus. A query reads a read model and does not hydrate the aggregate.
 
 ## Bounded contexts
 

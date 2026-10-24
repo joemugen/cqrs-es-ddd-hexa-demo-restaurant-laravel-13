@@ -4,17 +4,17 @@ declare(strict_types=1);
 
 namespace App\Providers\BoundedContexts\FrontOfHouse\Application\Command\Response;
 
-use App\Providers\BoundedContexts\FrontOfHouse\Domain\DishAtThePassId;
+use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableOrderId;
 use App\Providers\Modules\SharedKernel\Application\CommandResponse;
 
-final readonly class DishServed implements CommandResponse
+final readonly class PlaceTableOrderAccepted implements CommandResponse
 {
-    public function __construct(public DishAtThePassId $toServeId) {}
+    public function __construct(public TableOrderId $tableOrderId) {}
 
     public function jsonSerialize(): array
     {
         return [
-            'toServeId' => (string) $this->toServeId,
+            'tableOrderId' => (string) $this->tableOrderId,
             'accepted' => true,
         ];
     }

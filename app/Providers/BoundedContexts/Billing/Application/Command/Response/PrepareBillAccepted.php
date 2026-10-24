@@ -4,17 +4,17 @@ declare(strict_types=1);
 
 namespace App\Providers\BoundedContexts\Billing\Application\Command\Response;
 
-use App\Providers\BoundedContexts\Billing\Domain\SourceKey;
+use App\Providers\BoundedContexts\Billing\Domain\BillId;
 use App\Providers\Modules\SharedKernel\Application\CommandResponse;
 
-final readonly class ServedDishRecorded implements CommandResponse
+final readonly class PrepareBillAccepted implements CommandResponse
 {
-    public function __construct(public SourceKey $sourceKey) {}
+    public function __construct(public BillId $billId) {}
 
     public function jsonSerialize(): array
     {
         return [
-            'sourceKey' => (string) $this->sourceKey,
+            'billId' => (string) $this->billId,
             'accepted' => true,
         ];
     }

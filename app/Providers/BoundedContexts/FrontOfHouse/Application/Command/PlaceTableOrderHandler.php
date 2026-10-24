@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Providers\BoundedContexts\FrontOfHouse\Application\Command;
 
-use App\Providers\BoundedContexts\FrontOfHouse\Application\Command\Response\TableOrderPlaced;
+use App\Providers\BoundedContexts\FrontOfHouse\Application\Command\Response\PlaceTableOrderAccepted;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\MenuRepository;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\TableOrderRepository;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\TableRepository;
@@ -16,7 +16,7 @@ use App\Providers\Modules\SharedKernel\Application\Bus\Attribute\AsCommandHandle
 use App\Providers\Modules\SharedKernel\Application\CommandHandler;
 
 /**
- * @implements CommandHandler<PlaceTableOrder, TableOrderPlaced>
+ * @implements CommandHandler<PlaceTableOrder, PlaceTableOrderAccepted>
  */
 #[AsCommandHandler(PlaceTableOrder::class)]
 final readonly class PlaceTableOrderHandler implements CommandHandler
@@ -28,10 +28,10 @@ final readonly class PlaceTableOrderHandler implements CommandHandler
         private ContractPublisher $contracts,
     ) {}
 
-    public function __invoke(PlaceTableOrder $command): TableOrderPlaced
+    public function __invoke(PlaceTableOrder $command): PlaceTableOrderAccepted
     {
         if ($this->orders->exists($command->tableOrderId)) {
-            return new TableOrderPlaced($command->tableOrderId);
+            return new PlaceTableOrderAccepted($command->tableOrderId);
         }
 
         $table = $this->tables->get($command->tableId);
@@ -44,6 +44,6 @@ final readonly class PlaceTableOrderHandler implements CommandHandler
         $this->orders->save($order);
         $this->contracts->publish($order->releaseEvents());
 
-        return new TableOrderPlaced($command->tableOrderId);
+        return new PlaceTableOrderAccepted($command->tableOrderId);
     }
 }

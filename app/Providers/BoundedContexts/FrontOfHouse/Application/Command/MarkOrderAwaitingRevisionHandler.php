@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace App\Providers\BoundedContexts\FrontOfHouse\Application\Command;
 
-use App\Providers\BoundedContexts\FrontOfHouse\Application\Command\Response\OrderAwaitingRevision;
+use App\Providers\BoundedContexts\FrontOfHouse\Application\Command\Response\MarkOrderAwaitingRevisionAccepted;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\OrderFulfilmentRepository;
 use App\Providers\Modules\SharedKernel\Application\Bus\Attribute\AsCommandHandler;
 use App\Providers\Modules\SharedKernel\Application\CommandHandler;
 
 /**
- * @implements CommandHandler<MarkOrderAwaitingRevision, OrderAwaitingRevision>
+ * @implements CommandHandler<MarkOrderAwaitingRevision, MarkOrderAwaitingRevisionAccepted>
  */
 #[AsCommandHandler(MarkOrderAwaitingRevision::class)]
 final readonly class MarkOrderAwaitingRevisionHandler implements CommandHandler
@@ -19,7 +19,7 @@ final readonly class MarkOrderAwaitingRevisionHandler implements CommandHandler
         private OrderFulfilmentRepository $fulfilments,
     ) {}
 
-    public function __invoke(MarkOrderAwaitingRevision $command): OrderAwaitingRevision
+    public function __invoke(MarkOrderAwaitingRevision $command): MarkOrderAwaitingRevisionAccepted
     {
         if ($this->fulfilments->exists($command->tableOrderId)) {
             $fulfilment = $this->fulfilments->get($command->tableOrderId);
@@ -27,6 +27,6 @@ final readonly class MarkOrderAwaitingRevisionHandler implements CommandHandler
             $this->fulfilments->save($fulfilment);
         }
 
-        return new OrderAwaitingRevision($command->tableOrderId);
+        return new MarkOrderAwaitingRevisionAccepted($command->tableOrderId);
     }
 }

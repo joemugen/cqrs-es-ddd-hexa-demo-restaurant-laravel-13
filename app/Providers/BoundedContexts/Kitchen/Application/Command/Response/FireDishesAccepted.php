@@ -7,7 +7,7 @@ namespace App\Providers\BoundedContexts\Kitchen\Application\Command\Response;
 use App\Providers\BoundedContexts\Kitchen\Domain\KitchenTicketId;
 use App\Providers\Modules\SharedKernel\Application\CommandResponse;
 
-final readonly class DishMarkedReady implements CommandResponse
+final readonly class FireDishesAccepted implements CommandResponse
 {
     /**
      * @param  int  $version  of the ticket after the command, sent back to the client as an ETag, not in the body

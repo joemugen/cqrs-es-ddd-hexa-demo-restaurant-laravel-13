@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Providers\BoundedContexts\Kitchen\Application\Command;
 
-use App\Providers\BoundedContexts\Kitchen\Application\Command\Response\OrderReceived;
+use App\Providers\BoundedContexts\Kitchen\Application\Command\Response\ReceiveOrderAccepted;
 use App\Providers\BoundedContexts\Kitchen\Application\DishRepository;
 use App\Providers\BoundedContexts\Kitchen\Application\KitchenTicketRepository;
 use App\Providers\BoundedContexts\Kitchen\Domain\KitchenTicket;
@@ -16,7 +16,7 @@ use App\Providers\Modules\SharedKernel\Application\Bus\Attribute\AsCommandHandle
 use App\Providers\Modules\SharedKernel\Application\CommandHandler;
 
 /**
- * @implements CommandHandler<ReceiveOrder, OrderReceived>
+ * @implements CommandHandler<ReceiveOrder, ReceiveOrderAccepted>
  */
 #[AsCommandHandler(ReceiveOrder::class)]
 final readonly class ReceiveOrderHandler implements CommandHandler
@@ -30,7 +30,7 @@ final readonly class ReceiveOrderHandler implements CommandHandler
     /**
      * The ticket first, so that what the kitchen cooks is in the log before what it cannot.
      */
-    public function __invoke(ReceiveOrder $command): OrderReceived
+    public function __invoke(ReceiveOrder $command): ReceiveOrderAccepted
     {
         $assessed = OrderAssessment::of(
             $command->ticketId,
@@ -48,7 +48,7 @@ final readonly class ReceiveOrderHandler implements CommandHandler
             $this->contracts->publish([$assessed->unavailable]);
         }
 
-        return new OrderReceived($command->ticketId);
+        return new ReceiveOrderAccepted($command->ticketId);
     }
 
     /**

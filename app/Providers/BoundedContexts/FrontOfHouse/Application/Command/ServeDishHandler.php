@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Providers\BoundedContexts\FrontOfHouse\Application\Command;
 
-use App\Providers\BoundedContexts\FrontOfHouse\Application\Command\Response\DishServed;
+use App\Providers\BoundedContexts\FrontOfHouse\Application\Command\Response\ServeDishAccepted;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\PassRepository;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\TableOrderRepository;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\TableRepository;
@@ -14,7 +14,7 @@ use App\Providers\Modules\SharedKernel\Application\Bus\Attribute\AsCommandHandle
 use App\Providers\Modules\SharedKernel\Application\CommandHandler;
 
 /**
- * @implements CommandHandler<ServeDish, DishServed>
+ * @implements CommandHandler<ServeDish, ServeDishAccepted>
  */
 #[AsCommandHandler(ServeDish::class)]
 final readonly class ServeDishHandler implements CommandHandler
@@ -26,7 +26,7 @@ final readonly class ServeDishHandler implements CommandHandler
         private ContractPublisher $contracts,
     ) {}
 
-    public function __invoke(ServeDish $command): DishServed
+    public function __invoke(ServeDish $command): ServeDishAccepted
     {
         $dish = $this->passes->find($command->toServeId);
         $order = $this->orders->get(new TableOrderId((string) $dish->tableOrderId()));
@@ -34,6 +34,6 @@ final readonly class ServeDishHandler implements CommandHandler
         $this->passes->save($dish);
         $this->contracts->publish($dish->releaseEvents());
 
-        return new DishServed($command->toServeId);
+        return new ServeDishAccepted($command->toServeId);
     }
 }

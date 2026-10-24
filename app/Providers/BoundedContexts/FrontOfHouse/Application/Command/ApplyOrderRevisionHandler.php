@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace App\Providers\BoundedContexts\FrontOfHouse\Application\Command;
 
-use App\Providers\BoundedContexts\FrontOfHouse\Application\Command\Response\OrderRevisionApplied;
+use App\Providers\BoundedContexts\FrontOfHouse\Application\Command\Response\ApplyOrderRevisionAccepted;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\OrderFulfilmentRepository;
 use App\Providers\Modules\SharedKernel\Application\Bus\Attribute\AsCommandHandler;
 use App\Providers\Modules\SharedKernel\Application\CommandHandler;
 
 /**
- * @implements CommandHandler<ApplyOrderRevision, OrderRevisionApplied>
+ * @implements CommandHandler<ApplyOrderRevision, ApplyOrderRevisionAccepted>
  */
 #[AsCommandHandler(ApplyOrderRevision::class)]
 final readonly class ApplyOrderRevisionHandler implements CommandHandler
@@ -19,7 +19,7 @@ final readonly class ApplyOrderRevisionHandler implements CommandHandler
         private OrderFulfilmentRepository $fulfilments,
     ) {}
 
-    public function __invoke(ApplyOrderRevision $command): OrderRevisionApplied
+    public function __invoke(ApplyOrderRevision $command): ApplyOrderRevisionAccepted
     {
         if ($this->fulfilments->exists($command->tableOrderId)) {
             $fulfilment = $this->fulfilments->get($command->tableOrderId);
@@ -27,6 +27,6 @@ final readonly class ApplyOrderRevisionHandler implements CommandHandler
             $this->fulfilments->save($fulfilment);
         }
 
-        return new OrderRevisionApplied($command->tableOrderId);
+        return new ApplyOrderRevisionAccepted($command->tableOrderId);
     }
 }

@@ -7,7 +7,7 @@ namespace App\Providers\BoundedContexts\FrontOfHouse\Application\Command\Respons
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\VisitId;
 use App\Providers\Modules\SharedKernel\Application\CommandResponse;
 
-final readonly class TableFreed implements CommandResponse
+final readonly class FreeTableAccepted implements CommandResponse
 {
     public function __construct(public VisitId $visitId) {}
 

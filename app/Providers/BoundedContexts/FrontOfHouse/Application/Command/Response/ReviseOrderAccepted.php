@@ -7,7 +7,7 @@ namespace App\Providers\BoundedContexts\FrontOfHouse\Application\Command\Respons
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableOrderId;
 use App\Providers\Modules\SharedKernel\Application\CommandResponse;
 
-final readonly class OrderRevisionApplied implements CommandResponse
+final readonly class ReviseOrderAccepted implements CommandResponse
 {
     public function __construct(public TableOrderId $tableOrderId) {}
 
