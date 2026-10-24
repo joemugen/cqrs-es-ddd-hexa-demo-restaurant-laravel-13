@@ -9,7 +9,7 @@ use App\Providers\BoundedContexts\Billing\Application\Query\Response\BillLineVie
 use App\Providers\BoundedContexts\Billing\Application\Query\Response\BillView;
 use App\Providers\BoundedContexts\Billing\Application\Query\Response\PaymentView;
 use App\Providers\BoundedContexts\Billing\Domain\BillId;
-use App\Providers\BoundedContexts\Billing\Domain\BillingException;
+use App\Providers\BoundedContexts\Billing\Domain\BillingNotFound;
 use App\Providers\BoundedContexts\Billing\Domain\CoverRef;
 use App\Providers\BoundedContexts\Billing\Infrastructure\Tables;
 use App\Providers\Modules\SharedKernel\Application\Bus\Attribute\AsQueryHandler;
@@ -31,7 +31,7 @@ final class GetBillHandler implements QueryHandler
             ->first();
 
         if ($bill === null) {
-            throw new BillingException('No bill for this cover.', 404);
+            throw new BillingNotFound('No bill for this cover.');
         }
 
         return new BillView(

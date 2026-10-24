@@ -6,6 +6,7 @@ namespace App\Providers\BoundedContexts\FrontOfHouse\Infrastructure;
 
 use App\Providers\BoundedContexts\FrontOfHouse\Application\TableRepository;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\FrontOfHouseException;
+use App\Providers\BoundedContexts\FrontOfHouse\Domain\FrontOfHouseNotFound;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\Table;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableId;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableLabel;
@@ -20,7 +21,7 @@ final class DatabaseTableRepository implements TableRepository
         $row = DB::table(Tables::TABLES)->where('id', (string) $id)->first();
 
         if ($row === null) {
-            throw new FrontOfHouseException("Unknown table {$id}.", 404);
+            throw new FrontOfHouseNotFound("Unknown table {$id}.");
         }
 
         return $this->table($row);

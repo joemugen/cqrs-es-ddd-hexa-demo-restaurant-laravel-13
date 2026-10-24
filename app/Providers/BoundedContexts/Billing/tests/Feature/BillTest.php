@@ -12,9 +12,8 @@ use App\Providers\BoundedContexts\Billing\Infrastructure\Bus\BillingCommandBus;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\FrontOfHouseSeeder;
 use App\Providers\BoundedContexts\Kitchen\Infrastructure\KitchenSeeder;
 use App\Providers\Modules\EventStore\Domain\EventStore;
-use App\Providers\Modules\SharedKernel\Domain\ConcurrencyConflict;
-use App\Providers\Modules\SharedKernel\Domain\ExpectedVersion;
-use App\Providers\Modules\SharedKernel\Domain\PreconditionFailed;
+use App\Providers\Modules\SharedKernel\Application\Concurrency\ConcurrencyConflict;
+use App\Providers\Modules\SharedKernel\Application\Concurrency\PreconditionFailed;
 use Illuminate\Support\Facades\DB;
 
 describe('the till', function () {
@@ -284,7 +283,7 @@ describe('two bills prepared for the same cover', function () {
         $dish = new ServedDish(new SourceKey('order-1:line-1'), 'Green salad', 1, 1100, DishKind::FOOD);
         $bills = app(BillRepository::class);
         $first = Bill::prepare(new BillId('first'), new CoverRef('visit-1'), [$dish]);
-        $first->pay(1100, 0, ExpectedVersion::of(1));
+        $first->pay(1100, 0);
         $bills->save($first);
 
         $bills->save(Bill::prepare(new BillId('second'), new CoverRef('visit-1'), [$dish]));
@@ -300,8 +299,8 @@ describe('two payments that read the same bill', function () {
         $bills->save(Bill::prepare(new BillId('bill-1'), new CoverRef('visit-1'), [$dish]));
         $first = $bills->get(new BillId('bill-1'));
         $second = $bills->get(new BillId('bill-1'));
-        $first->pay(600, 0, ExpectedVersion::of(1));
-        $second->pay(600, 0, ExpectedVersion::of(1));
+        $first->pay(600, 0);
+        $second->pay(600, 0);
         $bills->save($first);
 
         expect(fn () => $bills->save($second))->toThrow(PreconditionFailed::class)
@@ -315,7 +314,7 @@ describe('two payments that read the same bill', function () {
 
         foreach ([600, 500] as $amount) {
             $bill = $bills->get(new BillId('bill-1'));
-            $bill->pay($amount, 0, ExpectedVersion::of(1));
+            $bill->pay($amount, 0);
             $bills->save($bill);
         }
 
@@ -329,7 +328,7 @@ describe('the bill of a cover', function () {
         $bills = app(BillRepository::class);
 
         $first = Bill::prepare(new BillId('zzzz-opened-first'), new CoverRef('visit-1'), [$dish]);
-        $first->pay(1100, 0, ExpectedVersion::of(1));
+        $first->pay(1100, 0);
         $bills->save($first);
         $bills->save(Bill::prepare(new BillId('aaaa-opened-second'), new CoverRef('visit-1'), [$dish]));
 

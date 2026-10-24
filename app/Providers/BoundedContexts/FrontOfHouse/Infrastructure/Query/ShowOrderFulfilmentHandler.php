@@ -6,7 +6,7 @@ namespace App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Query;
 
 use App\Providers\BoundedContexts\FrontOfHouse\Application\Query\Response\OrderFulfilmentView;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\Query\ShowOrderFulfilment;
-use App\Providers\BoundedContexts\FrontOfHouse\Domain\FrontOfHouseException;
+use App\Providers\BoundedContexts\FrontOfHouse\Domain\FrontOfHouseNotFound;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableId;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableOrderId;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\UnavailableLine;
@@ -26,7 +26,7 @@ final class ShowOrderFulfilmentHandler implements QueryHandler
         $row = DB::table(Tables::ORDER_FULFILMENTS)->where('table_order_id', (string) $query->tableOrderId)->first();
 
         if ($row === null) {
-            throw new FrontOfHouseException("Unknown order {$query->tableOrderId}.", 404);
+            throw new FrontOfHouseNotFound("Unknown order {$query->tableOrderId}.");
         }
 
         return new OrderFulfilmentView(

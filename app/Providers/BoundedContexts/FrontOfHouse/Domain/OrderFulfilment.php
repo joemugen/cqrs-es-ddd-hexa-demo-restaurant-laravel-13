@@ -97,7 +97,7 @@ final class OrderFulfilment implements AggregateRoot
         }
 
         if ($revisionsMade !== $this->revisionsSeen) {
-            throw new FrontOfHouseException('A revision of this order is already waiting for the kitchen.', 409);
+            throw new RevisionAlreadyWaiting;
         }
     }
 

@@ -7,10 +7,10 @@ use App\Providers\Modules\SharedKernel\Application\Bus\Attribute\Authorize;
 use App\Providers\Modules\SharedKernel\Application\Command;
 use App\Providers\Modules\SharedKernel\Application\CommandHandler;
 use App\Providers\Modules\SharedKernel\Application\CommandResponse;
+use App\Providers\Modules\SharedKernel\Application\Exception\Refusal;
 use App\Providers\Modules\SharedKernel\Application\Query;
 use App\Providers\Modules\SharedKernel\Application\QueryHandler;
 use App\Providers\Modules\SharedKernel\Application\QueryResponse;
-use App\Providers\Modules\SharedKernel\Domain\DomainException;
 use App\Providers\Modules\SharedKernel\Infrastructure\Bus\Middleware\AuthorizationCommandMiddleware;
 use App\Providers\Modules\SharedKernel\Infrastructure\Bus\Middleware\AuthorizationQueryMiddleware;
 use App\Providers\Modules\SharedKernel\Infrastructure\Bus\Middleware\LoggingCommandMiddleware;
@@ -18,6 +18,7 @@ use App\Providers\Modules\SharedKernel\Infrastructure\Bus\Middleware\LoggingQuer
 use App\Providers\Modules\SharedKernel\Infrastructure\Bus\Middleware\TransactionMiddleware;
 use App\Providers\Modules\SharedKernel\Infrastructure\Bus\MiddlewareCommandBus;
 use App\Providers\Modules\SharedKernel\Infrastructure\Bus\MiddlewareQueryBus;
+use App\Providers\Modules\SharedKernel\Infrastructure\Http\RefusalStatuses;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Foundation\Auth\User;
 use Illuminate\Support\Facades\Context;
@@ -251,7 +252,7 @@ describe('bus middleware', function (): void {
         it('logs a refusal as information with its status and lets it through', function (): void {
             Log::spy();
 
-            expect(fn () => app(RefusingLoggedTestBus::class)->dispatch(new ServeThePass))->toThrow(DomainException::class);
+            expect(fn () => app(RefusingLoggedTestBus::class)->dispatch(new ServeThePass))->toThrow(Refusal::class);
 
             Log::shouldHaveReceived('info')->withArgs(
                 fn (string $message, array $context): bool => $message === 'Command refused' && $context['status'] === 403,
@@ -272,8 +273,8 @@ describe('bus middleware', function (): void {
         it('refuses a command whose ability the caller lacks, with a 403', function (): void {
             try {
                 app(AuthorizedTestBus::class)->dispatch(new ServeThePass);
-            } catch (DomainException $exception) {
-                expect($exception->status())->toBe(403)
+            } catch (Refusal $exception) {
+                expect(app(RefusalStatuses::class)->of($exception))->toBe(403)
                     ->and($exception->getMessage())->toBe('You are not allowed to do that.');
 
                 return;
@@ -290,7 +291,7 @@ describe('bus middleware', function (): void {
 
         it('guards a query the same way', function (): void {
             expect(fn () => app(AuthorizedTestQueryBus::class)->ask(new ReadThePass))
-                ->toThrow(DomainException::class, 'You are not allowed to do that.');
+                ->toThrow(Refusal::class, 'You are not allowed to do that.');
 
             $this->actingAs(new User);
 

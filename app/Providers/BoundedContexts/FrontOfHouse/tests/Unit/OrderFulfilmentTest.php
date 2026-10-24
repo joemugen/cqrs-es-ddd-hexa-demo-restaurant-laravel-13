@@ -8,6 +8,7 @@ use App\Providers\BoundedContexts\FrontOfHouse\Domain\FulfilmentStatus;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\LineId;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\ObsoleteRevision;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\OrderFulfilment;
+use App\Providers\BoundedContexts\FrontOfHouse\Domain\RevisionAlreadyWaiting;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableId;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableOrderId;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\UnavailableLine;
@@ -192,7 +193,7 @@ describe('an order fulfilment', function () {
             $fulfilment = fulfilmentAwaitingRevision();
 
             expect(fn () => $fulfilment->ensureCanBeRevised(1))
-                ->toThrow(FrontOfHouseException::class, 'A revision of this order is already waiting for the kitchen.');
+                ->toThrow(RevisionAlreadyWaiting::class, 'A revision of this order is already waiting for the kitchen.');
         });
     });
 

@@ -12,7 +12,7 @@ use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableOrderId;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\FrontOfHouseSeeder;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Tables;
 use App\Providers\BoundedContexts\Kitchen\Infrastructure\KitchenSeeder;
-use App\Providers\Modules\SharedKernel\Domain\ConcurrencyConflict;
+use App\Providers\Modules\SharedKernel\Application\Concurrency\ConcurrencyConflict;
 use Illuminate\Support\Facades\DB;
 
 function aRevisionOfTheOrderWith(TableOrder $order, string $menuItem): void

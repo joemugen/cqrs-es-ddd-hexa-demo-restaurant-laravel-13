@@ -7,8 +7,8 @@ namespace App\Providers\BoundedContexts\Billing\Infrastructure\Http;
 use App\Providers\BoundedContexts\Billing\Application\Command\PayBill;
 use App\Providers\BoundedContexts\Billing\Domain\BillId;
 use App\Providers\BoundedContexts\Billing\Infrastructure\Bus\BillingCommandBus;
-use App\Providers\Modules\SharedKernel\Domain\ExpectedVersion;
-use App\Providers\Modules\SharedKernel\Domain\PreconditionRequired;
+use App\Providers\Modules\SharedKernel\Application\Concurrency\ExpectedVersion;
+use App\Providers\Modules\SharedKernel\Application\Concurrency\PreconditionRequired;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 

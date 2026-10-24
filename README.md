@@ -181,6 +181,14 @@ Two guarantees come from the database, not from the code, and hold with SQLite o
 
 - **Conditional writes are tested on SQLite only.** `UPDATE ... WHERE revision = ?` and the partial unique indexes are the guards. On MySQL with REPEATABLE READ, a read that follows a write that touched no row (the `exists` or the revision read to tell a conflict from an unchanged row) sees the snapshot of the transaction, not the row as it is, so a lost write can pass for a no-op. A database that is not SQLite needs READ COMMITTED or a `SELECT ... FOR UPDATE` there, and MySQL has no partial index (PostgreSQL has).
 
+## A refusal says why, not how
+
+The domain knows why it refuses, never how HTTP says it. An exception of a `Domain` folder extends `DomainException` and names a category the domain owns: `NotFound` (what was asked for is unknown) or `RuleViolation` (a rule of the business says no). It carries a message and no number. The status is the adapter's business: `RefusalStatuses` (`SharedKernel/Infrastructure/Http`) answers 404 for a `NotFound`, 422 for a `RuleViolation`, and a context registers in its service provider the classes a category does not fit (`VisitIsClosed` is a 409, `ObsoleteRevision` a 412). What is registered last is asked first, and what is unknown is a 500.
+
+Optimistic concurrency is not a rule of the business, it is a matter of the application and its repositories: `ConcurrencyConflict` (a save found the aggregate changed), `PreconditionFailed` and `ExpectedVersion` (the `If-Match` of a client) live in `SharedKernel/Application/Concurrency` under the category `StaleVersion`, and `PayBillHandler` compares the version the guests saw before `Bill` decides anything.
+
+A Pest test (`RefusalStatusesTest`) fails on an exception of a domain that has no category, and on any refusal that would end as a 500 because nobody gave it a status: the table does not grow by one line without the test saying so.
+
 ## A fact of the domain is not a contract
 
 An aggregate records typed facts (`DishesAdded`, `TableOrderPlaced`, `BillPaid`: classes of `Domain/Event`, a `TypedDomainEvent`), never an array. The ticket of the kitchen, which is rebuilt from its events, stores them in its own stream under a name the kitchen owns (`ticket.dishes_added`) and in a format it may change. The other aggregates are saved as their state and `RecordsEvents` keeps the facts until the handler releases them.

@@ -7,8 +7,6 @@ namespace App\Providers\BoundedContexts\Billing\Domain;
 use App\Providers\BoundedContexts\Billing\Domain\Event\BillPaid;
 use App\Providers\BoundedContexts\Billing\Domain\Event\DishWrittenOff;
 use App\Providers\Modules\SharedKernel\Domain\AggregateRoot;
-use App\Providers\Modules\SharedKernel\Domain\ExpectedVersion;
-use App\Providers\Modules\SharedKernel\Domain\PreconditionFailed;
 use App\Providers\Modules\SharedKernel\Domain\RecordsEvents;
 
 final class Bill implements AggregateRoot
@@ -78,17 +76,10 @@ final class Bill implements AggregateRoot
         $this->revision++;
     }
 
-    /**
-     * The payment is of a note the guests saw: if a dish joined the bill since, it is refused and the note is presented again.
-     */
-    public function pay(int $amountCents, int $tipCents, ExpectedVersion $seen): void
+    public function pay(int $amountCents, int $tipCents): void
     {
         if ($this->paid) {
             throw new BillingException('A paid bill cannot be changed.');
-        }
-
-        if ($seen->value !== $this->version) {
-            throw new PreconditionFailed("The bill changed since the guests saw it: it is at version {$this->version}, not {$seen->value}. Present it again.");
         }
 
         if ($amountCents < 1) {

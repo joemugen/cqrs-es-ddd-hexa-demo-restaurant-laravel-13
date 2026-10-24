@@ -2,7 +2,9 @@
 
 declare(strict_types=1);
 
-namespace App\Providers\Modules\SharedKernel\Domain;
+namespace App\Providers\Modules\SharedKernel\Application\Concurrency;
+
+use App\Providers\Modules\SharedKernel\Domain\InvalidValue;
 
 /**
  * The version of a resource as the client read it, sent back as an If-Match header: the command is only valid if

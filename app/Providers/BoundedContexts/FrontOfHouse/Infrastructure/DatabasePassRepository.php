@@ -8,7 +8,7 @@ use App\Providers\BoundedContexts\FrontOfHouse\Application\PassRepository;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\DishAtThePass;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\DishAtThePassId;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\DishName;
-use App\Providers\BoundedContexts\FrontOfHouse\Domain\FrontOfHouseException;
+use App\Providers\BoundedContexts\FrontOfHouse\Domain\FrontOfHouseNotFound;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\LineId;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableId;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableOrderId;
@@ -26,7 +26,7 @@ final class DatabasePassRepository implements PassRepository
         $row = DB::table(Tables::PASS)->where('id', (string) $id)->first();
 
         if ($row === null) {
-            throw new FrontOfHouseException("Nothing at the pass with id {$id}.", 404);
+            throw new FrontOfHouseNotFound("Nothing at the pass with id {$id}.");
         }
 
         return new DishAtThePass(

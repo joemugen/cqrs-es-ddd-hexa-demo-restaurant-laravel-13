@@ -7,17 +7,7 @@ namespace App\Providers\Modules\SharedKernel\Domain;
 use RuntimeException;
 
 /**
- * A business refusal: a message for the caller and the HTTP status that fits it.
+ * A business refusal: a message for the caller. The domain says why it refuses (a category such as NotFound or
+ * RuleViolation), never how a transport says it.
  */
-abstract class DomainException extends RuntimeException
-{
-    public function __construct(string $message, private readonly int $status = 422)
-    {
-        parent::__construct($message);
-    }
-
-    public function status(): int
-    {
-        return $this->status;
-    }
-}
+abstract class DomainException extends RuntimeException {}

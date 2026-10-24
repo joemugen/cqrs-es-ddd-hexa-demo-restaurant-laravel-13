@@ -7,9 +7,11 @@ namespace App\Providers\Modules\SharedKernel\Infrastructure\Bus\Middleware;
 use App\Providers\Modules\SharedKernel\Application\Bus\CommandMiddleware;
 use App\Providers\Modules\SharedKernel\Application\Command;
 use App\Providers\Modules\SharedKernel\Application\CommandResponse;
+use App\Providers\Modules\SharedKernel\Application\Exception\Refusal;
 use App\Providers\Modules\SharedKernel\Domain\DomainException;
 use App\Providers\Modules\SharedKernel\Infrastructure\Causation;
 use App\Providers\Modules\SharedKernel\Infrastructure\Correlation;
+use App\Providers\Modules\SharedKernel\Infrastructure\Http\RefusalStatuses;
 use Closure;
 use Illuminate\Support\Facades\Log;
 use Throwable;
@@ -35,8 +37,8 @@ final class LoggingCommandMiddleware implements CommandMiddleware
 
         try {
             $response = $next($command);
-        } catch (DomainException $refusal) {
-            Log::info('Command refused', $this->context($command, $commandId, $causedBy, $start, ['reason' => $refusal->getMessage(), 'status' => $refusal->status()]));
+        } catch (DomainException|Refusal $refusal) {
+            Log::info('Command refused', $this->context($command, $commandId, $causedBy, $start, ['reason' => $refusal->getMessage(), 'status' => app(RefusalStatuses::class)->of($refusal)]));
 
             throw $refusal;
         } catch (Throwable $failure) {

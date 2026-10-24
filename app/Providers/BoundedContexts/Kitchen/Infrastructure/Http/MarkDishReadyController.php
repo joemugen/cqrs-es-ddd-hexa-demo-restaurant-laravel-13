@@ -9,7 +9,7 @@ use App\Providers\BoundedContexts\Kitchen\Application\Command\Response\MarkDishR
 use App\Providers\BoundedContexts\Kitchen\Domain\KitchenTicketId;
 use App\Providers\BoundedContexts\Kitchen\Domain\LineId;
 use App\Providers\BoundedContexts\Kitchen\Infrastructure\Bus\KitchenCommandBus;
-use App\Providers\Modules\SharedKernel\Domain\ExpectedVersion;
+use App\Providers\Modules\SharedKernel\Application\Concurrency\ExpectedVersion;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use LogicException;

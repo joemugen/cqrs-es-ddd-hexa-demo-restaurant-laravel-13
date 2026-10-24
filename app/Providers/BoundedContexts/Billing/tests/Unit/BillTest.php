@@ -9,8 +9,6 @@ use App\Providers\BoundedContexts\Billing\Domain\Event\DishWrittenOff;
 use App\Providers\BoundedContexts\Billing\Domain\ServedDish;
 use App\Providers\BoundedContexts\Billing\Domain\SourceKey;
 use App\Providers\BoundedContexts\Billing\Domain\Vat;
-use App\Providers\Modules\SharedKernel\Domain\ExpectedVersion;
-use App\Providers\Modules\SharedKernel\Domain\PreconditionFailed;
 
 function servedDish(string $description, int $unitPriceCents, int $quantity, string $kind): ServedDish
 {
@@ -40,13 +38,13 @@ describe('Bill', function () {
             ->and($bill->balanceCents())->toBe(6700)
             ->and($bill->isPaid())->toBeFalse();
 
-        $bill->pay(4000, 0, ExpectedVersion::of(1));
+        $bill->pay(4000, 0);
 
         expect($bill->balanceCents())->toBe(2700)
             ->and($bill->tipCents())->toBe(0)
             ->and($bill->isPaid())->toBeFalse();
 
-        $bill->pay(2700, 500, ExpectedVersion::of(1));
+        $bill->pay(2700, 500);
 
         expect($bill->balanceCents())->toBe(0)
             ->and($bill->tipCents())->toBe(500)
@@ -63,11 +61,11 @@ describe('Bill', function () {
             servedDish('Green salad', 1100, 1, 'food'),
         ]);
 
-        expect(fn () => $bill->pay(1101, 0, ExpectedVersion::of(1)))
+        expect(fn () => $bill->pay(1101, 0))
             ->toThrow(BillingException::class, 'That payment is more than the balance.');
-        expect(fn () => $bill->pay(1100, -1, ExpectedVersion::of(1)))
+        expect(fn () => $bill->pay(1100, -1))
             ->toThrow(BillingException::class, 'A tip cannot be negative.');
-        expect(fn () => $bill->pay(0, 500, ExpectedVersion::of(1)))
+        expect(fn () => $bill->pay(0, 500))
             ->toThrow(BillingException::class, 'A payment needs an amount.');
     });
 
@@ -75,9 +73,9 @@ describe('Bill', function () {
         $bill = Bill::prepare(new BillId('bill-1'), new CoverRef('table-4'), [
             servedDish('Green salad', 1100, 1, 'food'),
         ]);
-        $bill->pay(1100, 200, ExpectedVersion::of(1));
+        $bill->pay(1100, 200);
 
-        expect(fn () => $bill->pay(1, 0, ExpectedVersion::of(1)))
+        expect(fn () => $bill->pay(1, 0))
             ->toThrow(BillingException::class, 'A paid bill cannot be changed.');
     });
 
@@ -105,30 +103,10 @@ describe('Bill', function () {
         });
     });
 
-    describe('when paid for a version of the note', function () {
-        test('is refused when the guests saw another version: the bill changed, so it must be presented again', function () {
-            $bill = Bill::prepare(new BillId('bill-1'), new CoverRef('table-4'), [servedDish('Green salad', 1100, 1, 'food')]);
-            $bill->receive(servedDish('Creme brulee', 1100, 1, 'food'));
-
-            expect(fn () => $bill->pay(1100, 0, ExpectedVersion::of(1)))
-                ->toThrow(PreconditionFailed::class, 'The bill changed since the guests saw it: it is at version 2, not 1. Present it again.')
-                ->and($bill->balanceCents())->toBe(2200);
-        });
-
-        test('takes the payment of the current version', function () {
-            $bill = Bill::prepare(new BillId('bill-1'), new CoverRef('table-4'), [servedDish('Green salad', 1100, 1, 'food')]);
-            $bill->receive(servedDish('Creme brulee', 1100, 1, 'food'));
-
-            $bill->pay(1100, 0, ExpectedVersion::of(2));
-
-            expect($bill->balanceCents())->toBe(1100);
-        });
-    });
-
     describe('when a dish is served after it was paid', function () {
         test('does not change the bill, and says the loss as a fact: the dish is written off', function () {
             $bill = Bill::prepare(new BillId('bill-1'), new CoverRef('visit-1'), [servedDish('Green salad', 1100, 1, 'food')]);
-            $bill->pay(1100, 0, ExpectedVersion::of(1));
+            $bill->pay(1100, 0);
             $bill->releaseEvents();
 
             $bill->receive(servedDish('Creme brulee', 1100, 2, 'food'));
@@ -159,10 +137,10 @@ describe('Bill', function () {
         test('records that it is paid once the balance reaches zero, and not before', function () {
             $bill = aBillOf1100();
 
-            $bill->pay(600, 0, ExpectedVersion::of(1));
+            $bill->pay(600, 0);
             expect($bill->releaseEvents())->toBe([]);
 
-            $bill->pay(500, 0, ExpectedVersion::of(1));
+            $bill->pay(500, 0);
             expect($bill->releaseEvents())->toEqual([new BillPaid(new BillId('bill-1'), new CoverRef('table-4'))]);
         });
     });
