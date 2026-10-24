@@ -38,6 +38,7 @@ final class GetBillHandler implements QueryHandler
             new BillId((string) $bill->id),
             new CoverRef((string) $bill->cover_ref),
             (string) $bill->status,
+            (int) $bill->version,
             $this->lines($bill->id),
             (int) $bill->food_gross_cents,
             (int) $bill->alcohol_gross_cents,

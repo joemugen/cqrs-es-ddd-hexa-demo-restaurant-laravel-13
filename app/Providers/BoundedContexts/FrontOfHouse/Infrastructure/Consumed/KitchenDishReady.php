@@ -8,7 +8,7 @@ use App\Providers\BoundedContexts\FrontOfHouse\Domain\DishName;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\LineId;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableId;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableLabel;
-use App\Providers\BoundedContexts\FrontOfHouse\Domain\TicketId;
+use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableOrderId;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\ConsumedEvents;
 use App\Providers\Modules\SharedKernel\Application\Publication\ConsumedMessage;
 use App\Providers\Modules\SharedKernel\Application\Publication\Consumes;
@@ -20,7 +20,7 @@ use App\Providers\Modules\SharedKernel\Application\Publication\Consumes;
 final readonly class KitchenDishReady implements ConsumedMessage
 {
     public function __construct(
-        public TicketId $ticketId,
+        public TableOrderId $tableOrderId,
         public LineId $lineId,
         public DishName $dishName,
         public TableId $tableId,
@@ -31,7 +31,7 @@ final readonly class KitchenDishReady implements ConsumedMessage
     public static function fromPayload(array $payload): static
     {
         return new self(
-            new TicketId((string) $payload['tableOrderId']),
+            new TableOrderId((string) $payload['tableOrderId']),
             new LineId((string) $payload['lineId']),
             new DishName((string) $payload['dishName']),
             new TableId((string) $payload['tableId']),

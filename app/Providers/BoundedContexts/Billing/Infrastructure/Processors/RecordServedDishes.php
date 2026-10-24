@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace App\Providers\BoundedContexts\Billing\Infrastructure\Processors;
 
-use App\Providers\BoundedContexts\Billing\Application\ServedLedger;
+use App\Providers\BoundedContexts\Billing\Application\Command\RecordServedDish;
+use App\Providers\BoundedContexts\Billing\Infrastructure\Bus\BillingCommandBus;
 use App\Providers\BoundedContexts\Billing\Infrastructure\Consumed\FrontOfHouseDishServed;
 use App\Providers\Modules\EventStore\Application\ConsumedMessages;
 use App\Providers\Modules\EventStore\Domain\CheckpointStore;
@@ -14,7 +15,8 @@ use App\Providers\Modules\SharedKernel\Infrastructure\Causation;
 use App\Providers\Modules\SharedKernel\Infrastructure\Correlation;
 
 /**
- * Copies a served dish onto the till. It is not replayed: a charge is taken once.
+ * Copies a served dish onto the till: on the bill that is open, or on the ledger that waits for one. It is not replayed: a
+ * charge is taken once.
  */
 final class RecordServedDishes implements Processor
 {
@@ -23,7 +25,7 @@ final class RecordServedDishes implements Processor
     public function __construct(
         private EventStore $events,
         private CheckpointStore $checkpoints,
-        private ServedLedger $served,
+        private BillingCommandBus $bus,
         private ConsumedMessages $messages,
     ) {}
 
@@ -44,7 +46,7 @@ final class RecordServedDishes implements Processor
                 $handled++;
                 Correlation::resume($event->correlationId);
                 Causation::resume($event->position);
-                $this->served->record($message->coverRef, $message->dish, $event->position);
+                $this->bus->dispatch(new RecordServedDish($message->coverRef, $message->dish, $event->position));
             }
 
             $position = $event->position;

@@ -10,7 +10,7 @@ describe('a source key', function (): void {
         expect((string) new SourceKey('ticket-1:ticket-1-2'))->toBe('ticket-1:ticket-1-2');
     });
 
-    it('refuses anything that is not a ticket and a line', function (string $key): void {
+    it('refuses anything that is not an order and a line', function (string $key): void {
         expect(fn () => new SourceKey($key))->toThrow(InvalidValue::class);
     })->with(['', 'ticket-1', 'ticket-1:', ':line-1', 'ticket 1:line-1', 'a:b:c']);
 

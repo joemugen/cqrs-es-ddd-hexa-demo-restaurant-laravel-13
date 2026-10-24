@@ -12,6 +12,11 @@ final readonly class ExpectedVersion
 {
     private function __construct(public int $value) {}
 
+    public static function of(int $version): self
+    {
+        return new self($version);
+    }
+
     /**
      * No header, or *, means the client did not ask for a check.
      *

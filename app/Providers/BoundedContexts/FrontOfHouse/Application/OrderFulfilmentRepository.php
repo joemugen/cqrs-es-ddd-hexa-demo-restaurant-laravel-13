@@ -17,7 +17,7 @@ interface OrderFulfilmentRepository
     /**
      * @return list<OrderFulfilment>
      */
-    public function awaitingRevisionOf(VisitId $visit): array;
+    public function openOf(VisitId $visit): array;
 
     public function save(OrderFulfilment $fulfilment): void;
 }

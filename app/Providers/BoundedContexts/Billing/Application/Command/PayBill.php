@@ -6,6 +6,7 @@ namespace App\Providers\BoundedContexts\Billing\Application\Command;
 
 use App\Providers\BoundedContexts\Billing\Domain\BillId;
 use App\Providers\Modules\SharedKernel\Application\Command;
+use App\Providers\Modules\SharedKernel\Domain\ExpectedVersion;
 
 final readonly class PayBill implements Command
 {
@@ -13,5 +14,6 @@ final readonly class PayBill implements Command
         public BillId $billId,
         public int $amountCents,
         public int $tipCents,
+        public ExpectedVersion $seen,
     ) {}
 }

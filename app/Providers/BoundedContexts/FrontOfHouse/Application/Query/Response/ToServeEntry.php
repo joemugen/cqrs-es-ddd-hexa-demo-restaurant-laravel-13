@@ -9,7 +9,7 @@ use App\Providers\BoundedContexts\FrontOfHouse\Domain\DishName;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\LineId;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableId;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableLabel;
-use App\Providers\BoundedContexts\FrontOfHouse\Domain\TicketId;
+use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableOrderId;
 use JsonSerializable;
 
 final readonly class ToServeEntry implements JsonSerializable
@@ -20,7 +20,7 @@ final readonly class ToServeEntry implements JsonSerializable
         public TableLabel $tableLabel,
         public DishName $dishName,
         public int $quantity,
-        public TicketId $ticketId,
+        public TableOrderId $tableOrderId,
         public LineId $lineId,
     ) {}
 
@@ -35,7 +35,7 @@ final readonly class ToServeEntry implements JsonSerializable
             'tableLabel' => (string) $this->tableLabel,
             'dishName' => (string) $this->dishName,
             'quantity' => $this->quantity,
-            'ticketId' => (string) $this->ticketId,
+            'tableOrderId' => (string) $this->tableOrderId,
             'lineId' => (string) $this->lineId,
         ];
     }

@@ -14,10 +14,11 @@ use App\Providers\Modules\SharedKernel\Domain\StringId;
 final readonly class VisitId extends StringId
 {
     /**
-     * The visit that guests start at a table under a key: the same table and key always give the same id.
+     * The visit of the nth guests a table seats: it comes from the table and from how many visits it has seated, not from
+     * what a client sent, so no key that is purged or replayed can name a visit twice.
      */
-    public static function derivedFrom(TableId $table, string $key): self
+    public static function forSeating(TableId $table, int $ordinal): self
     {
-        return new self(NamespacedUuid::generate('visit', $table.':'.$key));
+        return new self(NamespacedUuid::generate('seating', $table.':'.$ordinal));
     }
 }

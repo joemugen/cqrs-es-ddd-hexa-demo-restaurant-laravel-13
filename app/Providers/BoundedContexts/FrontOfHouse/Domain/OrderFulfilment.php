@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Providers\BoundedContexts\FrontOfHouse\Domain;
 
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\Event\TableOrderCancelled;
+use App\Providers\BoundedContexts\FrontOfHouse\Domain\Event\TableOrderClosed;
 use App\Providers\Modules\SharedKernel\Domain\AggregateRoot;
 use App\Providers\Modules\SharedKernel\Domain\RecordsEvents;
 
@@ -135,13 +136,17 @@ final class OrderFulfilment implements AggregateRoot
     }
 
     /**
-     * The guests of the visit paid and left: an order that still awaits a revision will never get one.
+     * The guests of the visit paid and left: whatever the order was waiting for, it will not get it, and the kitchen is told to
+     * stop. An order that is over says nothing again.
      */
     public function close(): void
     {
-        if ($this->status === FulfilmentStatus::AWAITING_REVISION) {
-            $this->status = FulfilmentStatus::CLOSED;
+        if ($this->isOver()) {
+            return;
         }
+
+        $this->status = FulfilmentStatus::CLOSED;
+        $this->recordThat(new TableOrderClosed($this->id, $this->tableId, $this->visitId));
     }
 
     public function id(): TableOrderId

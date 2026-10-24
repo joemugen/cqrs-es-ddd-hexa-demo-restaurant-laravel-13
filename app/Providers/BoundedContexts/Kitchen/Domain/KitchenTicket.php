@@ -7,6 +7,7 @@ namespace App\Providers\BoundedContexts\Kitchen\Domain;
 use App\Providers\BoundedContexts\Kitchen\Domain\Event\DishesAdded;
 use App\Providers\BoundedContexts\Kitchen\Domain\Event\DishFired;
 use App\Providers\BoundedContexts\Kitchen\Domain\Event\DishReady;
+use App\Providers\BoundedContexts\Kitchen\Domain\Event\TicketCancelled;
 use App\Providers\BoundedContexts\Kitchen\Domain\Event\TicketCompleted;
 use App\Providers\BoundedContexts\Kitchen\Domain\Event\TicketOpened;
 use App\Providers\Modules\SharedKernel\Domain\AggregateId;
@@ -27,6 +28,7 @@ final class KitchenTicket implements EventSourcedAggregate
         DishFired::STORED_AS => DishFired::class,
         DishReady::STORED_AS => DishReady::class,
         TicketCompleted::STORED_AS => TicketCompleted::class,
+        TicketCancelled::STORED_AS => TicketCancelled::class,
     ];
 
     private RecordedEvents $pending;
@@ -41,6 +43,8 @@ final class KitchenTicket implements EventSourcedAggregate
     private TableLabel $tableLabel;
 
     private bool $completed = false;
+
+    private bool $cancelled = false;
 
     private function __construct(
         private readonly KitchenTicketId $id,
@@ -87,6 +91,10 @@ final class KitchenTicket implements EventSourcedAggregate
     {
         if ($lines === []) {
             throw new KitchenException('Add at least one dish to the ticket.');
+        }
+
+        if ($this->cancelled) {
+            return;
         }
 
         $new = array_values(array_filter(
@@ -152,6 +160,24 @@ final class KitchenTicket implements EventSourcedAggregate
         }
     }
 
+    /**
+     * The guests paid and left: what is still to cook is not cooked. A ticket that was finished, or already cancelled, has
+     * nothing to cancel.
+     */
+    public function cancel(): void
+    {
+        if ($this->completed || $this->cancelled) {
+            return;
+        }
+
+        $this->recordFact(new TicketCancelled($this->id));
+    }
+
+    public function isCancelled(): bool
+    {
+        return $this->cancelled;
+    }
+
     public function isComplete(): bool
     {
         return $this->completed;
@@ -190,6 +216,10 @@ final class KitchenTicket implements EventSourcedAggregate
 
     private function guardOpen(): void
     {
+        if ($this->cancelled) {
+            throw new KitchenException('A cancelled ticket cannot change.');
+        }
+
         if ($this->completed) {
             throw new KitchenException('A finished ticket cannot change.');
         }
@@ -228,6 +258,7 @@ final class KitchenTicket implements EventSourcedAggregate
             $fact instanceof DishFired => $this->lines[(string) $fact->lineId]['fired'] = true,
             $fact instanceof DishReady => $this->lines[(string) $fact->lineId]['ready'] = true,
             $fact instanceof TicketCompleted => $this->completed = true,
+            $fact instanceof TicketCancelled => $this->cancelled = true,
         };
     }
 

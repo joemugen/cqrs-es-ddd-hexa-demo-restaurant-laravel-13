@@ -56,7 +56,6 @@ final class PrepareBillProcessor implements Processor
                 $this->bus->dispatch(new PrepareBill(
                     billId: BillId::forBillRequest($message->coverRef, $event->position),
                     coverRef: $message->coverRef,
-                    requestPosition: $event->position,
                 ));
             }
 

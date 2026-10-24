@@ -15,6 +15,8 @@ final class ConsumedEvents
 
     public const FRONT_OF_HOUSE_DISH_SERVED = 'front_of_house.dish_served';
 
+    public const FRONT_OF_HOUSE_TABLE_ORDER_CLOSED = 'front_of_house.table_order_closed';
+
     public const KITCHEN_DISH_READY = 'kitchen.dish_ready';
 
     public const KITCHEN_DISH_EIGHTY_SIXED = 'kitchen.dish_eighty_sixed';

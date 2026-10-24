@@ -11,7 +11,8 @@ use App\Providers\Modules\SharedKernel\Application\Publication\PublishedAs;
 use App\Providers\Modules\SharedKernel\Application\Publication\Translates;
 
 /**
- * What the till bills of a dish that was served, and where it comes from: the same source is billed once.
+ * What the till bills of a dish that was served, to which visit, and the line of the order it comes from. The order and the
+ * line come apart: the till builds its own key to charge a dish once.
  */
 #[PublishedAs(FrontOfHouseEvent::DISH_SERVED, version: 1)]
 #[Translates(DishServed::class)]
@@ -26,7 +27,6 @@ final readonly class DishServedV1 implements IntegrationContract
         public int $quantity,
         public int $unitPriceCents,
         public string $kind,
-        public string $sourceKey,
     ) {}
 
     public static function from(DishServed $event): self
@@ -34,13 +34,12 @@ final readonly class DishServedV1 implements IntegrationContract
         return new self(
             (string) $event->tableId,
             (string) $event->visitId,
-            (string) $event->ticketId,
+            (string) $event->tableOrderId,
             (string) $event->lineId,
             (string) $event->dishName,
             $event->quantity,
             $event->unitPriceCents,
             $event->kind,
-            $event->ticketId.':'.$event->lineId,
         );
     }
 
@@ -55,7 +54,6 @@ final readonly class DishServedV1 implements IntegrationContract
             'quantity' => $this->quantity,
             'unitPriceCents' => $this->unitPriceCents,
             'kind' => $this->kind,
-            'sourceKey' => $this->sourceKey,
         ];
     }
 
@@ -70,7 +68,6 @@ final readonly class DishServedV1 implements IntegrationContract
             (int) $payload['quantity'],
             (int) $payload['unitPriceCents'],
             (string) $payload['kind'],
-            (string) $payload['sourceKey'],
         );
     }
 }

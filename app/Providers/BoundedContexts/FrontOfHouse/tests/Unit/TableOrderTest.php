@@ -128,6 +128,15 @@ describe('TableOrder', function () {
             return Table::restore(new TableId('table-4'), new TableLabel('Window 4'), 2, new VisitId('visit-1'));
         }
 
+        test('the order keeps the revisions it had when it was read: that is its version', function () {
+            $order = TableOrder::restore(new TableOrderId('order-1'), new TableId('table-4'), new VisitId('visit-1'), seatedOrder()->lines(), 1);
+
+            $order->revise(windowTable(), sampleMenu(), [new RequestedLine(new MenuItemId('green-salad'), 1, 'main')]);
+
+            expect($order->revisions())->toBe(2)
+                ->and($order->revisionsWhenLoaded())->toBe(1);
+        });
+
         test('the added lines go on after the lines already placed, and are recorded', function () {
             $order = seatedOrder();
             $order->releaseEvents();

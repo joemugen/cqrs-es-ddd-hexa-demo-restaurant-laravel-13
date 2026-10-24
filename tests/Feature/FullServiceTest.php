@@ -91,7 +91,7 @@ test('a service runs from the welcome to the departure', function () {
         ->and($bill['balanceCents'])->toBe(6700)
         ->and($bill['status'])->toBe('open');
 
-    $this->postJson("/api/billing/bills/{$bill['billId']}/payments", ['amountCents' => 4000])->assertOk();
+    $this->postJson("/api/billing/bills/{$bill['billId']}/payments", ['amountCents' => 4000], ['If-Match' => '"'.$bill['version'].'"'])->assertOk();
     $stillSeated = collect($this->getJson('/api/front-of-house/floor-plan')->json())->firstWhere('tableId', 'table-4');
     expect($stillSeated['status'])->toBe('occupied')
         ->and($this->getJson("/api/billing/covers/{$this->visit}/bill")->json()['balanceCents'])->toBe(2700);
@@ -99,7 +99,7 @@ test('a service runs from the welcome to the departure', function () {
     $this->postJson("/api/billing/bills/{$bill['billId']}/payments", [
         'amountCents' => 2700,
         'tipCents' => 500,
-    ])->assertOk();
+    ], ['If-Match' => '"'.$bill['version'].'"'])->assertOk();
 
     $paid = $this->getJson("/api/billing/covers/{$this->visit}/bill")->json();
     $freed = collect($this->getJson('/api/front-of-house/floor-plan')->json())->firstWhere('tableId', 'table-4');
@@ -109,7 +109,7 @@ test('a service runs from the welcome to the departure', function () {
         ->and($paid['tipCents'])->toBe(500)
         ->and($freed)->toMatchArray(['guestCount' => 0, 'status' => 'free']);
 
-    $this->postJson("/api/billing/bills/{$bill['billId']}/payments", ['amountCents' => 1])
+    $this->postJson("/api/billing/bills/{$bill['billId']}/payments", ['amountCents' => 1], ['If-Match' => '"'.$bill['version'].'"'])
         ->assertUnprocessable()
         ->assertJson(['message' => 'A paid bill cannot be changed.']);
 

@@ -4,6 +4,7 @@ use App\Providers\BoundedContexts\Kitchen\Domain\DishName;
 use App\Providers\BoundedContexts\Kitchen\Domain\Event\DishesAdded;
 use App\Providers\BoundedContexts\Kitchen\Domain\Event\DishFired;
 use App\Providers\BoundedContexts\Kitchen\Domain\Event\DishReady;
+use App\Providers\BoundedContexts\Kitchen\Domain\Event\TicketCancelled;
 use App\Providers\BoundedContexts\Kitchen\Domain\Event\TicketCompleted;
 use App\Providers\BoundedContexts\Kitchen\Domain\Event\TicketOpened;
 use App\Providers\BoundedContexts\Kitchen\Domain\KitchenException;
@@ -70,6 +71,40 @@ function thenTheTicketRecorded(KitchenTicket $ticket, StreamedDomainEvent ...$ex
 }
 
 describe('KitchenTicket', function () {
+    describe('when the guests are gone', function () {
+        test('is cancelled: what is still to cook is not cooked', function () {
+            $ticket = givenTheTicket(theTicketWasOpened(), theDishWasFired('salad', 'starter'));
+
+            $ticket->cancel();
+
+            thenTheTicketRecorded($ticket, new TicketCancelled(new KitchenTicketId('ticket-1')));
+            expect($ticket->isCancelled())->toBeTrue();
+        });
+
+        test('cannot be fired or made ready any more', function () {
+            $ticket = givenTheTicket(theTicketWasOpened(), theDishWasFired('salad', 'starter'), new TicketCancelled(new KitchenTicketId('ticket-1')));
+
+            expect(fn () => $ticket->fireCourse('main'))->toThrow(KitchenException::class, 'A cancelled ticket cannot change.')
+                ->and(fn () => $ticket->markReady(new LineId('salad')))->toThrow(KitchenException::class, 'A cancelled ticket cannot change.');
+        });
+
+        test('is cancelled once, and not at all when everything was cooked', function () {
+            $cancelled = givenTheTicket(theTicketWasOpened(), new TicketCancelled(new KitchenTicketId('ticket-1')));
+            $done = givenTheTicket(
+                theTicketWasOpened(),
+                theDishWasFired('salad', 'starter'), theDishWasReady('salad', 'Green salad'),
+                theDishWasFired('steak', 'main'), theDishWasReady('steak', 'Steak frites'),
+                theTicketWasCompleted(),
+            );
+
+            $cancelled->cancel();
+            $done->cancel();
+
+            expect($cancelled->pendingEvents()->isEmpty())->toBeTrue()
+                ->and($done->pendingEvents()->isEmpty())->toBeTrue();
+        });
+    });
+
     describe('when it opens', function () {
         test('records that it opened, with the dishes and the party', function () {
             $ticket = KitchenTicket::open(new KitchenTicketId('ticket-1'), new PartyRef('table-4'), new TableLabel('Window 4'), theDishesOfTheTicket());

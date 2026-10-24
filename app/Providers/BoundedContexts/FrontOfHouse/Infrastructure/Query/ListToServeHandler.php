@@ -12,7 +12,7 @@ use App\Providers\BoundedContexts\FrontOfHouse\Domain\DishName;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\LineId;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableId;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableLabel;
-use App\Providers\BoundedContexts\FrontOfHouse\Domain\TicketId;
+use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableOrderId;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Tables;
 use App\Providers\Modules\SharedKernel\Application\Bus\Attribute\AsQueryHandler;
 use App\Providers\Modules\SharedKernel\Application\QueryHandler;
@@ -35,7 +35,7 @@ final class ListToServeHandler implements QueryHandler
                 new TableLabel((string) $row->table_label),
                 new DishName((string) $row->dish_name),
                 (int) $row->quantity,
-                new TicketId((string) $row->ticket_id),
+                new TableOrderId((string) $row->table_order_id),
                 new LineId((string) $row->line_id),
             ))
             ->all());

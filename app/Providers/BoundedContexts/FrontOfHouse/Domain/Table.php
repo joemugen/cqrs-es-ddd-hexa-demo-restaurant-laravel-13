@@ -12,19 +12,27 @@ final class Table implements AggregateRoot
 {
     use RecordsEvents;
 
+    private readonly int $visitsSeatedWhenLoaded;
+
     private function __construct(
         private readonly TableId $id,
         private readonly TableLabel $label,
         private int $guestCount,
         private ?VisitId $visit,
-    ) {}
-
-    public static function restore(TableId $id, TableLabel $label, int $guestCount, ?VisitId $visit = null): self
-    {
-        return new self($id, $label, $guestCount, $visit);
+        private int $visitsSeated,
+    ) {
+        $this->visitsSeatedWhenLoaded = $visitsSeated;
     }
 
-    public function seat(VisitId $visit, int $guestCount): void
+    public static function restore(TableId $id, TableLabel $label, int $guestCount, ?VisitId $visit = null, int $visitsSeated = 0): self
+    {
+        return new self($id, $label, $guestCount, $visit, $visitsSeated);
+    }
+
+    /**
+     * The guests who sit down start a visit, which the table names after how many it has seated.
+     */
+    public function seat(int $guestCount): VisitId
     {
         if ($guestCount < 1) {
             throw new FrontOfHouseException('Seat at least one guest.');
@@ -35,7 +43,9 @@ final class Table implements AggregateRoot
         }
 
         $this->guestCount = $guestCount;
-        $this->visit = $visit;
+        $this->visitsSeated++;
+
+        return $this->visit = VisitId::forSeating($this->id, $this->visitsSeated);
     }
 
     public function requestBill(): void
@@ -69,6 +79,19 @@ final class Table implements AggregateRoot
     public function visit(): ?VisitId
     {
         return $this->visit;
+    }
+
+    /**
+     * Whether guests sat down since the table was read: the save then writes a visit, which the database allows once per table.
+     */
+    public function hasStartedAVisit(): bool
+    {
+        return $this->visitsSeated > $this->visitsSeatedWhenLoaded;
+    }
+
+    public function visitsSeated(): int
+    {
+        return $this->visitsSeated;
     }
 
     public function hasGuests(): bool

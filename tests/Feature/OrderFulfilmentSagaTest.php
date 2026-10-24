@@ -357,7 +357,7 @@ describe('the order fulfilment saga', function () {
 
             test('the revision is obsolete once the bill is paid: it is refused and the order is closed', function () {
                 $bill = $this->getJson("/api/billing/covers/{$this->visit}/bill")->json();
-                $this->postJson("/api/billing/bills/{$bill['billId']}/payments", ['amountCents' => $bill['balanceCents']])->assertOk();
+                $this->postJson("/api/billing/bills/{$bill['billId']}/payments", ['amountCents' => $bill['balanceCents']], ['If-Match' => '"'.$bill['version'].'"'])->assertOk();
                 runWorkers('front-of-house');
 
                 reviseWith($this->id, 'house-red')
@@ -377,7 +377,7 @@ describe('the order fulfilment saga', function () {
 
             test('a payment the dining room hears twice closes the order once', function () {
                 $bill = $this->getJson("/api/billing/covers/{$this->visit}/bill")->json();
-                $this->postJson("/api/billing/bills/{$bill['billId']}/payments", ['amountCents' => $bill['balanceCents']])->assertOk();
+                $this->postJson("/api/billing/bills/{$bill['billId']}/payments", ['amountCents' => $bill['balanceCents']], ['If-Match' => '"'.$bill['version'].'"'])->assertOk();
                 runWorkers('front-of-house');
 
                 app(CheckpointStore::class)->put('foh.order-fulfilment', 0);
@@ -388,7 +388,7 @@ describe('the order fulfilment saga', function () {
 
             test('the payment of the previous guests does not close the order of the next ones', function () {
                 $bill = $this->getJson("/api/billing/covers/{$this->visit}/bill")->json();
-                $this->postJson("/api/billing/bills/{$bill['billId']}/payments", ['amountCents' => $bill['balanceCents']])->assertOk();
+                $this->postJson("/api/billing/bills/{$bill['billId']}/payments", ['amountCents' => $bill['balanceCents']], ['If-Match' => '"'.$bill['version'].'"'])->assertOk();
                 runWorkers('front-of-house');
                 $this->visit = $this->postJson('/api/front-of-house/tables/table-7/guests', ['guestCount' => 2])->assertOk()->json('visitId');
                 $this->postJson('/api/kitchen/dishes/dish-brulee/eighty-six')->assertOk();

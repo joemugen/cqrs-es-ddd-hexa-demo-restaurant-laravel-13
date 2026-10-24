@@ -6,7 +6,7 @@ namespace App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\Consumed;
 
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\DishAtThePassId;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\LineId;
-use App\Providers\BoundedContexts\FrontOfHouse\Domain\TicketId;
+use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableOrderId;
 use App\Providers\BoundedContexts\FrontOfHouse\Infrastructure\ConsumedEvents;
 use App\Providers\Modules\SharedKernel\Application\Publication\ConsumedMessage;
 use App\Providers\Modules\SharedKernel\Application\Publication\Consumes;
@@ -21,6 +21,6 @@ final readonly class FrontOfHouseDishServed implements ConsumedMessage
 
     public static function fromPayload(array $payload): static
     {
-        return new self(DishAtThePassId::forLine(new TicketId((string) $payload['tableOrderId']), new LineId((string) $payload['lineId'])));
+        return new self(DishAtThePassId::forLine(new TableOrderId((string) $payload['tableOrderId']), new LineId((string) $payload['lineId'])));
     }
 }

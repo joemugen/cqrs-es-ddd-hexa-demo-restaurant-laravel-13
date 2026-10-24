@@ -7,7 +7,7 @@ namespace App\Providers\BoundedContexts\FrontOfHouse\Domain\Event;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\DishName;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\LineId;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableId;
-use App\Providers\BoundedContexts\FrontOfHouse\Domain\TicketId;
+use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableOrderId;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\VisitId;
 use App\Providers\Modules\SharedKernel\Domain\TypedDomainEvent;
 
@@ -23,7 +23,7 @@ final readonly class DishServed implements TypedDomainEvent
         public int $quantity,
         public int $unitPriceCents,
         public string $kind,
-        public TicketId $ticketId,
+        public TableOrderId $tableOrderId,
         public LineId $lineId,
     ) {}
 }

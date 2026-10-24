@@ -17,16 +17,20 @@ final class DishAtThePass implements AggregateRoot
         private readonly TableId $tableId,
         private readonly DishName $dishName,
         private readonly int $quantity,
-        private readonly TicketId $ticketId,
+        private readonly TableOrderId $tableOrderId,
         private readonly LineId $lineId,
         private bool $served,
     ) {}
 
     /**
-     * The guests are billed what they ordered at: the price and the kind come from their line, not from the menu of the moment.
+     * Only the guests who are still there are served. The guests are billed what they ordered at: the price and the kind come from their line, not from the menu of the moment.
      */
-    public function serve(OrderLine $line, VisitId $visit): void
+    public function serve(OrderLine $line, Table $table, VisitId $visit): void
     {
+        if (! $table->isHosting($visit)) {
+            throw new VisitIsClosed;
+        }
+
         if ($this->served) {
             throw new FrontOfHouseException('That dish has already left the pass.');
         }
@@ -39,7 +43,7 @@ final class DishAtThePass implements AggregateRoot
             $this->quantity,
             $line->unitPriceCents,
             $line->kind,
-            $this->ticketId,
+            $this->tableOrderId,
             $this->lineId,
         ));
     }
@@ -64,9 +68,9 @@ final class DishAtThePass implements AggregateRoot
         return $this->quantity;
     }
 
-    public function ticketId(): TicketId
+    public function tableOrderId(): TableOrderId
     {
-        return $this->ticketId;
+        return $this->tableOrderId;
     }
 
     public function lineId(): LineId

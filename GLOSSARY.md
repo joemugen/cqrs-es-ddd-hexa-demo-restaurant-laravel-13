@@ -10,7 +10,7 @@ The same word does not always mean the same thing in two contexts, and that is o
 | --- | --- | --- | --- |
 | **Service** | service | One evening, from the welcome of the guests to their departure. | `tests/Feature/FullServiceTest.php` |
 | **Table** | table | A place in the dining room. It is free, or occupied by guests. | `FrontOfHouse` `Table`, `TableStatus` |
-| **Visit** | tablée | The guests of a table, from the moment they sit down to the moment they leave. A table sees several visits in an evening, and everything the guests order, are served and owe belongs to their visit, never to the table. | `VisitId`, `Table::seat()` |
+| **Visit** | tablée | The guests of a table, from the moment they sit down to the moment they leave. A table sees several visits in an evening, and everything the guests order, are served and owe belongs to their visit, never to the table. The table names it after how many visits it has seated, and holds one open at a time. | `VisitId`, `Table::seat()` |
 | **Guests** | convives, clients | The people sitting at a table. | `Table::seat()`, `guestCount` |
 | **Seat** | installer | Welcome guests at a free table. A table that already has guests cannot be seated. | `SeatGuests` |
 | **Floor plan** | plan de salle | What the room sees of its tables: label, guests, free or occupied. | `FloorPlan`, `GET /floor-plan` |
@@ -56,8 +56,8 @@ Sources: [Wikipedia](https://en.wikipedia.org/wiki/86_(term)), [Snopes](https://
 | Term | FR | Meaning | In the code |
 | --- | --- | --- | --- |
 | **Pass** | passe | The counter where the kitchen puts the dishes that are ready and where the room takes them. It is where the room decides what was served. | `DishAtThePass`, `FillThePassProcessor` |
-| **To serve** | à servir | The list of dishes waiting at the pass, a reading of it. It can lag behind the kitchen until a worker catches it up, and it can be rebuilt. | `ToServeProjector`, `GET /to-serve` |
-| **Serve** | servir | Take a dish from the pass to the table. Only what was served is billed. | `ServeDish`, `DishServed` |
+| **To serve** | à servir | The list of dishes waiting at the pass, a reading of it. It can lag behind the kitchen until a worker catches it up, and it can be rebuilt. It drops the dishes of an order that closed. | `ToServeProjector`, `GET /to-serve` |
+| **Serve** | servir | Take a dish from the pass to the table. Only what was served is billed, and nothing is served to a visit that paid and left. | `ServeDish`, `DishServed` |
 
 ## The order that does not go through
 
@@ -69,7 +69,7 @@ Sources: [Wikipedia](https://en.wikipedia.org/wiki/86_(term)), [Snopes](https://
 | **Confirmed** | confirmée | The kitchen cooks what the order asks. | `FulfilmentStatus::CONFIRMED` |
 | **Awaiting revision** | en attente de révision | Some lines are unavailable; the waiter must go back to the guests. | `FulfilmentStatus::AWAITING_REVISION` |
 | **Cancelled** | annulée | The guests gave up the lines that were unavailable. What is already on the ticket is still cooked. | `CancelOrder`, `FulfilmentStatus::CANCELLED` |
-| **Closed** | clôturée | The guests paid and left before a revision came. A revision is then **obsolete** and refused. | `FulfilmentStatus::CLOSED`, `ObsoleteRevision` |
+| **Closed** | clôturée | The guests paid and left: the payment closes the visit and every order of it that is not over. A revision is then **obsolete** and refused, nothing more is served, and the kitchen cancels what it still cooks. | `FulfilmentStatus::CLOSED`, `ObsoleteRevision` |
 | **Abandoned line** | ligne abandonnée | A line given up for good: replaced by a revision, or dropped by a cancellation. | `abandonedLines` |
 
 The guests do not leave without paying: the table is freed by the payment of its bill and by nothing else.
@@ -79,8 +79,10 @@ The guests do not leave without paying: the table is freed by the payment of its
 | Term | FR | Meaning | In the code |
 | --- | --- | --- | --- |
 | **Cover** | couvert | The guests of one visit, as the till knows them. It is the id of the visit, under another name: the till does not know the room. | `CoverRef` |
-| **Bill** | addition | What a cover owes for the dishes that were served before the request for the bill. Open until its balance is gone, then paid and immutable. | `Bill`, `BillStatus` |
-| **Served dish** | plat servi | A line of the bill. Its source (ticket and line) makes sure a dish is charged once. | `ServedDish`, `SourceKey` |
+| **Bill** | addition | What a cover owes for the dishes that were served to it. Asking for it freezes nothing: a dish served afterwards goes on the open bill, which moves to its next version. Open until its balance is gone, then paid and immutable. A cover has one open bill at a time. | `Bill`, `BillStatus` |
+| **Version of a bill** | version de l'addition | Which note the guests saw: it grows each time a dish joins the bill. A payment is of a version, and is refused when the bill changed since. | `Bill::version()`, `If-Match` |
+| **Served dish** | plat servi | A line of the bill. Its source (order and line) makes sure a dish is charged once. | `ServedDish`, `SourceKey` |
+| **Written off** | passé en perte | A dish that the till receives after the bill of its cover was paid, even one served before the payment that the till read late: nobody can be charged, and the loss is a fact of the till. | `DishWrittenOff`, `billing.dish_written_off` |
 | **VAT** | TVA | Prices are tax-inclusive. Food eaten in is 10 %, alcohol 20 %. | `Vat`, `DishKind` |
 | **Payment** | paiement | An amount paid on a bill. It may be split between several payments. | `Payment`, `PayBill` |
 | **Tip** | pourboire | Added to a payment; it does not reduce the balance. | `Payment::$tipCents` |
@@ -99,7 +101,7 @@ These words are technical, but they are the ones of the code and of the discussi
 | **Position** | Where a fact sits in the event log. It is the clock all contexts share, and what decides a late reading. | `StoredEvent::$position` |
 | **Saga** | What follows an order between the room and the kitchen, through the facts they publish, with no one in charge. | `OrderFulfilment`, `OrderFulfilmentProcessor` |
 | **Idempotency key** | Sent with an order: the same key places it once. | `Idempotency-Key` |
-| **If-Match** | Sent with `fire` or `ready`: the version of the ticket the cook saw. If it moved, the command is refused. | `ETag`, `If-Match` |
+| **If-Match** | Sent with `fire` or `ready`: the version of the ticket the cook saw. If it moved, the command is refused; without it, or with `*`, the kitchen does not check. Sent with a payment: the version of the bill the guests saw, which is required (`*` or nothing is a 428), and refused (412) when the bill changed. | `ETag`, `If-Match`, `Bill::pay()` |
 
 ## Keeping it true
 

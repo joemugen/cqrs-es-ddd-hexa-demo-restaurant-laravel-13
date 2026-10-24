@@ -24,7 +24,7 @@ final readonly class PayBillHandler implements CommandHandler
     public function __invoke(PayBill $command): PaymentAccepted
     {
         $bill = $this->bills->get($command->billId);
-        $bill->pay($command->amountCents, $command->tipCents);
+        $bill->pay($command->amountCents, $command->tipCents, $command->seen);
         $this->bills->save($bill);
 
         $this->contracts->publish($bill->releaseEvents());

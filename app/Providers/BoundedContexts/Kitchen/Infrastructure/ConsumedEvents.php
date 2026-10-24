@@ -12,4 +12,6 @@ final class ConsumedEvents
     public const FRONT_OF_HOUSE_TABLE_ORDER_PLACED = 'front_of_house.table_order_placed';
 
     public const FRONT_OF_HOUSE_TABLE_ORDER_REVISED = 'front_of_house.table_order_revised';
+
+    public const FRONT_OF_HOUSE_TABLE_ORDER_CLOSED = 'front_of_house.table_order_closed';
 }

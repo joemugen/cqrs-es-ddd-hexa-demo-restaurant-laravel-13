@@ -3,6 +3,7 @@
 use App\Providers\BoundedContexts\FrontOfHouse\Application\Integration\BillRequestedV1;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\Integration\DishServedV1;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\Integration\TableOrderCancelledV1;
+use App\Providers\BoundedContexts\FrontOfHouse\Application\Integration\TableOrderClosedV1;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\Integration\TableOrderPlacedV1;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\Integration\TableOrderRevisedV1;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\DishKind;
@@ -10,6 +11,7 @@ use App\Providers\BoundedContexts\FrontOfHouse\Domain\DishName;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\Event\BillRequested;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\Event\DishServed;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\Event\TableOrderCancelled;
+use App\Providers\BoundedContexts\FrontOfHouse\Domain\Event\TableOrderClosed;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\Event\TableOrderPlaced;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\Event\TableOrderRevised;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\LineId;
@@ -18,7 +20,6 @@ use App\Providers\BoundedContexts\FrontOfHouse\Domain\OrderLine;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableId;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableLabel;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableOrderId;
-use App\Providers\BoundedContexts\FrontOfHouse\Domain\TicketId;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\VisitId;
 use App\Providers\Modules\SharedKernel\Application\Publication\PublishedAs;
 
@@ -79,6 +80,14 @@ describe('what the dining room tells the others', function () {
             ->and(TableOrderCancelledV1::fromPayload($contract->toPayload()))->toEqual($contract);
     });
 
+    test('an order closed: the guests paid and left, so the kitchen stops cooking it', function () {
+        $contract = TableOrderClosedV1::from(new TableOrderClosed(new TableOrderId('order-1'), new TableId('table-4'), new VisitId('visit-1')));
+
+        expect(publishedAs(TableOrderClosedV1::class))->toBe('front_of_house.table_order_closed v1')
+            ->and($contract->toPayload())->toBe(['tableOrderId' => 'order-1', 'tableId' => 'table-4'])
+            ->and(TableOrderClosedV1::fromPayload($contract->toPayload()))->toEqual($contract);
+    });
+
     test('a bill requested: which table', function () {
         $contract = BillRequestedV1::from(new BillRequested(new TableId('table-4'), new VisitId('visit-1')));
 
@@ -87,20 +96,19 @@ describe('what the dining room tells the others', function () {
             ->and(BillRequestedV1::fromPayload($contract->toPayload()))->toEqual($contract);
     });
 
-    test('a dish served: what the till bills, and where it comes from', function () {
-        $contract = DishServedV1::from(new DishServed(new TableId('table-4'), new VisitId('visit-1'), new DishName('Green salad'), 2, 1100, DishKind::FOOD, new TicketId('ticket-1'), new LineId('line-1')));
+    test('a dish served: what the till bills, and the line of the order it comes from', function () {
+        $contract = DishServedV1::from(new DishServed(new TableId('table-4'), new VisitId('visit-1'), new DishName('Green salad'), 2, 1100, DishKind::FOOD, new TableOrderId('order-1'), new LineId('line-1')));
 
         expect(publishedAs(DishServedV1::class))->toBe('front_of_house.dish_served v1')
             ->and($contract->toPayload())->toBe([
                 'tableId' => 'table-4',
                 'visitId' => 'visit-1',
-                'tableOrderId' => 'ticket-1',
+                'tableOrderId' => 'order-1',
                 'lineId' => 'line-1',
                 'description' => 'Green salad',
                 'quantity' => 2,
                 'unitPriceCents' => 1100,
                 'kind' => DishKind::FOOD,
-                'sourceKey' => 'ticket-1:line-1',
             ])
             ->and(DishServedV1::fromPayload($contract->toPayload()))->toEqual($contract);
     });

@@ -13,6 +13,8 @@ final class TableOrder implements AggregateRoot
 {
     use RecordsEvents;
 
+    private readonly int $revisionsWhenLoaded;
+
     /**
      * @param  list<OrderLine>  $lines
      */
@@ -22,7 +24,9 @@ final class TableOrder implements AggregateRoot
         private readonly VisitId $visitId,
         private array $lines,
         private int $revisions = 0,
-    ) {}
+    ) {
+        $this->revisionsWhenLoaded = $revisions;
+    }
 
     /**
      * @param  list<OrderLine>  $lines
@@ -86,6 +90,15 @@ final class TableOrder implements AggregateRoot
     public function revisions(): int
     {
         return $this->revisions;
+    }
+
+    /**
+     * The revisions the order had when it was read: its version, which a save checks so that two revisions that read the same
+     * order cannot both be written.
+     */
+    public function revisionsWhenLoaded(): int
+    {
+        return $this->revisionsWhenLoaded;
     }
 
     public function visitId(): VisitId

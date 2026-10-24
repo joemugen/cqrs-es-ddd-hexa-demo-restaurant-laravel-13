@@ -2,6 +2,7 @@
 
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\DishName;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\Event\TableOrderCancelled;
+use App\Providers\BoundedContexts\FrontOfHouse\Domain\Event\TableOrderClosed;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\FrontOfHouseException;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\FulfilmentStatus;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\LineId;
@@ -239,22 +240,35 @@ describe('an order fulfilment', function () {
             expect($fulfilment->status())->toBe(FulfilmentStatus::CLOSED);
         });
 
-        test('an order the kitchen is cooking is left alone', function () {
+        test('an order the kitchen is cooking is closed too, and says so: nobody cooks for an empty table', function () {
             $fulfilment = fulfilmentAwaitingTheKitchen();
             $fulfilment->confirm();
 
             $fulfilment->close();
 
-            expect($fulfilment->status())->toBe(FulfilmentStatus::CONFIRMED);
+            expect($fulfilment->status())->toBe(FulfilmentStatus::CLOSED)
+                ->and($fulfilment->releaseEvents())->toEqual([new TableOrderClosed(new TableOrderId('order-1'), new TableId('table-7'), new VisitId('visit-1'))]);
+        });
+
+        test('an order that was closed says it once', function () {
+            $fulfilment = fulfilmentAwaitingTheKitchen();
+            $fulfilment->close();
+            $fulfilment->releaseEvents();
+
+            $fulfilment->close();
+
+            expect($fulfilment->releaseEvents())->toBe([]);
         });
 
         test('an order that was cancelled stays cancelled', function () {
             $fulfilment = fulfilmentAwaitingRevision();
             $fulfilment->cancel('The guests gave up.');
 
+            $fulfilment->releaseEvents();
             $fulfilment->close();
 
-            expect($fulfilment->status())->toBe(FulfilmentStatus::CANCELLED);
+            expect($fulfilment->status())->toBe(FulfilmentStatus::CANCELLED)
+                ->and($fulfilment->releaseEvents())->toBe([]);
         });
     });
 });

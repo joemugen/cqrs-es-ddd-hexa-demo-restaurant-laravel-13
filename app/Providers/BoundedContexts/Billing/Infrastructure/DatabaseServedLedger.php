@@ -13,9 +13,9 @@ use Illuminate\Support\Facades\DB;
 
 final class DatabaseServedLedger implements ServedLedger
 {
-    public function record(CoverRef $coverRef, ServedDish $dish, int $position): void
+    public function record(CoverRef $coverRef, ServedDish $dish, int $position): bool
     {
-        DB::table(Tables::SERVED_ITEMS)->insertOrIgnore([
+        return DB::table(Tables::SERVED_ITEMS)->insertOrIgnore([
             'source_key' => (string) $dish->sourceKey,
             'cover_ref' => (string) $coverRef,
             'description' => $dish->description,
@@ -23,15 +23,21 @@ final class DatabaseServedLedger implements ServedLedger
             'unit_price_cents' => $dish->unitPriceCents,
             'kind' => $dish->kind,
             'position' => $position,
-        ]);
+        ]) > 0;
     }
 
-    public function unbilled(CoverRef $coverRef, int $upToPosition): array
+    public function writeOff(SourceKey $sourceKey): void
+    {
+        DB::table(Tables::SERVED_ITEMS)->where('source_key', (string) $sourceKey)->update(['written_off_at' => now()]);
+    }
+
+    public function unbilled(CoverRef $coverRef): array
     {
         return DB::table(Tables::SERVED_ITEMS)
             ->where('cover_ref', (string) $coverRef)
             ->whereNull('bill_id')
-            ->where('position', '<=', $upToPosition)
+            ->whereNull('written_off_at')
+            ->orderBy('position')
             ->orderBy('source_key')
             ->get()
             ->map(fn (object $row): ServedDish => new ServedDish(

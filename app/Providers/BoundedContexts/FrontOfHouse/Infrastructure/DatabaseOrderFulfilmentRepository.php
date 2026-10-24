@@ -32,11 +32,11 @@ final class DatabaseOrderFulfilmentRepository implements OrderFulfilmentReposito
         return $this->fulfilment($row);
     }
 
-    public function awaitingRevisionOf(VisitId $visit): array
+    public function openOf(VisitId $visit): array
     {
         return DB::table(Tables::ORDER_FULFILMENTS)
             ->where('visit_id', (string) $visit)
-            ->where('status', FulfilmentStatus::AWAITING_REVISION)
+            ->whereNotIn('status', [FulfilmentStatus::CANCELLED, FulfilmentStatus::CLOSED])
             ->get()
             ->map(fn (object $row): OrderFulfilment => $this->fulfilment($row))
             ->all();
