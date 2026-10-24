@@ -10,6 +10,8 @@ use App\Providers\BoundedContexts\Billing\Domain\CoverRef;
 
 interface BillRepository
 {
+    public function exists(BillId $id): bool;
+
     public function get(BillId $id): Bill;
 
     public function save(Bill $bill): void;

@@ -15,8 +15,8 @@ use App\Providers\Modules\SharedKernel\Infrastructure\Causation;
 use App\Providers\Modules\SharedKernel\Infrastructure\Correlation;
 
 /**
- * Copies a served dish onto the till: on the bill that is open, or on the ledger that waits for one. It is not replayed: a
- * charge is taken once.
+ * Copies a served dish into the ledger of its cover, which decides where it goes: on the bill that is open, or waiting for one.
+ * A dish told twice is recorded once.
  */
 final class RecordServedDishes implements Processor
 {

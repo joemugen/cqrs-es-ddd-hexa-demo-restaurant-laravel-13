@@ -4,12 +4,9 @@ declare(strict_types=1);
 
 namespace App\Providers\BoundedContexts\Billing\Application\Command;
 
-use App\Providers\BoundedContexts\Billing\Application\BillRepository;
 use App\Providers\BoundedContexts\Billing\Application\Command\Response\PrepareBillAccepted;
-use App\Providers\BoundedContexts\Billing\Application\ServedLedger;
-use App\Providers\BoundedContexts\Billing\Domain\Bill;
-use App\Providers\BoundedContexts\Billing\Domain\ServedDish;
-use App\Providers\BoundedContexts\Billing\Domain\SourceKey;
+use App\Providers\BoundedContexts\Billing\Application\CoverLedgerRepository;
+use App\Providers\Modules\EventStore\Application\ContractPublisher;
 use App\Providers\Modules\SharedKernel\Application\Bus\Attribute\AsCommandHandler;
 use App\Providers\Modules\SharedKernel\Application\CommandHandler;
 
@@ -20,31 +17,25 @@ use App\Providers\Modules\SharedKernel\Application\CommandHandler;
 final readonly class PrepareBillHandler implements CommandHandler
 {
     public function __construct(
-        private BillRepository $bills,
-        private ServedLedger $served,
+        private CoverLedgerRepository $ledgers,
+        private ContractPublisher $contracts,
     ) {}
 
+    /**
+     * The ledger places the dishes on a bill and says so: the bill itself is opened by what follows that fact.
+     */
     public function __invoke(PrepareBill $command): ?PrepareBillAccepted
     {
-        $open = $this->bills->openFor($command->coverRef);
+        $ledger = $this->ledgers->get($command->coverRef);
+        $bill = $ledger->openBill($command->billId);
 
-        if ($open !== null) {
-            return new PrepareBillAccepted($open->id());
-        }
-
-        $lines = $this->served->unbilled($command->coverRef);
-
-        if ($lines === []) {
+        if ($bill === null) {
             return null;
         }
 
-        $bill = Bill::prepare($command->billId, $command->coverRef, $lines);
-        $this->bills->save($bill);
-        $this->served->attach($bill->id(), array_map(
-            fn (ServedDish $line): SourceKey => $line->sourceKey,
-            $bill->lines(),
-        ));
+        $this->ledgers->save($ledger);
+        $this->contracts->publish($ledger->releaseEvents());
 
-        return new PrepareBillAccepted($bill->id());
+        return new PrepareBillAccepted($bill);
     }
 }

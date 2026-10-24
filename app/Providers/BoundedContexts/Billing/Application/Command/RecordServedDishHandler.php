@@ -4,9 +4,8 @@ declare(strict_types=1);
 
 namespace App\Providers\BoundedContexts\Billing\Application\Command;
 
-use App\Providers\BoundedContexts\Billing\Application\BillRepository;
 use App\Providers\BoundedContexts\Billing\Application\Command\Response\RecordServedDishAccepted;
-use App\Providers\BoundedContexts\Billing\Application\ServedLedger;
+use App\Providers\BoundedContexts\Billing\Application\CoverLedgerRepository;
 use App\Providers\Modules\EventStore\Application\ContractPublisher;
 use App\Providers\Modules\SharedKernel\Application\Bus\Attribute\AsCommandHandler;
 use App\Providers\Modules\SharedKernel\Application\CommandHandler;
@@ -18,27 +17,17 @@ use App\Providers\Modules\SharedKernel\Application\CommandHandler;
 final readonly class RecordServedDishHandler implements CommandHandler
 {
     public function __construct(
-        private BillRepository $bills,
-        private ServedLedger $served,
+        private CoverLedgerRepository $ledgers,
         private ContractPublisher $contracts,
     ) {}
 
     public function __invoke(RecordServedDish $command): RecordServedDishAccepted
     {
-        if (! $this->served->record($command->coverRef, $command->dish, $command->position)) {
-            return new RecordServedDishAccepted($command->dish->sourceKey);
-        }
+        $ledger = $this->ledgers->get($command->coverRef);
 
-        $bill = $this->bills->latestFor($command->coverRef);
-
-        if ($bill !== null) {
-            $bill->receive($command->dish);
-            $this->bills->save($bill);
-            $bill->isPaid()
-                ? $this->served->writeOff($command->dish->sourceKey)
-                : $this->served->attach($bill->id(), [$command->dish->sourceKey]);
-            $this->contracts->publish($bill->releaseEvents());
-        }
+        $ledger->record($command->dish, $command->position);
+        $this->ledgers->save($ledger);
+        $this->contracts->publish($ledger->releaseEvents());
 
         return new RecordServedDishAccepted($command->dish->sourceKey);
     }

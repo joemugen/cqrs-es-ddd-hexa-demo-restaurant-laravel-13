@@ -230,6 +230,11 @@ describe('the till', function () {
 
         $this->app->instance(BillRepository::class, new class implements BillRepository
         {
+            public function exists(BillId $id): bool
+            {
+                throw new RuntimeException('Queries must not hydrate aggregates.');
+            }
+
             public function get(BillId $id): Bill
             {
                 throw new RuntimeException('Queries must not hydrate aggregates.');

@@ -20,6 +20,11 @@ use Illuminate\Support\Facades\DB;
 
 final class DatabaseBillRepository implements BillRepository
 {
+    public function exists(BillId $id): bool
+    {
+        return DB::table(Tables::BILLS)->where('id', (string) $id)->exists();
+    }
+
     public function get(BillId $id): Bill
     {
         $row = DB::table(Tables::BILLS)->where('id', (string) $id)->first();

@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace App\Providers\BoundedContexts\Billing;
 
 use App\Providers\BoundedContexts\Billing\Application\BillRepository;
-use App\Providers\BoundedContexts\Billing\Application\ServedLedger;
+use App\Providers\BoundedContexts\Billing\Application\CoverLedgerRepository;
 use App\Providers\BoundedContexts\Billing\Infrastructure\Bus\BillingCommandBus;
 use App\Providers\BoundedContexts\Billing\Infrastructure\Bus\BillingQueryBus;
 use App\Providers\BoundedContexts\Billing\Infrastructure\Console\ConsumeBillingEvents;
 use App\Providers\BoundedContexts\Billing\Infrastructure\DatabaseBillRepository;
-use App\Providers\BoundedContexts\Billing\Infrastructure\DatabaseServedLedger;
+use App\Providers\BoundedContexts\Billing\Infrastructure\DatabaseCoverLedgerRepository;
 use App\Providers\Modules\EventStore\Infrastructure\EventConsumption;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
@@ -22,7 +22,7 @@ final class BillingServiceProvider extends ServiceProvider
         $this->mergeConfigFrom(__DIR__.'/config/billing.php', 'billing');
 
         $this->app->bind(BillRepository::class, DatabaseBillRepository::class);
-        $this->app->bind(ServedLedger::class, DatabaseServedLedger::class);
+        $this->app->bind(CoverLedgerRepository::class, DatabaseCoverLedgerRepository::class);
 
         $this->app->singleton(BillingCommandBus::class);
         $this->app->singleton(BillingQueryBus::class);

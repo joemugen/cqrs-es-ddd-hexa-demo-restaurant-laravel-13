@@ -12,4 +12,10 @@ final class ConsumedEvents
     public const FRONT_OF_HOUSE_BILL_REQUESTED = 'front_of_house.bill_requested';
 
     public const FRONT_OF_HOUSE_DISH_SERVED = 'front_of_house.dish_served';
+
+    public const BILLING_BILL_OPENED = 'billing.bill_opened';
+
+    public const BILLING_DISH_PLACED_ON_BILL = 'billing.dish_placed_on_bill';
+
+    public const BILLING_BILL_PAID = 'billing.bill_paid';
 }
