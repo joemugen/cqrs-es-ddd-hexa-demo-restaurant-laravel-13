@@ -14,7 +14,7 @@ use App\Providers\Modules\SharedKernel\Application\Publication\ConsumedMessage;
 use App\Providers\Modules\SharedKernel\Application\Publication\Consumes;
 
 /**
- * A dish is ready at the pass, for a table: the room puts it on its list to serve.
+ * A dish is ready, for a table: the room puts it at the pass, and its list to serve shows it.
  */
 #[Consumes(ConsumedEvents::KITCHEN_DISH_READY, version: 1)]
 final readonly class KitchenDishReady implements ConsumedMessage

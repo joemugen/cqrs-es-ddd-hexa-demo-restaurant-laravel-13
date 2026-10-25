@@ -9,12 +9,12 @@ use App\Providers\Modules\SharedKernel\Application\CommandResponse;
 
 final readonly class ServeDishAccepted implements CommandResponse
 {
-    public function __construct(public DishAtThePassId $toServeId) {}
+    public function __construct(public DishAtThePassId $dishAtThePassId) {}
 
     public function jsonSerialize(): array
     {
         return [
-            'toServeId' => (string) $this->toServeId,
+            'dishAtThePassId' => (string) $this->dishAtThePassId,
             'accepted' => true,
         ];
     }
