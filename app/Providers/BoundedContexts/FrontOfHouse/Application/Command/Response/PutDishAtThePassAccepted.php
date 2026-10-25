@@ -14,7 +14,7 @@ final readonly class PutDishAtThePassAccepted implements CommandResponse
     public function jsonSerialize(): array
     {
         return [
-            'toServeId' => (string) $this->dishAtThePassId,
+            'dishAtThePassId' => (string) $this->dishAtThePassId,
             'accepted' => true,
         ];
     }

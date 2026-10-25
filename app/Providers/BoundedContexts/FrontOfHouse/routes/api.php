@@ -27,6 +27,7 @@ Route::post('/tables/{tableId}/orders', PlaceTableOrderController::class)
 Route::get('/to-serve', ListToServeController::class)
     ->name('front-of-house.to-serve');
 
+// {toServeId} is the id of a line of the list to serve: the controller hands it over as the id of the dish at the pass.
 Route::post('/to-serve/{toServeId}/serve', ServeDishController::class)
     ->name('front-of-house.to-serve.serve');
 

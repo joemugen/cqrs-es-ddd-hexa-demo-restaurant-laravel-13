@@ -9,5 +9,5 @@ use App\Providers\Modules\SharedKernel\Application\Command;
 
 final readonly class ServeDish implements Command
 {
-    public function __construct(public DishAtThePassId $toServeId) {}
+    public function __construct(public DishAtThePassId $dishAtThePassId) {}
 }

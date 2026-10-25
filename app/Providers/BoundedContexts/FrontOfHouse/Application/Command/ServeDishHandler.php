@@ -8,7 +8,6 @@ use App\Providers\BoundedContexts\FrontOfHouse\Application\Command\Response\Serv
 use App\Providers\BoundedContexts\FrontOfHouse\Application\PassRepository;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\TableOrderRepository;
 use App\Providers\BoundedContexts\FrontOfHouse\Application\TableRepository;
-use App\Providers\BoundedContexts\FrontOfHouse\Domain\TableOrderId;
 use App\Providers\Modules\EventStore\Application\ContractPublisher;
 use App\Providers\Modules\SharedKernel\Application\Bus\Attribute\AsCommandHandler;
 use App\Providers\Modules\SharedKernel\Application\CommandHandler;
@@ -28,12 +27,12 @@ final readonly class ServeDishHandler implements CommandHandler
 
     public function __invoke(ServeDish $command): ServeDishAccepted
     {
-        $dish = $this->passes->find($command->toServeId);
-        $order = $this->orders->get(new TableOrderId((string) $dish->tableOrderId()));
+        $dish = $this->passes->find($command->dishAtThePassId);
+        $order = $this->orders->get($dish->tableOrderId());
         $dish->serve($order->line($dish->lineId()), $this->tables->get($order->tableId()), $order->visitId());
         $this->passes->save($dish);
         $this->contracts->publish($dish->releaseEvents());
 
-        return new ServeDishAccepted($command->toServeId);
+        return new ServeDishAccepted($command->dishAtThePassId);
     }
 }
