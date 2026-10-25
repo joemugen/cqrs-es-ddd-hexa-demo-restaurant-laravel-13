@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Replay one service through the JSON API.
-# The pass lags until `queue:work` runs. `php artisan projections:run to-serve`
+# The list to serve lags until `queue:work` runs. `php artisan projections:run to-serve`
 # catches the same read model up inside this process.
 set -euo pipefail
 

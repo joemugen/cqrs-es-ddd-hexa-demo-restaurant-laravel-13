@@ -38,9 +38,9 @@ test('a service runs from the welcome to the departure', function () {
     $this->getJson('/api/front-of-house/to-serve')->assertExactJson([]);
     $this->artisan('queue:work', ['--stop-when-empty' => true, '--max-jobs' => 20, '--memory' => 2048])->assertSuccessful();
 
-    $pass = $this->getJson('/api/front-of-house/to-serve')->json();
-    expect($pass)->toHaveCount(1)->and($pass[0]['dishName'])->toBe('Green salad');
-    $this->postJson("/api/front-of-house/to-serve/{$pass[0]['id']}/serve")->assertOk();
+    $toServe = $this->getJson('/api/front-of-house/to-serve')->json();
+    expect($toServe)->toHaveCount(1)->and($toServe[0]['dishName'])->toBe('Green salad');
+    $this->postJson("/api/front-of-house/to-serve/{$toServe[0]['id']}/serve")->assertOk();
 
     $this->postJson("/api/kitchen/tickets/{$first['ticketId']}/fire", ['course' => 'main'])->assertOk();
     $this->postJson("/api/kitchen/tickets/{$first['ticketId']}/fire", ['course' => 'drink'])->assertOk();

@@ -63,8 +63,8 @@ app/Providers/
     SharedKernel/        the contracts, buses and value types every context implements
     EventStore/          the log, the checkpoints, the in-process wake-up
   BoundedContexts/
-    FrontOfHouse/        dining room
-    Kitchen/             tickets and the pass screen
+    FrontOfHouse/        dining room: tables, orders, the pass
+    Kitchen/             tickets and the kitchen screen
     Billing/             the till
 ```
 
@@ -272,7 +272,7 @@ php artisan key:generate
 touch database/database.sqlite
 ```
 
-`.env.example` sets `QUEUE_CONNECTION=database`, which is what makes the pass lag in sync mode, and `CACHE_STORE=database`, which the consumer locks need. `EVENT_CONSUMPTION` (`sync` or `worker`) picks who consumes events.
+`.env.example` sets `QUEUE_CONNECTION=database`, which is what makes the list to serve lag in sync mode, and `CACHE_STORE=database`, which the consumer locks need. `EVENT_CONSUMPTION` (`sync` or `worker`) picks who consumes events.
 
 ## Tests
 
@@ -280,7 +280,7 @@ touch database/database.sqlite
 php artisan test
 ```
 
-Domain rules are pure Pest tests and do not boot Laravel. Each step of the service has an HTTP feature test. `tests/Feature/FullServiceTest.php` replays the evening from the welcome to the departure, including the moment the pass is empty until `queue:work` runs.
+Domain rules are pure Pest tests and do not boot Laravel. Each step of the service has an HTTP feature test. `tests/Feature/FullServiceTest.php` replays the evening from the welcome to the departure, including the moment the list to serve is empty until `queue:work` runs.
 
 ## Replay
 
@@ -290,7 +290,7 @@ bash scripts/demo.sh
 
 The script migrates a fresh SQLite database, starts `php artisan serve`, and walks the JSON API with curl. After the starter is ready it prints an empty to-serve list, runs `php artisan queue:work database --stop-when-empty`, and only then serves the dish.
 
-To catch the pass up without a worker:
+To catch the list to serve up without a worker:
 
 ```bash
 php artisan projections:run to-serve
