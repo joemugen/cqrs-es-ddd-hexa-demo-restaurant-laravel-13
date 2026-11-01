@@ -16,7 +16,7 @@ use App\Providers\Modules\SharedKernel\Application\Publication\Translates;
  */
 #[PublishedAs(FrontOfHouseEvent::DISH_SERVED, version: 1)]
 #[Translates(DishServed::class)]
-final readonly class DishServedV1 implements IntegrationContract
+final readonly class DishServedContract implements IntegrationContract
 {
     public function __construct(
         public string $tableId,

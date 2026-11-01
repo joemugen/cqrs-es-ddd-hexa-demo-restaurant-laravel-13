@@ -4,39 +4,39 @@ declare(strict_types=1);
 
 namespace App\Providers\BoundedContexts\FrontOfHouse\Application\Integration;
 
-use App\Providers\BoundedContexts\FrontOfHouse\Domain\Event\TableFreed;
+use App\Providers\BoundedContexts\FrontOfHouse\Domain\Event\TableOrderClosed;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\FrontOfHouseEvent;
 use App\Providers\Modules\SharedKernel\Application\Publication\IntegrationContract;
 use App\Providers\Modules\SharedKernel\Application\Publication\PublishedAs;
 use App\Providers\Modules\SharedKernel\Application\Publication\Translates;
 
 /**
- * The guests of a visit are gone and the table is free: the visit is over.
+ * The guests paid and left: the kitchen stops what it still cooks for this order.
  */
-#[PublishedAs(FrontOfHouseEvent::TABLE_FREED, version: 1)]
-#[Translates(TableFreed::class)]
-final readonly class TableFreedV1 implements IntegrationContract
+#[PublishedAs(FrontOfHouseEvent::TABLE_ORDER_CLOSED, version: 1)]
+#[Translates(TableOrderClosed::class)]
+final readonly class TableOrderClosedContract implements IntegrationContract
 {
     public function __construct(
+        public string $tableOrderId,
         public string $tableId,
-        public string $visitId,
     ) {}
 
-    public static function from(TableFreed $event): self
+    public static function from(TableOrderClosed $event): self
     {
-        return new self((string) $event->tableId, (string) $event->visitId);
+        return new self((string) $event->tableOrderId, (string) $event->tableId);
     }
 
     public function toPayload(): array
     {
         return [
+            'tableOrderId' => $this->tableOrderId,
             'tableId' => $this->tableId,
-            'visitId' => $this->visitId,
         ];
     }
 
     public static function fromPayload(array $payload): static
     {
-        return new self((string) $payload['tableId'], (string) $payload['visitId']);
+        return new self((string) $payload['tableOrderId'], (string) $payload['tableId']);
     }
 }

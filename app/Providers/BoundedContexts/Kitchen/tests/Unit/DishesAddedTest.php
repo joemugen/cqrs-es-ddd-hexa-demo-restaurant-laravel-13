@@ -1,6 +1,6 @@
 <?php
 
-use App\Providers\BoundedContexts\Kitchen\Application\Integration\DishesAddedV1;
+use App\Providers\BoundedContexts\Kitchen\Application\Integration\DishesAddedContract;
 use App\Providers\BoundedContexts\Kitchen\Domain\DishName;
 use App\Providers\BoundedContexts\Kitchen\Domain\Event\DishesAdded;
 use App\Providers\BoundedContexts\Kitchen\Domain\KitchenTicketId;
@@ -37,17 +37,17 @@ describe('the domain event DishesAdded', function () {
     });
 });
 
-describe('the contract DishesAddedV1', function () {
+describe('the contract DishesAddedContract', function () {
     test('tells the other contexts about the order and what they need of the lines, nothing of the stations', function () {
-        expect(DishesAddedV1::from(dishesAddedToTheTicketOfOrder('order-1'))->toPayload())->toBe([
+        expect(DishesAddedContract::from(dishesAddedToTheTicketOfOrder('order-1'))->toPayload())->toBe([
             'tableOrderId' => 'order-1',
             'lines' => [['lineId' => 'order-1-3', 'name' => 'Creme brulee', 'quantity' => 1, 'course' => 'dessert']],
         ]);
     });
 
     test('is read back by a consumer from its payload', function () {
-        $contract = DishesAddedV1::from(dishesAddedToTheTicketOfOrder('order-1'));
+        $contract = DishesAddedContract::from(dishesAddedToTheTicketOfOrder('order-1'));
 
-        expect(DishesAddedV1::fromPayload($contract->toPayload()))->toEqual($contract);
+        expect(DishesAddedContract::fromPayload($contract->toPayload()))->toEqual($contract);
     });
 });

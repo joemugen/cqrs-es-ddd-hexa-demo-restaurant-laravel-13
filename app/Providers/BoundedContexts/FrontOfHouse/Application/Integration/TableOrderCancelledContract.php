@@ -16,7 +16,7 @@ use App\Providers\Modules\SharedKernel\Application\Publication\Translates;
  */
 #[PublishedAs(FrontOfHouseEvent::TABLE_ORDER_CANCELLED, version: 1)]
 #[Translates(TableOrderCancelled::class)]
-final readonly class TableOrderCancelledV1 implements IntegrationContract
+final readonly class TableOrderCancelledContract implements IntegrationContract
 {
     /**
      * @param  list<string>  $abandonedLines

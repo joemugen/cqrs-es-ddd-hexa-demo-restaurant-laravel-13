@@ -15,7 +15,7 @@ use App\Providers\Modules\SharedKernel\Application\Publication\Translates;
  */
 #[PublishedAs(BillingEvent::DISH_WRITTEN_OFF, version: 1)]
 #[Translates(DishWrittenOff::class)]
-final readonly class DishWrittenOffV1 implements IntegrationContract
+final readonly class DishWrittenOffContract implements IntegrationContract
 {
     public function __construct(
         public string $coverRef,

@@ -16,7 +16,7 @@ use App\Providers\Modules\SharedKernel\Application\Publication\Translates;
  */
 #[PublishedAs(KitchenEvent::LINES_UNAVAILABLE, version: 1)]
 #[Translates(LinesUnavailable::class)]
-final readonly class LinesUnavailableV1 implements IntegrationContract
+final readonly class LinesUnavailableContract implements IntegrationContract
 {
     /**
      * @param  list<array{lineId: string, name: string, reason: string}>  $lines

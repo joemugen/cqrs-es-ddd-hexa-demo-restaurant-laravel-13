@@ -15,7 +15,7 @@ use App\Providers\Modules\SharedKernel\Application\Publication\Translates;
  */
 #[PublishedAs(KitchenEvent::DISH_EIGHTY_SIXED, version: 1)]
 #[Translates(DishEightySixed::class)]
-final readonly class DishEightySixedV1 implements IntegrationContract
+final readonly class DishEightySixedContract implements IntegrationContract
 {
     public function __construct(public string $dishName) {}
 

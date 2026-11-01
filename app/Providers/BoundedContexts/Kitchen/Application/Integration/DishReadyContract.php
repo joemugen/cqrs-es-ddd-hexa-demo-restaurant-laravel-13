@@ -15,7 +15,7 @@ use App\Providers\Modules\SharedKernel\Application\Publication\Translates;
  */
 #[PublishedAs(KitchenEvent::DISH_READY, version: 1)]
 #[Translates(DishReady::class)]
-final readonly class DishReadyV1 implements IntegrationContract
+final readonly class DishReadyContract implements IntegrationContract
 {
     public function __construct(
         public string $tableOrderId,

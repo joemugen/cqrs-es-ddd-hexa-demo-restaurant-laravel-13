@@ -15,7 +15,7 @@ use App\Providers\Modules\SharedKernel\Application\Publication\Translates;
  */
 #[PublishedAs(FrontOfHouseEvent::BILL_REQUESTED, version: 1)]
 #[Translates(BillRequested::class)]
-final readonly class BillRequestedV1 implements IntegrationContract
+final readonly class BillRequestedContract implements IntegrationContract
 {
     public function __construct(
         public string $tableId,

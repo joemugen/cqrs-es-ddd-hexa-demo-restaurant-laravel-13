@@ -15,7 +15,7 @@ use App\Providers\Modules\SharedKernel\Application\Publication\Translates;
  */
 #[PublishedAs(BillingEvent::DISH_PLACED_ON_BILL, version: 1)]
 #[Translates(DishPlacedOnBill::class)]
-final readonly class DishPlacedOnBillV1 implements IntegrationContract
+final readonly class DishPlacedOnBillContract implements IntegrationContract
 {
     public function __construct(
         public string $coverRef,

@@ -17,7 +17,7 @@ use App\Providers\Modules\SharedKernel\Application\Publication\Translates;
  */
 #[PublishedAs(BillingEvent::BILL_OPENED, version: 1)]
 #[Translates(BillOpened::class)]
-final readonly class BillOpenedV1 implements IntegrationContract
+final readonly class BillOpenedContract implements IntegrationContract
 {
     /**
      * @param  list<array{sourceKey: string, description: string, quantity: int, unitPriceCents: int, kind: string}>  $dishes

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Providers\BoundedContexts\FrontOfHouse\Application\Integration;
 
-use App\Providers\BoundedContexts\FrontOfHouse\Domain\Event\TableOrderPlaced;
+use App\Providers\BoundedContexts\FrontOfHouse\Domain\Event\TableOrderRevised;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\FrontOfHouseEvent;
 use App\Providers\BoundedContexts\FrontOfHouse\Domain\OrderLine;
 use App\Providers\Modules\SharedKernel\Application\Publication\IntegrationContract;
@@ -12,11 +12,11 @@ use App\Providers\Modules\SharedKernel\Application\Publication\PublishedAs;
 use App\Providers\Modules\SharedKernel\Application\Publication\Translates;
 
 /**
- * What the others need of an order that was placed: the table, the visit it belongs to and the lines, never the price.
+ * What the kitchen needs of a revision: the lines it adds to the order.
  */
-#[PublishedAs(FrontOfHouseEvent::TABLE_ORDER_PLACED, version: 1)]
-#[Translates(TableOrderPlaced::class)]
-final readonly class TableOrderPlacedV1 implements IntegrationContract
+#[PublishedAs(FrontOfHouseEvent::TABLE_ORDER_REVISED, version: 1)]
+#[Translates(TableOrderRevised::class)]
+final readonly class TableOrderRevisedContract implements IntegrationContract
 {
     /**
      * @param  list<array{lineId: string, name: string, quantity: int, course: string, allergens: list<string>}>  $lines
@@ -24,19 +24,19 @@ final readonly class TableOrderPlacedV1 implements IntegrationContract
     public function __construct(
         public string $tableOrderId,
         public string $tableId,
-        public string $visitId,
         public string $tableLabel,
+        public int $revision,
         public array $lines,
     ) {}
 
-    public static function from(TableOrderPlaced $event): self
+    public static function from(TableOrderRevised $event): self
     {
         return new self(
             (string) $event->tableOrderId,
             (string) $event->tableId,
-            (string) $event->visitId,
             (string) $event->tableLabel,
-            array_map(fn (OrderLine $line): array => $line->forTheKitchen(), $event->lines),
+            $event->revision,
+            array_map(fn (OrderLine $line): array => $line->forTheKitchen(), $event->addedLines),
         );
     }
 
@@ -45,14 +45,14 @@ final readonly class TableOrderPlacedV1 implements IntegrationContract
         return [
             'tableOrderId' => $this->tableOrderId,
             'tableId' => $this->tableId,
-            'visitId' => $this->visitId,
             'tableLabel' => $this->tableLabel,
+            'revision' => $this->revision,
             'lines' => $this->lines,
         ];
     }
 
     public static function fromPayload(array $payload): static
     {
-        return new self((string) $payload['tableOrderId'], (string) $payload['tableId'], (string) $payload['visitId'], (string) $payload['tableLabel'], $payload['lines']);
+        return new self((string) $payload['tableOrderId'], (string) $payload['tableId'], (string) $payload['tableLabel'], (int) $payload['revision'], $payload['lines']);
     }
 }

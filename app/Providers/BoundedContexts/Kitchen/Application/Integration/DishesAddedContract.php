@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Providers\BoundedContexts\Kitchen\Application\Integration;
 
-use App\Providers\BoundedContexts\Kitchen\Domain\Event\TicketOpened;
+use App\Providers\BoundedContexts\Kitchen\Domain\Event\DishesAdded;
 use App\Providers\BoundedContexts\Kitchen\Domain\KitchenEvent;
 use App\Providers\BoundedContexts\Kitchen\Domain\TicketLine;
 use App\Providers\Modules\SharedKernel\Application\Publication\IntegrationContract;
@@ -12,11 +12,12 @@ use App\Providers\Modules\SharedKernel\Application\Publication\PublishedAs;
 use App\Providers\Modules\SharedKernel\Application\Publication\Translates;
 
 /**
- * The kitchen opened a ticket for the order: which order, and the lines it cooks. The stations and cooking times stay in the kitchen.
+ * What the kitchen tells the others when dishes join a ticket: which order, and what they need to know of the lines.
+ * The stations and cooking times stay in the kitchen.
  */
-#[PublishedAs(KitchenEvent::TICKET_OPENED, version: 1)]
-#[Translates(TicketOpened::class)]
-final readonly class TicketOpenedV1 implements IntegrationContract
+#[PublishedAs(KitchenEvent::DISHES_ADDED, version: 1)]
+#[Translates(DishesAdded::class)]
+final readonly class DishesAddedContract implements IntegrationContract
 {
     /**
      * @param  list<array{lineId: string, name: string, quantity: int, course: string}>  $lines
@@ -26,7 +27,7 @@ final readonly class TicketOpenedV1 implements IntegrationContract
         public array $lines,
     ) {}
 
-    public static function from(TicketOpened $event): self
+    public static function from(DishesAdded $event): self
     {
         return new self(
             (string) $event->ticketId,
